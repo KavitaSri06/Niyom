@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { NWEmployee, NWClient } from './types';
 import {
-  FileText, Plus, Search, ChevronDown, X, Eye, Pencil, Trash2,
-  Download, CheckCircle2, AlertCircle, RefreshCw, ChevronLeft,
+  FileText, Plus, Search, ChevronDown, Eye, Pencil, Trash2,
+  Download, CheckCircle2, AlertCircle, ChevronLeft, Mail,
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 
 interface Props { employee: NWEmployee; }
 
@@ -49,6 +50,9 @@ interface DealRecord {
   snap_email: string;
   notes: string;
   created_at: string;
+  email_status: 'pending' | 'sent';
+  email_sent_at?: string;
+  email_sent_by?: string;
   client?: { full_name: string; client_code: string };
 }
 
@@ -72,7 +76,7 @@ const emptyForm = (): DealForm => ({
 function adjustRate(base: string): string {
   const n = parseFloat(base);
   if (!base || isNaN(n) || n <= 0) return '';
-  return (Math.round((n - n * 0.015 / 100) * 100) / 100).toFixed(2); // 2dp always
+  return (Math.round((n - n * 0.015 / 100) * 100) / 100).toFixed(2);
 }
 
 function fmt(n: number) {
@@ -81,6 +85,15 @@ function fmt(n: number) {
 function fmtDate(d: string) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatRole(role: string): string {
+  switch (role) {
+    case 'super_admin': return 'Super Admin';
+    case 'admin': return 'Admin';
+    case 'employee': return 'Relationship Manager';
+    default: return 'Staff';
+  }
 }
 
 // ---------- Read-only field ----------
@@ -121,7 +134,30 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
-// ---------- PDF generator ----------
+// ---------- Email Status Badge ----------
+function EmailStatusBadge({ status }: { status: 'pending' | 'sent' }) {
+  if (status === 'sent') {
+    return (
+      <span
+        className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg"
+        style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.18)' }}
+      >
+        <CheckCircle2 className="w-3 h-3" />
+        Email Sent
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg"
+      style={{ background: 'rgba(107,107,107,0.1)', color: '#6B6B6B', border: '1px solid rgba(107,107,107,0.18)' }}
+    >
+      Pending
+    </span>
+  );
+}
+
+// ---------- PDF generator (browser print / download) — UNCHANGED ----------
 function generatePDF(deal: DealRecord, clientCode: string) {
   const dpId = deal.snap_demat_account ? deal.snap_demat_account.slice(0, 8) : '—';
   const clientIdDP = deal.snap_demat_account ? deal.snap_demat_account.slice(-8) : '—';
@@ -261,7 +297,7 @@ function generatePDF(deal: DealRecord, clientCode: string) {
     </tr>
     <tr>
       <td class="split-label">Depository</td>
-      <td class="split-val">${previewDeal.snap_depository || '-'}</td>
+      <td class="split-val">${deal.snap_depository || '-'}</td>
       <td class="split-label">Depository</td>
       <td class="split-val">NSDL</td>
     </tr>
@@ -311,7 +347,7 @@ function generatePDF(deal: DealRecord, clientCode: string) {
         <div style="padding:12px 14px">
           <p style="font-size:9.5px">Authorized Signatory Name: <strong>N Ramya</strong></p>
           <p style="font-size:9.5px;margin-top:6px">Date: ${fmtDate(deal.deal_date)}</p>
-          <img src="${window.location.origin}/Screenshot_2026-04-06_at_4.02.25_PM.png" style="height:56px;margin-top:4px;display:block" alt="Signature & Seal" />
+          <img src="${window.location.origin}/Screenshot_2026-04-06_at_4.02.25_PM.png" style="height:56px;margin-top:4px;display:block" alt="Signature &amp; Seal" />
           <p style="font-size:9px;color:#888">Signature &amp; Seal</p>
         </div>
       </td>
@@ -341,6 +377,341 @@ function generatePDF(deal: DealRecord, clientCode: string) {
   }, 500);
 }
 
+// ---------- Generate PDF as Base64 string for email attachment ----------
+async function generateDealPDFBase64(deal: DealRecord): Promise<string> {
+  const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+  const PW = 210;
+  const ML = 12, MR = 12, MT = 14;
+  const CW = PW - ML - MR; // 186mm
+
+  const numFmt = (n: number) =>
+    (Math.round(n * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const dpId = deal.snap_demat_account ? deal.snap_demat_account.slice(0, 8) : '-';
+  const clientIdDP = deal.snap_demat_account ? deal.snap_demat_account.slice(-8) : '-';
+
+  // Helper: fetch image and return data URL
+  async function fetchImgDataUrl(src: string): Promise<string | null> {
+    try {
+      const res = await fetch(src);
+      const blob = await res.blob();
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  // Helper: draw a 2-col label/value table (centered values)
+  function draw2Col(
+    rows: [string, string][],
+    startY: number,
+    cellH = 7,
+    labelRatio = 0.4
+  ): number {
+    const lW = CW * labelRatio;
+    const vW = CW * (1 - labelRatio);
+    doc.setLineWidth(0.2);
+    doc.setDrawColor(187, 187, 187);
+    rows.forEach(([lbl, val], i) => {
+      const ry = startY + i * cellH;
+      // label cell
+      doc.setFillColor(250, 250, 250);
+      doc.rect(ML, ry, lW, cellH, 'FD');
+      // value cell
+      doc.setFillColor(255, 255, 255);
+      doc.rect(ML + lW, ry, vW, cellH, 'FD');
+      // label text
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80, 80, 80);
+      doc.text(lbl, ML + lW / 2, ry + cellH / 2 + 1.4, { align: 'center' });
+      // value text
+      doc.setTextColor(17, 17, 17);
+      const lines = doc.splitTextToSize(val, vW - 4);
+      doc.text(lines[0] ?? val, ML + lW + vW / 2, ry + cellH / 2 + 1.4, { align: 'center' });
+    });
+    return startY + rows.length * cellH;
+  }
+
+  // Helper: section title, returns new Y
+  function sectionTitle(text: string, sy: number): number {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(17, 17, 17);
+    doc.text(text, ML, sy);
+    return sy + 6;
+  }
+
+  // --- Load assets ---
+  const [logoDataUrl, sigDataUrl] = await Promise.all([
+    fetchImgDataUrl(window.location.origin + '/niyomlogo.png'),
+    fetchImgDataUrl(window.location.origin + '/Screenshot_2026-04-06_at_4.02.25_PM.png'),
+  ]);
+
+  let y = MT;
+
+  // ===== HEADER =====
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, 'PNG', ML, y, 28, 14);
+  }
+
+  // Tagline
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(139, 115, 85);
+  doc.text('Wealth Reimagined', ML + 32, y + 10);
+
+  // Deal Note title
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(17, 17, 17);
+  doc.text('DEAL NOTE', PW - MR, y + 6, { align: 'right' });
+
+  y += 18;
+
+  // Header divider
+  doc.setDrawColor(17, 17, 17);
+  doc.setLineWidth(0.5);
+  doc.line(ML, y, PW - MR, y);
+  y += 4;
+
+  // Ref + date line
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(136, 136, 136);
+  doc.text(
+    `Ref: ${deal.confirmation_number}   |   ${fmtDate(deal.deal_date)}`,
+    PW - MR, y, { align: 'right' }
+  );
+  y += 8;
+
+  // ===== DEAL INFORMATION =====
+  y = sectionTitle('Deal Information', y);
+  y = draw2Col([
+    ['Deal Date', fmtDate(deal.deal_date)],
+    ['Transaction Type', deal.transaction_type],
+    ['Product Type', deal.product_type],
+  ], y);
+  y += 5;
+
+  // ===== SECURITY DETAILS =====
+  y = sectionTitle('Security / Instrument Details', y);
+  y = draw2Col([
+    ['Security / Company Name', deal.security_name],
+    ['ISIN Number', deal.isin],
+    ['Quantity', numFmt(deal.quantity)],
+    ['Rate per Unit (Rs.)', `${numFmt(deal.rate_per_unit)} Per Share`],
+    ['Stamp Duty / Charges (Rs.)', (Math.round((deal.stamp_duty || 0) * 100) / 100).toFixed(2)],
+    ['Settlement Amount (Rs.)', 'Rs. ' + numFmt(deal.settlement_amount)],
+  ], y);
+  y += 5;
+
+  // ===== BUYER / SELLER SPLIT TABLE =====
+  const colW = CW / 4;
+  const splitRows: [string, string, string, string][] = [
+    ['Client Name', deal.snap_client_name, 'Client Name', 'NIYOM WEALTH MANAGEMENT LLP'],
+    ['PAN Number', deal.snap_pan, 'PAN Number', 'AAZFN2255K'],
+    ['DP Name', deal.snap_dp_name, 'DP Name', 'Chola Securities'],
+    ['DP ID', dpId, 'DP ID', 'IN300572'],
+    ['Client ID', clientIdDP, 'Client ID', '10158746'],
+    ['Depository', deal.snap_depository || '-', 'Depository', 'NSDL'],
+  ];
+
+  // Main header row
+  doc.setLineWidth(0.2);
+  doc.setDrawColor(187, 187, 187);
+  const hH = 8;
+  doc.setFillColor(240, 235, 224);
+  doc.rect(ML, y, CW / 2, hH, 'FD');
+  doc.rect(ML + CW / 2, y, CW / 2, hH, 'FD');
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(17, 17, 17);
+  doc.text('Buyer Details', ML + CW / 4, y + hH / 2 + 1.5, { align: 'center' });
+  doc.text('Seller Details', ML + CW * 3 / 4, y + hH / 2 + 1.5, { align: 'center' });
+  y += hH;
+
+  // Sub-header row
+  const shH = 6;
+  doc.setFillColor(250, 247, 242);
+  ['Particulars', 'Details', 'Particulars', 'Details'].forEach((h, ci) => {
+    doc.rect(ML + ci * colW, y, colW, shH, 'FD');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(17, 17, 17);
+    doc.text(h, ML + ci * colW + colW / 2, y + shH / 2 + 1.5, { align: 'center' });
+  });
+  y += shH;
+
+  // Data rows
+  splitRows.forEach(([bl, bv, sl, sv]) => {
+    const rH = 7;
+    [bl, bv, sl, sv].forEach((txt, ci) => {
+      const isLabel = ci === 0 || ci === 2;
+      if (isLabel) {
+        doc.setFillColor(250, 250, 247);
+      } else {
+        doc.setFillColor(255, 255, 255);
+      }
+      doc.rect(ML + ci * colW, y, colW, rH, 'FD');
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(isLabel ? 80 : 17, isLabel ? 80 : 17, isLabel ? 80 : 17);
+      const lines = doc.splitTextToSize(txt, colW - 3);
+      doc.text(lines[0] ?? txt, ML + ci * colW + colW / 2, y + rH / 2 + 1.5, { align: 'center' });
+    });
+    y += rH;
+  });
+  y += 5;
+
+  // ===== PAYMENT DETAILS =====
+  y = sectionTitle('Payment Details', y);
+  const payW = CW * 0.55;
+  const payX = ML + (CW - payW) / 2;
+  const pLW = payW * 0.45;
+  const pVW = payW * 0.55;
+
+  // Payment header
+  doc.setFillColor(240, 235, 224);
+  doc.setLineWidth(0.2);
+  doc.setDrawColor(187, 187, 187);
+  doc.rect(payX, y, pLW, 7, 'FD');
+  doc.rect(payX + pLW, y, pVW, 7, 'FD');
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(17, 17, 17);
+  doc.text('Particulars', payX + pLW / 2, y + 5, { align: 'center' });
+  doc.text('Details', payX + pLW + pVW / 2, y + 5, { align: 'center' });
+  y += 7;
+
+  const payRows: [string, string][] = [
+    ['Bank Name', 'IDFC FIRST BANK'],
+    ['Account Name', 'NIYOM WEALTH MANAGEMENT LLP'],
+    ['Account Number', '89394331135'],
+    ['IFSC Code', 'IDFB0080131'],
+    ['Branch', 'Anna Nagar West Branch'],
+  ];
+  payRows.forEach(([k, v]) => {
+    const rH = 7;
+    doc.setFillColor(250, 250, 247);
+    doc.rect(payX, y, pLW, rH, 'FD');
+    doc.setFillColor(255, 255, 255);
+    doc.rect(payX + pLW, y, pVW, rH, 'FD');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text(k, payX + pLW / 2, y + rH / 2 + 1.5, { align: 'center' });
+    doc.setTextColor(17, 17, 17);
+    const lines = doc.splitTextToSize(v, pVW - 4);
+    doc.text(lines[0] ?? v, payX + pLW + pVW / 2, y + rH / 2 + 1.5, { align: 'center' });
+    y += rH;
+  });
+  y += 6;
+
+  // ===== TERMS & CONDITIONS =====
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(17, 17, 17);
+  doc.text('TERMS & CONDITIONS', ML, y);
+  y += 7;
+
+  const tcItems: [string, string][] = [
+    ['1. Deal Confirmation & Settlement', 'The transaction shall be considered final upon mutual confirmation of price, quantity, and settlement terms by both parties. The Buyer shall ensure timely payment, and the Seller shall ensure timely transfer of securities/bonds as per the agreed timeline.'],
+    ['2. Intermediary Role', 'Niyom Wealth Management LLP acts solely as a facilitator/intermediary for the transaction and shall not be held liable for any payment default, transfer delay, counterparty failure, operational issue, or investment-related loss.'],
+    ['3. Risk & Disclaimer', 'Investments in unlisted shares and secondary bonds are subject to market, liquidity, credit, regulatory, and valuation risks. Niyom Wealth Management LLP does not guarantee listing, liquidity, returns, redemption, coupon payments, price appreciation, or exit opportunities. Clients are advised to undertake independent due diligence before transacting.'],
+    ['4. Compliance, Taxes & Charges', 'All parties confirm compliance with applicable KYC norms, SEBI/RBI regulations, taxation laws, and depository requirements. Applicable taxes, stamp duty, DP charges, brokerage, and statutory levies shall be borne by the respective parties as mutually agreed.'],
+    ['5. Jurisdiction & Acceptance', 'Any dispute, claim, default, or legal proceeding arising out of the transaction shall be subject to the exclusive jurisdiction of the courts in Chennai, Tamil Nadu, India. Execution of payment, transfer instruction, email/WhatsApp confirmation, or deal confirmation shall constitute deemed acceptance of these Terms & Conditions.'],
+  ];
+
+  tcItems.forEach(([title, body]) => {
+    if (y > 260) { doc.addPage(); y = MT; }
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(17, 17, 17);
+    doc.text(title, ML, y);
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(51, 51, 51);
+    const lines = doc.splitTextToSize(body, CW);
+    doc.text(lines, ML, y);
+    y += lines.length * 4.5 + 3;
+  });
+
+  // ===== CONFIRMATION =====
+  if (y > 240) { doc.addPage(); y = MT; }
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(17, 17, 17);
+  doc.text('Confirmation', ML, y);
+  y += 5;
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(51, 51, 51);
+  doc.text('We hereby confirm that the above details are true and agreed upon by both parties.', ML, y);
+  y += 8;
+
+  const sigColW = CW / 2;
+  const sigH = 32;
+
+  // Signature header cells
+  doc.setLineWidth(0.2);
+  doc.setDrawColor(187, 187, 187);
+  doc.setFillColor(240, 235, 224);
+  doc.rect(ML, y, sigColW, 8, 'FD');
+  doc.rect(ML + sigColW, y, sigColW, 8, 'FD');
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(17, 17, 17);
+  doc.text('For NIYOM WEALTH MANAGEMENT LLP', ML + sigColW / 2, y + 5.5, { align: 'center' });
+  doc.text('Client / Counterparty', ML + sigColW + sigColW / 2, y + 5.5, { align: 'center' });
+  y += 8;
+
+  // Signature body cells
+  doc.setFillColor(255, 255, 255);
+  doc.rect(ML, y, sigColW, sigH, 'FD');
+  doc.rect(ML + sigColW, y, sigColW, sigH, 'FD');
+
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(17, 17, 17);
+  doc.text('Authorized Signatory Name: N Ramya', ML + 4, y + 7);
+  doc.text(`Date: ${fmtDate(deal.deal_date)}`, ML + 4, y + 13);
+
+  if (sigDataUrl) {
+    doc.addImage(sigDataUrl, 'PNG', ML + 4, y + 16, 22, 11);
+  }
+
+  doc.setTextColor(136, 136, 136);
+  doc.text('Signature & Seal', ML + 4, y + 29);
+
+  doc.setTextColor(17, 17, 17);
+  doc.text(`Authorized Signatory Name: ${deal.snap_client_name}`, ML + sigColW + 4, y + 7);
+  doc.text('Date:', ML + sigColW + 4, y + 13);
+  doc.setTextColor(136, 136, 136);
+  doc.text('Signature', ML + sigColW + 4, y + 29);
+
+  y += sigH + 8;
+
+  // Footer
+  doc.setDrawColor(221, 221, 221);
+  doc.setLineWidth(0.2);
+  doc.line(ML, y, PW - MR, y);
+  y += 4;
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(136, 136, 136);
+  doc.text('Website: www.niyomwealth.com', PW / 2, y, { align: 'center' });
+
+  // Return raw base64 (without data: prefix)
+  return doc.output('datauristring').split(',')[1];
+}
+
 // ============================================================
 export default function DealConfirmation({ employee }: Props) {
   const [view, setView] = useState<'list' | 'form' | 'preview'>('list');
@@ -358,6 +729,7 @@ export default function DealConfirmation({ employee }: Props) {
   const [previewDeal, setPreviewDeal] = useState<DealRecord | null>(null);
   const [deleteDeal, setDeleteDeal] = useState<DealRecord | null>(null);
   const [search, setSearch] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
 
   const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
   const clientDropRef = useRef<HTMLDivElement>(null);
@@ -370,12 +742,13 @@ export default function DealConfirmation({ employee }: Props) {
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
-    setTimeout(() => setToast(null), 3500);
+    setTimeout(() => setToast(null), 4000);
   };
 
   const loadDeals = useCallback(async () => {
     setLoading(true);
-    let q = supabase.from('nw_deal_confirmations')
+    let q = supabase
+      .from('nw_deal_confirmations')
       .select('*, client:nw_clients(full_name, client_code)')
       .order('created_at', { ascending: false });
     if (!isAdmin) q = q.eq('employee_id', employee.id);
@@ -387,15 +760,20 @@ export default function DealConfirmation({ employee }: Props) {
   useEffect(() => { loadDeals(); }, [loadDeals]);
 
   useEffect(() => {
-    let q = supabase.from('nw_clients').select('id, client_code, full_name, pan, phone, email, dp_name, demat_account,depository, bank_name, bank_account, bank_ifsc, address, city, state, pincode, employee_id').order('full_name');
+    let q = supabase
+      .from('nw_clients')
+      .select('id, client_code, full_name, pan, phone, email, dp_name, demat_account, depository, bank_name, bank_account, bank_ifsc, address, city, state, pincode, employee_id')
+      .order('full_name');
     if (!isAdmin) q = (q as any).eq('employee_id', employee.id);
-    q.then(({ data }) => setClients((data as NWClient[]) || []));
+    q.then(({ data }) => setClients((data as unknown as NWClient[]) || []));
   }, [isAdmin, employee.id]);
 
   // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (clientDropRef.current && !clientDropRef.current.contains(e.target as Node)) setShowClientDrop(false);
+      if (clientDropRef.current && !clientDropRef.current.contains(e.target as Node)) {
+        setShowClientDrop(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -479,7 +857,7 @@ export default function DealConfirmation({ employee }: Props) {
       snap_pan: selectedClient.pan,
       snap_dp_name: selectedClient.dp_name,
       snap_demat_account: selectedClient.demat_account,
-      snap_depository: selectedClient.depository,
+      snap_depository: (selectedClient as any).depository,
       snap_bank_name: selectedClient.bank_name,
       snap_bank_account: selectedClient.bank_account,
       snap_bank_ifsc: selectedClient.bank_ifsc,
@@ -515,6 +893,63 @@ export default function DealConfirmation({ employee }: Props) {
     showToast('Deleted.');
   };
 
+  // ---------- Send Email ----------
+  const handleSendEmail = async (deal: DealRecord) => {
+    if (emailSending || deal.email_status === 'sent') return;
+    setEmailSending(true);
+
+    try {
+      // 1. Generate PDF as base64
+      const pdfBase64 = await generateDealPDFBase64(deal);
+
+      // 2. Call Supabase Edge Function
+      const { data: fnData, error: fnError } = await supabase.functions.invoke(
+        'send-deal-confirmation-email',
+        {
+          body: {
+            dealId: deal.id,
+            confirmationNumber: deal.confirmation_number,
+            clientName: deal.snap_client_name,
+            clientEmail: deal.snap_email,
+            employeeName: employee.full_name,
+            employeeDesignation: formatRole(employee.role),
+            employeeEmail: employee.email,
+            employeePhone: employee.phone,
+            pdfBase64,
+          },
+        }
+      );
+
+      if (fnError || !fnData?.success) {
+        throw new Error(fnData?.error || fnError?.message || 'Failed to send email');
+      }
+
+      // 3. Update database
+      await supabase
+        .from('nw_deal_confirmations')
+        .update({
+          email_status: 'sent',
+          email_sent_at: new Date().toISOString(),
+          email_sent_by: employee.id,
+        })
+        .eq('id', deal.id);
+
+      // 4. Optimistically update previewDeal and reload list
+      setPreviewDeal(prev =>
+        prev && prev.id === deal.id
+          ? { ...prev, email_status: 'sent', email_sent_at: new Date().toISOString() }
+          : prev
+      );
+      await loadDeals();
+
+      showToast('Deal Confirmation Email Sent Successfully');
+    } catch (err: any) {
+      showToast('Failed to Send Email', false);
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
   const filteredDeals = deals.filter(d =>
     !search ||
     d.confirmation_number.toLowerCase().includes(search.toLowerCase()) ||
@@ -527,6 +962,7 @@ export default function DealConfirmation({ employee }: Props) {
     const clientCode = (previewDeal.client as any)?.client_code || '';
     const dpId = previewDeal.snap_demat_account.slice(0, 8);
     const clientIdDP = previewDeal.snap_demat_account.slice(-8);
+    const alreadySent = previewDeal.email_status === 'sent';
 
     const Row = ({ label, value, bold }: { label: string; value: string; bold?: boolean }) => (
       <tr>
@@ -537,15 +973,48 @@ export default function DealConfirmation({ employee }: Props) {
 
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
+        {/* Top Action Bar */}
+        <div className="flex items-center gap-4 flex-wrap">
           <button onClick={() => setView('list')} className="flex items-center gap-2 text-sm" style={{ color: '#8A8A8A' }}>
             <ChevronLeft className="w-4 h-4" /> Back to List
           </button>
           <div className="flex-1" />
-          <button onClick={() => generatePDF(previewDeal, clientCode)}
+          {/* Download PDF */}
+          <button
+            onClick={() => generatePDF(previewDeal, clientCode)}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black"
-            style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+            style={{ background: 'linear-gradient(135deg, #B8961E, #9C7D18)' }}
+          >
             <Download className="w-4 h-4" /> Download PDF
+          </button>
+          {/* Send Email Button */}
+          <button
+            onClick={() => handleSendEmail(previewDeal)}
+            disabled={emailSending || alreadySent}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black transition-all disabled:cursor-not-allowed"
+            style={{
+              background: alreadySent
+                ? 'linear-gradient(135deg, #10B981, #059669)'
+                : 'linear-gradient(135deg, #D4AF37, #B8961E)',
+              opacity: emailSending ? 0.75 : 1,
+            }}
+          >
+            {emailSending ? (
+              <>
+                <div className="w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                Sending...
+              </>
+            ) : alreadySent ? (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                Email Sent ✓
+              </>
+            ) : (
+              <>
+                <Mail className="w-4 h-4" />
+                Send Email
+              </>
+            )}
           </button>
         </div>
 
@@ -612,12 +1081,7 @@ export default function DealConfirmation({ employee }: Props) {
                     ['DP Name', previewDeal.snap_dp_name, 'DP Name', 'Chola Securities'],
                     ['DP ID', dpId, 'DP ID', 'IN300572'],
                     ['Client ID', clientIdDP, 'Client ID', '10158746'],
-                    [
-  'Depository',
-  previewDeal.snap_depository || '-',
-  'Depository',
-  'NSDL'
-],
+                    ['Depository', previewDeal.snap_depository || '-', 'Depository', 'NSDL'],
                   ].map(([bl, bv, sl, sv], i) => (
                     <tr key={i}>
                       <td className="px-3 py-2 text-xs font-medium" style={{ background: '#FAFAF7', border: '1px solid #D5CDB8', textAlign: 'center' }}>{bl}</td>
@@ -688,7 +1152,7 @@ export default function DealConfirmation({ employee }: Props) {
                       <div className="px-4 py-5 space-y-3">
                         <p className="text-xs">Authorized Signatory Name: <strong>N Ramya</strong></p>
                         <p className="text-xs">Date: {fmtDate(previewDeal.deal_date)}</p>
-                        <img src="/Screenshot_2026-04-06_at_4.02.25_PM.png" alt="Signature & Seal" className="h-14 mt-1" />
+                        <img src="/Screenshot_2026-04-06_at_4.02.25_PM.png" alt="Signature &amp; Seal" className="h-14 mt-1" />
                         <p className="text-xs" style={{ color: '#888' }}>Signature &amp; Seal</p>
                       </div>
                     </td>
@@ -908,7 +1372,7 @@ export default function DealConfirmation({ employee }: Props) {
         <div>
           <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Documents</p>
           <h1 className="text-2xl font-bold text-white">Deal Confirmations</h1>
-          <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>Generate, preview and download deal confirmation notes</p>
+          <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>Generate, preview and email deal confirmation notes</p>
         </div>
         <button onClick={openCreate}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black"
@@ -932,7 +1396,7 @@ export default function DealConfirmation({ employee }: Props) {
           { label: 'Total', value: deals.length, color: '#D4AF37' },
           { label: 'Confirmed', value: deals.filter(d => d.status === 'confirmed').length, color: '#10B981' },
           { label: 'Drafts', value: deals.filter(d => d.status === 'draft').length, color: '#8A8A8A' },
-          { label: 'This Month', value: deals.filter(d => d.created_at?.startsWith(new Date().toISOString().slice(0, 7))).length, color: '#60a5fa' },
+          { label: 'Emails Sent', value: deals.filter(d => d.email_status === 'sent').length, color: '#60a5fa' },
         ].map(s => (
           <div key={s.label} className="rounded-2xl p-5" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
             <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#4A4A4A' }}>{s.label}</p>
@@ -966,7 +1430,7 @@ export default function DealConfirmation({ employee }: Props) {
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
-                  {['Reference', 'Client', 'Security', 'Type', 'Date', 'Settlement', 'Status', ''].map(h => (
+                  {['Reference', 'Client', 'Security', 'Type', 'Date', 'Settlement', 'Status', 'Email', ''].map(h => (
                     <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
                   ))}
                 </tr>
@@ -1000,30 +1464,31 @@ export default function DealConfirmation({ employee }: Props) {
                         {d.status === 'confirmed' ? 'Confirmed' : 'Draft'}
                       </span>
                     </td>
+                    {/* Email Status — replaces Download PDF */}
+                    <td className="px-5 py-3.5">
+                      <EmailStatusBadge status={d.email_status ?? 'pending'} />
+                    </td>
+                    {/* Actions: Preview | Edit | Delete */}
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => { setPreviewDeal(d); setView('preview'); }}
+                        <button
+                          onClick={() => { setPreviewDeal(d); setView('preview'); }}
                           className="p-1.5 rounded-lg transition-colors" title="Preview"
                           style={{ color: '#4A4A4A' }}
                           onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')}
                           onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button onClick={() => generatePDF(d, (d.client as any)?.client_code || '')}
-                          className="p-1.5 rounded-lg transition-colors" title="Download PDF"
-                          style={{ color: '#4A4A4A' }}
-                          onMouseEnter={e => (e.currentTarget.style.color = '#10B981')}
-                          onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => openEdit(d)}
+                        <button
+                          onClick={() => openEdit(d)}
                           className="p-1.5 rounded-lg transition-colors" title="Edit"
                           style={{ color: '#4A4A4A' }}
                           onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
                           onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={() => setDeleteDeal(d)}
+                        <button
+                          onClick={() => setDeleteDeal(d)}
                           className="p-1.5 rounded-lg transition-colors" title="Delete"
                           style={{ color: '#4A4A4A' }}
                           onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
@@ -1064,4 +1529,3 @@ export default function DealConfirmation({ employee }: Props) {
     </div>
   );
 }
-
