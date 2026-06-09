@@ -73,7 +73,11 @@ export default function Layout({ children, page, onNavigate, employee }: Props) 
         {navItems.map(({ key, label, icon: Icon }) => {
           const active = page === key;
           return (
-            <button key={key} onClick={() => { onNavigate(key); setMobileOpen(false); }}
+            <button key={key} onClick={() => {
+  window.history.pushState({}, '', `/crm/${key}`);
+  onNavigate(key);
+  setMobileOpen(false);
+}}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
               style={{
                 background: active ? 'rgba(201,184,150,0.1)' : 'transparent',

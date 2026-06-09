@@ -26,6 +26,33 @@ export default function CRM() {
   const [pageParams, setPageParams] = useState<Record<string, string>>({});
 
   useEffect(() => {
+  const path = window.location.pathname;
+
+  const route = path.replace('/crm/', '');
+
+  const validPages = [
+    'dashboard',
+    'onboarding',
+    'deal_confirmation',
+    'clients',
+    'portfolio',
+    'transactions',
+    'reports',
+    'mis',
+    'dsa_management',
+    'dsa_payout',
+    'documents',
+    'admin_documents',
+    'employees',
+    'settings'
+  ];
+
+  if (validPages.includes(route)) {
+    setPage(route as CRMPage);
+  }
+}, []);
+
+  useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -100,6 +127,8 @@ export default function CRM() {
       default: return <Dashboard employee={employee} onNavigate={navigate} />;
     }
   };
+
+  
 
   return (
     <Layout employee={employee} page={page} onNavigate={navigate}>
