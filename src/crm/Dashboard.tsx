@@ -1,0 +1,321 @@
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { NWEmployee, NWTransaction, NWActivityLog, NWClient } from './types';
+import { fmt, fmtDate, timeAgo, TXN_LABELS, TXN_COLORS, VERIFICATION_COLORS, VERIFICATION_LABELS } from './utils';
+import { Users, TrendingUp, ArrowLeftRight, UserCheck, ArrowRight, Activity, BarChart2 } from 'lucide-react';
+import { CRMPage } from './types';
+
+interface Props { employee: NWEmployee; onNavigate: (page: CRMPage) => void; }
+
+interface Stats {
+  totalClients: number;
+  totalPortfolio: number;
+  verifiedClients: number;
+  monthlyTxns: number;
+  totalEmployees?: number;
+}
+
+interface EmployeeStat {
+  id: string;
+  full_name: string;
+  employee_code: string;
+  clientCount: number;
+  portfolioValue: number;
+  verifiedCount: number;
+}
+
+export default function Dashboard({ employee, onNavigate }: Props) {
+  const [stats, setStats] = useState<Stats>({ totalClients: 0, totalPortfolio: 0, verifiedClients: 0, monthlyTxns: 0 });
+  const [recentTxns, setRecentTxns] = useState<NWTransaction[]>([]);
+  const [recentClients, setRecentClients] = useState<NWClient[]>([]);
+  const [activity, setActivity] = useState<NWActivityLog[]>([]);
+  const [employeeStats, setEmployeeStats] = useState<EmployeeStat[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+
+      const clientsQuery = supabase
+        .from('nw_clients')
+        .select('id, portfolio_value, verification_status, full_name, client_code, employee_id, created_at, phone, email, employee:nw_employees(full_name, employee_code)')
+        .order('created_at', { ascending: false });
+
+      const txnsQuery = supabase
+        .from('nw_transactions')
+        .select('*, client:nw_clients(full_name, client_code)')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      const activityQuery = supabase
+        .from('nw_activity_logs')
+        .select('*, employee:nw_employees(full_name)')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      const [clientsRes, txnsRes, activityRes] = await Promise.all([
+        clientsQuery, txnsQuery, activityQuery,
+      ]);
+
+      const allClients = clientsRes.data || [];
+      const allTxns = txnsRes.data || [];
+
+      const clients = isAdmin ? allClients : allClients.filter(c => c.employee_id === employee.id);
+      const txns = allTxns;
+
+      const monthTxns = txns.filter(t => t.txn_date >= monthStart);
+      const totalPortfolio = clients.reduce((s, c) => s + (c.portfolio_value || 0), 0);
+      const verifiedClients = clients.filter(c => c.verification_status === 'verified').length;
+
+      let empCount: number | undefined;
+      if (isAdmin) {
+        const { data: empData, count } = await supabase
+          .from('nw_employees')
+          .select('id, full_name, employee_code', { count: 'exact' })
+          .eq('status', 'active');
+
+        empCount = count || 0;
+
+        // Build per-employee stats from client data
+        if (empData) {
+          const statsMap: Record<string, EmployeeStat> = {};
+          for (const e of empData) {
+            statsMap[e.id] = { id: e.id, full_name: e.full_name, employee_code: e.employee_code, clientCount: 0, portfolioValue: 0, verifiedCount: 0 };
+          }
+          // Bucket 'unassigned' for clients with no employee
+          statsMap['__unassigned__'] = { id: '__unassigned__', full_name: 'Unassigned', employee_code: '—', clientCount: 0, portfolioValue: 0, verifiedCount: 0 };
+
+          for (const c of allClients) {
+            const key = c.employee_id && statsMap[c.employee_id] ? c.employee_id : '__unassigned__';
+            statsMap[key].clientCount++;
+            statsMap[key].portfolioValue += c.portfolio_value || 0;
+            if (c.verification_status === 'verified') statsMap[key].verifiedCount++;
+          }
+
+          const sorted = Object.values(statsMap)
+            .filter(s => s.id === '__unassigned__' ? s.clientCount > 0 : true)
+            .sort((a, b) => b.portfolioValue - a.portfolioValue);
+          setEmployeeStats(sorted);
+        }
+      }
+
+      setStats({ totalClients: clients.length, totalPortfolio, verifiedClients, monthlyTxns: monthTxns.length, totalEmployees: empCount });
+      setRecentTxns(txns.slice(0, 5) as NWTransaction[]);
+      setRecentClients(clients.slice(0, 5) as NWClient[]);
+      setActivity(activityRes.data || []);
+      setLoading(false);
+    };
+    load();
+  }, [isAdmin]);
+
+  const statCards = [
+    { label: isAdmin ? 'Total Clients' : 'My Clients', value: stats.totalClients.toString(), icon: Users, color: '#3B82F6', sub: 'Active clients' },
+    { label: isAdmin ? 'Total Portfolio' : 'My Portfolio', value: fmt(stats.totalPortfolio), icon: TrendingUp, color: '#D4AF37', sub: 'Under management' },
+    { label: 'Verified Clients', value: stats.verifiedClients.toString(), icon: UserCheck, color: '#10B981', sub: `of ${stats.totalClients} total` },
+    { label: 'Monthly Transactions', value: stats.monthlyTxns.toString(), icon: ArrowLeftRight, color: '#F59E0B', sub: 'This month' },
+    ...(isAdmin && stats.totalEmployees !== undefined ? [{ label: 'Total Employees', value: stats.totalEmployees.toString(), icon: Users, color: '#EC4899', sub: 'Active staff' }] : []),
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#D4AF37', borderTopColor: 'transparent' }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Overview</p>
+        <h1 className="text-2xl font-bold text-white">Welcome back, {employee.full_name.split(' ')[0]}</h1>
+        <p className="text-sm mt-0.5" style={{ color: '#8A8A8A' }}>
+          {isAdmin ? 'Full portfolio view across all employees' : "Here's what's happening across your portfolio"}
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className={`grid gap-4 ${isAdmin ? 'grid-cols-2 lg:grid-cols-5' : 'grid-cols-2 lg:grid-cols-4'}`}>
+        {statCards.map(s => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} className="rounded-2xl p-5" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B6B6B' }}>{s.label}</p>
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${s.color}15` }}>
+                  <Icon className="w-4 h-4" style={{ color: s.color }} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-white">{s.value}</p>
+              <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>{s.sub}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Admin: Employee Breakdown */}
+      {isAdmin && employeeStats.length > 0 && (
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid #1E1E24' }}>
+            <BarChart2 className="w-4 h-4" style={{ color: '#D4AF37' }} />
+            <h2 className="text-sm font-bold text-white">Employee Breakdown</h2>
+            <span className="text-xs ml-1" style={{ color: '#4A4A4A' }}>— clients & AUM per employee</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+                  {['Employee', 'Code', 'Clients', 'Verified', 'Portfolio AUM', 'Share'].map(h => (
+                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {employeeStats.map((es, i) => {
+                  const pct = stats.totalPortfolio > 0 ? (es.portfolioValue / stats.totalPortfolio) * 100 : 0;
+                  return (
+                    <tr key={es.id} style={{ borderBottom: '1px solid #111' }}>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                            style={{ background: i === 0 ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.05)', color: i === 0 ? '#D4AF37' : '#6B6B6B' }}>
+                            {es.full_name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm font-medium text-white">{es.full_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="text-xs font-mono px-2 py-1 rounded" style={{ background: '#111', color: '#D4AF37' }}>{es.employee_code}</span>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm font-semibold text-white">{es.clientCount}</td>
+                      <td className="px-5 py-3.5">
+                        <span className="text-sm text-emerald-400 font-semibold">{es.verifiedCount}</span>
+                        <span className="text-xs ml-1" style={{ color: '#4A4A4A' }}>/ {es.clientCount}</span>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm font-semibold text-white">{fmt(es.portfolioValue)}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: '#1E1E24' }}>
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #D4AF37, #B8961E)' }} />
+                          </div>
+                          <span className="text-xs" style={{ color: '#6B6B6B' }}>{pct.toFixed(1)}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Transactions */}
+        <div className="lg:col-span-2 rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #1E1E24' }}>
+            <h2 className="text-sm font-bold text-white">Recent Transactions</h2>
+            <button onClick={() => onNavigate('transactions')} className="text-xs flex items-center gap-1" style={{ color: '#D4AF37' }}>
+              View all <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="divide-y" style={{ borderColor: '#1A1A1A' }}>
+            {recentTxns.length === 0 ? (
+              <p className="text-sm text-center py-10" style={{ color: '#4A4A4A' }}>No transactions yet</p>
+            ) : recentTxns.map(t => (
+              <div key={t.id} className="px-5 py-3.5 flex items-center gap-3">
+                <div className={`text-xs font-bold px-2 py-1 rounded-lg ${TXN_COLORS[t.txn_type]}`}>
+                  {TXN_LABELS[t.txn_type]}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{t.product_name}</p>
+                  <p className="text-xs truncate" style={{ color: '#6B6B6B' }}>{(t.client as any)?.full_name || '—'} · {fmtDate(t.txn_date)}</p>
+                </div>
+                <p className="text-sm font-bold text-white flex-shrink-0">{fmt(t.consolidated_amount)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Activity Feed */}
+        <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+          <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid #1E1E24' }}>
+            <Activity className="w-4 h-4" style={{ color: '#D4AF37' }} />
+            <h2 className="text-sm font-bold text-white">Activity Feed</h2>
+          </div>
+          <div className="divide-y p-4 space-y-3 max-h-80 overflow-y-auto" style={{ borderColor: '#1A1A1A' }}>
+            {activity.length === 0 ? (
+              <p className="text-sm text-center py-6" style={{ color: '#4A4A4A' }}>No recent activity</p>
+            ) : activity.map(a => (
+              <div key={a.id} className="flex gap-3">
+                <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: '#D4AF37' }} />
+                <div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-xs font-semibold text-white">{a.action}</p>
+                    {isAdmin && (a as any).employee?.full_name && (
+                      <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(212,175,55,0.08)', color: '#D4AF37' }}>
+                        {(a as any).employee.full_name}
+                      </span>
+                    )}
+                  </div>
+                  {a.description && <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>{a.description}</p>}
+                  <p className="text-xs mt-0.5" style={{ color: '#3A3A3A' }}>{timeAgo(a.created_at)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Clients */}
+      <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #1E1E24' }}>
+          <h2 className="text-sm font-bold text-white">Recent Clients</h2>
+          <button onClick={() => onNavigate('clients')} className="text-xs flex items-center gap-1" style={{ color: '#D4AF37' }}>
+            View all <ArrowRight className="w-3 h-3" />
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+                {['Client', 'Code', ...(isAdmin ? ['Managed By'] : []), 'Portfolio', 'Status', 'Date'].map(h => (
+                  <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {recentClients.length === 0 ? (
+                <tr><td colSpan={isAdmin ? 6 : 5} className="text-center py-10 text-sm" style={{ color: '#4A4A4A' }}>No clients yet</td></tr>
+              ) : recentClients.map(c => (
+                <tr key={c.id} style={{ borderBottom: '1px solid #111' }}>
+                  <td className="px-5 py-3.5">
+                    <p className="text-sm font-medium text-white">{c.full_name}</p>
+                    <p className="text-xs" style={{ color: '#4A4A4A' }}>{c.phone || c.email || '—'}</p>
+                  </td>
+                  <td className="px-5 py-3.5"><span className="text-xs font-mono px-2 py-1 rounded" style={{ background: '#111', color: '#D4AF37' }}>{c.client_code}</span></td>
+                  {isAdmin && (
+                    <td className="px-5 py-3.5 text-xs" style={{ color: '#8A8A8A' }}>
+                      {(c as any).employee?.full_name || <span style={{ color: '#3A3A3A' }}>Unassigned</span>}
+                    </td>
+                  )}
+                  <td className="px-5 py-3.5 text-sm font-semibold text-white">{fmt(c.portfolio_value || 0)}</td>
+                  <td className="px-5 py-3.5">
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-lg border ${VERIFICATION_COLORS[c.verification_status]}`}>
+                      {VERIFICATION_LABELS[c.verification_status]}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5 text-xs" style={{ color: '#6B6B6B' }}>{fmtDate(c.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

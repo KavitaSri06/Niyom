@@ -1,0 +1,108 @@
+import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { TrendingUp, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+
+interface Props {
+  clientId: string;
+  onComplete: () => void;
+}
+
+export default function ClientChangePassword({ clientId, onComplete }: Props) {
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (password !== confirm) { setError('Passwords do not match.'); return; }
+    setError('');
+    setLoading(true);
+
+    const { error: pwErr } = await supabase.auth.updateUser({ password });
+    if (pwErr) { setError(pwErr.message); setLoading(false); return; }
+
+    const { error: dbErr } = await supabase
+      .from('nw_clients')
+      .update({ client_password_changed: true })
+      .eq('id', clientId);
+
+    setLoading(false);
+    if (dbErr) { setError(dbErr.message); return; }
+    onComplete();
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-8" style={{ background: '#050505' }}>
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+            <TrendingUp className="w-8 h-8 text-black" />
+          </div>
+          <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-4" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}>
+            <ShieldCheck className="w-7 h-7" style={{ color: '#D4AF37' }} />
+          </div>
+          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D4AF37' }}>Security Setup</p>
+          <h2 className="text-3xl font-bold text-white">Set New Password</h2>
+          <p className="mt-2 text-sm" style={{ color: '#8A8A8A' }}>
+            For your security, please set a new personal password to continue.
+          </p>
+        </div>
+
+        {error && (
+          <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {[
+            { label: 'New Password', val: password, set: setPassword, key: 'pw' },
+            { label: 'Confirm Password', val: confirm, set: setConfirm, key: 'cf' },
+          ].map(f => (
+            <div key={f.key}>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#8A8A8A' }}>{f.label}</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  required
+                  value={f.val}
+                  onChange={e => f.set(e.target.value)}
+                  placeholder="Min 8 characters"
+                  className="w-full py-3 rounded-xl text-sm text-white outline-none transition-all"
+                  style={{ background: '#0D0D0D', border: '1px solid #1E1E24', paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
+                  onFocus={e => (e.target.style.borderColor = '#D4AF37')}
+                  onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                />
+                {f.key === 'pw' && (
+                  <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: '#4A4A4A' }}>
+                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          <div className="space-y-2">
+            {[
+              { text: 'At least 8 characters', met: password.length >= 8 },
+              { text: 'Passwords must match', met: password === confirm && confirm.length > 0 },
+            ].map(r => (
+              <p key={r.text} className="text-xs flex items-center gap-1.5" style={{ color: r.met ? '#10B981' : '#4A4A4A' }}>
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: r.met ? '#10B981' : '#4A4A4A' }} />
+                {r.text}
+              </p>
+            ))}
+          </div>
+          <button type="submit" disabled={loading}
+            className="w-full py-3.5 rounded-xl font-bold text-sm text-black disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+            {loading ? 'Setting Password...' : 'Set Password & Continue'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

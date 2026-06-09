@@ -1,0 +1,225 @@
+export interface NWEmployee {
+  id: string;
+  auth_user_id: string;
+  employee_code: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  role: 'super_admin' | 'admin' | 'employee';
+  status: 'active' | 'inactive';
+  password_changed: boolean;
+  joining_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NWClient {
+  id: string;
+  client_code: string;
+  employee_id: string | null;
+  full_name: string;
+  email: string;
+  phone: string;
+  pan: string;
+  dob: string;
+  address: string;
+  city: string;
+  state: string;
+  demat_account: string;
+  dp_name: string;
+  bank_account: string;
+  bank_ifsc: string;
+  bank_name: string;
+  verification_status: 'pending' | 'partial' | 'verified' | 'rejected';
+  portfolio_value: number;
+  notes: string;
+  sourced_via: 'direct' | 'dsa';
+  dsa_id: string | null;
+  client_login_enabled: boolean;
+  client_password_changed: boolean;
+  client_auth_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+  employee?: { full_name: string; employee_code: string };
+  dsa?: { full_name: string; dsa_code: string };
+}
+
+export interface NWDSA {
+  id: string;
+  dsa_code: string;
+  employee_id: string;
+  full_name: string;
+  email: string;
+  mobile: string;
+  pan: string;
+  address: string;
+  bank_name: string;
+  bank_account: string;
+  bank_ifsc: string;
+  photo_url: string | null;
+  pan_doc_url: string | null;
+  bank_doc_url: string | null;
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at: string;
+  employee?: { full_name: string; employee_code: string };
+}
+
+export interface NWClientDocument {
+  id: string;
+  client_id: string;
+  doc_type: string;
+  file_name: string;
+  file_url: string;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+export type PayoutFrequency = 'annual' | 'halfyearly' | 'quarterly' | 'monthly';
+export type SchemeType = 'equity' | 'debt' | 'hybrid' | 'index' | 'elss' | 'liquid' | 'others';
+export type InsuranceType = 'term' | 'ulip' | 'traditional' | 'medical' | 'vehicle';
+export type PremiumFrequency = 'monthly' | 'quarterly' | 'halfyearly' | 'annual' | 'single';
+
+export interface NWHolding {
+  id: string;
+  client_id: string;
+  product_type: ProductType;
+  product_name: string;
+  quantity: number;
+  avg_cost: number;
+  current_value: number;
+  invested_amount: number;
+  maturity_date: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  // DSA pricing (unlisted_share, secondary_bond, primary_bond only)
+  dsa_price?: number | null;
+  client_price?: number | null;
+  // MIS revenue fields
+  landing_cost?: number | null;          // internal cost (unlisted/bonds)
+  insurance_revenue?: number | null;     // flat revenue (insurance)
+  trail_percent?: number | null;         // trail % p.a. (mutual fund)
+  trail_start_date?: string | null;      // investment date for trail calc
+  // Fixed Income
+  isin?: string | null;
+  face_value?: number | null;
+  coupon_rate?: number | null;
+  interest_payout_date?: string | null;
+  payout_date_pattern?: string | null;
+  payout_frequency?: string | null;
+  interest_payout_amount?: number | null;
+  issuer_name?: string;
+  // Mutual Fund
+  folio_number?: string;
+  fund_house?: string;
+  scheme_type?: string;
+  nav_date?: string | null;
+  purchase_nav?: number | null;
+  current_nav?: number | null;
+  // Insurance
+  policy_number?: string;
+  insurance_type?: string;
+  insurer_name?: string;
+  sum_assured?: number | null;
+  premium_amount?: number | null;
+  premium_frequency?: string;
+  policy_start_date?: string | null;
+  premium_due_date?: string | null;
+  nominee_name?: string;
+}
+
+export interface NWTransaction {
+  id: string;
+  client_id: string;
+  employee_id: string | null;
+  txn_type: 'buy' | 'sell';
+  product_type: ProductType;
+  product_name: string;
+  quantity: number | null;
+  per_unit_price: number | null;
+  consolidated_amount: number;
+  txn_date: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  // DSA pricing (unlisted_share, secondary_bond, primary_bond only)
+  dsa_price?: number | null;
+  client_price?: number | null;
+  // MIS revenue fields
+  landing_cost?: number | null;
+  insurance_revenue?: number | null;
+  trail_percent?: number | null;
+  trail_start_date?: string | null;
+  // Fixed Income
+  isin?: string | null;
+  face_value?: number | null;
+  coupon_rate?: number | null;
+  interest_payout_date?: string | null;
+  payout_date_pattern?: string | null;
+  payout_frequency?: string | null;
+  issuer_name?: string;
+  // Mutual Fund
+  folio_number?: string;
+  fund_house?: string;
+  scheme_type?: string;
+  nav_date?: string | null;
+  purchase_nav?: number | null;
+  // Insurance
+  policy_number?: string;
+  insurance_type?: string;
+  insurer_name?: string;
+  sum_assured?: number | null;
+  premium_amount?: number | null;
+  premium_frequency?: string;
+  client?: { full_name: string; client_code: string };
+  employee?: { full_name: string; employee_code: string };
+  documents?: NWTxnDocument[];
+}
+
+export interface NWTxnDocument {
+  id: string;
+  txn_id: string;
+  file_name: string;
+  file_url: string;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+export interface NWActivityLog {
+  id: string;
+  employee_id: string | null;
+  client_id: string | null;
+  action: string;
+  description: string;
+  created_at: string;
+  employee?: { full_name: string };
+  client?: { full_name: string };
+}
+
+export interface NWAlert {
+  id: string;
+  employee_id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
+export type ProductType = 'unlisted_share' | 'secondary_bond' | 'primary_bond' | 'mutual_fund' | 'fixed_deposit' | 'insurance';
+
+export type CRMPage =
+  | 'dashboard'
+  | 'onboarding'
+  | 'clients'
+  | 'portfolio'
+  | 'transactions'
+  | 'reports'
+  | 'mis'
+  | 'dsa_payout'
+  | 'dsa_management'
+  | 'documents'
+  | 'admin_documents'
+  | 'employees'
+  | 'deal_confirmation'
+  | 'settings';
