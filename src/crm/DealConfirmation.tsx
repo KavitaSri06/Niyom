@@ -40,6 +40,7 @@ interface DealRecord {
   snap_pan: string;
   snap_dp_name: string;
   snap_demat_account: string;
+  snap_depository?: string;
   snap_bank_name: string;
   snap_bank_account: string;
   snap_bank_ifsc: string;
@@ -260,7 +261,7 @@ function generatePDF(deal: DealRecord, clientCode: string) {
     </tr>
     <tr>
       <td class="split-label">Depository</td>
-      <td class="split-val">NSDL</td>
+      <td class="split-val">${previewDeal.snap_depository || '-'}</td>
       <td class="split-label">Depository</td>
       <td class="split-val">NSDL</td>
     </tr>
@@ -386,7 +387,7 @@ export default function DealConfirmation({ employee }: Props) {
   useEffect(() => { loadDeals(); }, [loadDeals]);
 
   useEffect(() => {
-    let q = supabase.from('nw_clients').select('id, client_code, full_name, pan, phone, email, dp_name, demat_account, bank_name, bank_account, bank_ifsc, address, city, state, pincode, employee_id').order('full_name');
+    let q = supabase.from('nw_clients').select('id, client_code, full_name, pan, phone, email, dp_name, demat_account,depository, bank_name, bank_account, bank_ifsc, address, city, state, pincode, employee_id').order('full_name');
     if (!isAdmin) q = (q as any).eq('employee_id', employee.id);
     q.then(({ data }) => setClients((data as NWClient[]) || []));
   }, [isAdmin, employee.id]);
@@ -478,6 +479,7 @@ export default function DealConfirmation({ employee }: Props) {
       snap_pan: selectedClient.pan,
       snap_dp_name: selectedClient.dp_name,
       snap_demat_account: selectedClient.demat_account,
+      snap_depository: selectedClient.depository,
       snap_bank_name: selectedClient.bank_name,
       snap_bank_account: selectedClient.bank_account,
       snap_bank_ifsc: selectedClient.bank_ifsc,
@@ -610,7 +612,12 @@ export default function DealConfirmation({ employee }: Props) {
                     ['DP Name', previewDeal.snap_dp_name, 'DP Name', 'Chola Securities'],
                     ['DP ID', dpId, 'DP ID', 'IN300572'],
                     ['Client ID', clientIdDP, 'Client ID', '10158746'],
-                    ['Depository', 'NSDL', 'Depository', 'NSDL'],
+                    [
+  'Depository',
+  previewDeal.snap_depository || '-',
+  'Depository',
+  'NSDL'
+],
                   ].map(([bl, bv, sl, sv], i) => (
                     <tr key={i}>
                       <td className="px-3 py-2 text-xs font-medium" style={{ background: '#FAFAF7', border: '1px solid #D5CDB8', textAlign: 'center' }}>{bl}</td>

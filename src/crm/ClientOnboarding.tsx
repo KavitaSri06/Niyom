@@ -226,6 +226,11 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
     return data.path;
   };
 
+  const depository =
+  form.demat_account?.toUpperCase().startsWith("IN")
+    ? "NSDL"
+    : "CDSL";
+
   const handleSubmit = async () => {
     if (missingDocs.length > 0) {
       setError(`Please upload all required documents: ${missingDocs.map(d => d.label).join(', ')}`);
@@ -289,6 +294,7 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
         pincode: form.pincode,
         demat_account: form.demat_account,
         dp_name: form.dp_name,
+        depository: depository,
         bank_account: form.bank_account,
         bank_ifsc: form.bank_ifsc.toUpperCase(),
         bank_name: form.bank_name,
