@@ -67,7 +67,7 @@ export default function MIS({ employee }: Props) {
     setLoading(true);
 
     // Fetch clients (admin = all or filtered by employee, employee = own)
-    let clientQuery = supabase.from('nw_clients').select('id, full_name, client_code, employee_id');
+    let clientQuery = supabase.from('nw_clients').select('id, full_name, client_code, employee_id, sourced_via');;
     if (!isAdmin) clientQuery = clientQuery.eq('employee_id', employee.id);
     else if (empFilter !== 'all') clientQuery = clientQuery.eq('employee_id', empFilter);
     const { data: clientData } = await clientQuery;
@@ -102,17 +102,24 @@ export default function MIS({ employee }: Props) {
 
       // Unlisted shares / secondary bonds / primary bonds → (per_unit_price - landing_cost) × qty
       if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(t.product_type)) {
-        const price = (t as any).per_unit_price || 0;
         const landingCost = (t as any).landing_cost || 0;
-        const qty = t.quantity || 0;
-        const revenue = (price - landingCost) * qty;
+const qty = t.quantity || 0;
+
+const client = clientList.find(c => c.id === t.client_id);
+
+
+const price =
+  client?.sourced_via === 'dsa'
+    ? ((t as any).dsa_price || 0)
+    : ((t as any).per_unit_price || 0);
+
+const revenue = (price - landingCost) * qty;
         if (revenue !== 0) {
           computed.push({
             ...baseRow,
             revenue_type: 'landing_cost',
             revenue,
-            notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
-          });
+notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,          });
         }
       }
 
@@ -388,5 +395,7 @@ export default function MIS({ employee }: Props) {
         </div>
       )}
     </div>
+
+    
   );
 }
