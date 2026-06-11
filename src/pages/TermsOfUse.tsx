@@ -15,13 +15,13 @@ export function TermsOfUse({ onClose }: TermsOfUseProps) {
   return (
     <LegalDocumentLayout
       title="Terms of Use"
-      subtitle="Niyom Wealth Management LLP"
+      subtitle="Niyom Wealth Distribution LLP"
       icon={<Scale className="w-16 h-16 text-slate-700" strokeWidth={1.5} />}
       onClose={onClose}
     >
       <LegalSection number="1" title="Acceptance of Terms">
         <p>
-          By accessing and using the Niyom Wealth Management LLP website and services, you accept
+          By accessing and using the Niyom Wealth Distribution LLP website and services, you accept
           and agree to be bound by these Terms of Use and our Privacy Policy. If you do not agree
           to these terms, please do not use our services.
         </p>
@@ -39,7 +39,7 @@ export function TermsOfUse({ onClose }: TermsOfUseProps) {
       </LegalSection>
 
       <LegalSection number="3" title="Services Offered">
-        <p className="mb-4">Niyom Wealth Management LLP provides the following services:</p>
+        <p className="mb-4">Niyom Wealth Distribution LLP provides the following services:</p>
         <LegalList items={[
           'Investment advisory and wealth management services',
           'Distribution of mutual funds',
@@ -121,7 +121,7 @@ export function TermsOfUse({ onClose }: TermsOfUseProps) {
       <LegalSection number="7" title="Intellectual Property">
         <p>
           All content on our website, including text, graphics, logos, images, and software, is
-          the property of Niyom Wealth Management LLP and is protected by copyright and intellectual
+          the property of Niyom Wealth Distribution LLP and is protected by copyright and intellectual
           property laws. You may not reproduce, distribute, modify, or create derivative works
           without our prior written consent.
         </p>
@@ -196,7 +196,7 @@ export function TermsOfUse({ onClose }: TermsOfUseProps) {
 
       <LegalSection number="12" title="Indemnification">
         <p>
-          You agree to indemnify, defend, and hold harmless Niyom Wealth Management LLP, its
+          You agree to indemnify, defend, and hold harmless Niyom Wealth Distribution LLP, its
           officers, directors, employees, and agents from any claims, liabilities, damages, losses,
           and expenses arising from your use of our services or violation of these terms.
         </p>
@@ -228,7 +228,7 @@ export function TermsOfUse({ onClose }: TermsOfUseProps) {
       <LegalSection number="16" title="Contact Information">
         <p className="mb-4">For questions about these Terms of Use, please contact us at:</p>
         <ContactBox
-          company="Niyom Wealth Management LLP"
+          company="Niyom Wealth Distribution LLP"
           email="support@niyomwealth.com"
           phone="+91 8939433113"
         />

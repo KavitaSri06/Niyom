@@ -282,7 +282,7 @@ export default function PublicOnboarding({ onBack }: Props) {
         <div>
           <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Client Onboarding</p>
           <h1 className="text-2xl font-bold text-white">Begin Your Wealth Journey</h1>
-          <p className="text-sm mt-1" style={{ color: '#6B6B6B' }}>Complete all steps to register with Niyom Wealth Management.</p>
+          <p className="text-sm mt-1" style={{ color: '#6B6B6B' }}>Complete all steps to register with Niyom Wealth Distribution.</p>
         </div>
 
         {/* Stepper */}
@@ -486,7 +486,7 @@ export default function PublicOnboarding({ onBack }: Props) {
               </div>
 
               <div className="p-4 rounded-xl text-xs leading-relaxed" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.12)', color: '#6B6B6B' }}>
-                By submitting this form, you confirm that all information provided is accurate and you consent to Niyom Wealth Management LLP processing your details for account creation and KYC verification purposes.
+                By submitting this form, you confirm that all information provided is accurate and you consent to Niyom Wealth Distribution LLP processing your details for account creation and KYC verification purposes.
               </div>
             </>
           )}

@@ -36,13 +36,14 @@ interface DealRecord {
   isin: string;
   quantity: number;
   rate_per_unit: number;
+  base_rate: number;
   settlement_amount: number;
   stamp_duty: number;
   snap_client_name: string;
   snap_pan: string;
   snap_dp_name: string;
   snap_demat_account: string;
-  snap_depository?: string;
+  snap_depository: string;
   snap_bank_name: string;
   snap_bank_account: string;
   snap_bank_ifsc: string;
@@ -95,6 +96,17 @@ function formatRole(role: string): string {
     case 'employee': return 'Relationship Manager';
     default: return 'Staff';
   }
+}
+
+function buildPdfOpts(confirmationNumber: string, dealDate: string, scale: number) {
+  return {
+    margin: 0,
+    filename: `DEAL-CONFIRMATION-${confirmationNumber}-${dealDate}.pdf`,
+    image: { type: 'png' as const, quality: 1 },
+    html2canvas: { scale, useCORS: true, logging: false, windowWidth: 794, letterRendering: true },
+    jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
+    pagebreak: { mode: ['css', 'legacy'] as string[] },
+  };
 }
 
 // ---------- Read-only field ----------
@@ -249,7 +261,7 @@ export default function DealConfirmation({ employee }: Props) {
       security_name: deal.security_name,
       isin: deal.isin,
       quantity: String(deal.quantity),
-      base_rate: String(deal.rate_per_unit),
+      base_rate: String(deal.base_rate ?? deal.rate_per_unit),
       rate_per_unit: String(deal.rate_per_unit),
       notes: deal.notes,
     });
@@ -303,7 +315,7 @@ export default function DealConfirmation({ employee }: Props) {
       snap_pan: selectedClient.pan,
       snap_dp_name: selectedClient.dp_name,
       snap_demat_account: selectedClient.demat_account,
-      snap_depository: (selectedClient as any).depository,
+      snap_depository: selectedClient.depository,
       snap_bank_name: selectedClient.bank_name,
       snap_bank_account: selectedClient.bank_account,
       snap_bank_ifsc: selectedClient.bank_ifsc,
@@ -347,16 +359,16 @@ export default function DealConfirmation({ employee }: Props) {
     try {
       // 1. Generate PDF as base64 from DOM
       const element = document.getElementById('deal-confirmation-pdf-content');
-      if (!element) throw new Error('PDF content not found');
+      if (!element) {
+        // The PDF renderer targets this DOM element which only exists in preview view.
+        // Guard explicitly so future callers (e.g. a list-row resend button) get a
+        // clear error instead of a generic "Failed to Send Email" toast.
+        showToast('Open the deal preview before sending email.', false);
+        setEmailSending(false);
+        return;
+      }
 
-      const opt = {
-        margin: 0,
-        filename: `DEAL-CONFIRMATION-${deal.confirmation_number}-${deal.deal_date}.pdf`,
-        image: { type: 'png' as const, quality: 1 },
-        html2canvas: { scale: 3, useCORS: true, logging: false, windowWidth: 794, letterRendering: true },
-        jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
-        pagebreak: { mode: ['css', 'legacy'] }
-      };
+      const opt = buildPdfOpts(deal.confirmation_number, deal.deal_date, 1.5);
 
       const base64Str = await html2pdf().set(opt).from(element).output('datauristring');
       const pdfBase64 = base64Str.split(',')[1];
@@ -472,14 +484,7 @@ export default function DealConfirmation({ employee }: Props) {
     );
 
     // PDF generation options
-    const pdfOpt = {
-      margin: 0,
-      filename: `DEAL-CONFIRMATION-${previewDeal.confirmation_number}-${previewDeal.deal_date}.pdf`,
-      image: { type: 'png' as const, quality: 1 },
-      html2canvas: { scale: 3, useCORS: true, logging: false, windowWidth: 794, letterRendering: true },
-      jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
-      pagebreak: { mode: ['css', 'legacy'] as string[] }
-    };
+    const pdfOpt = buildPdfOpts(previewDeal.confirmation_number, previewDeal.deal_date, 3);
 
     return (
       <div className="space-y-6">
@@ -666,8 +671,8 @@ export default function DealConfirmation({ employee }: Props) {
               <p style={{ fontSize: '11px', fontWeight: 900, color: '#000', marginBottom: '8px', textTransform: 'uppercase' }}>TERMS & CONDITIONS</p>
               {[
                 ['1. Deal Confirmation & Settlement', 'The transaction shall be considered final upon mutual confirmation of price, quantity, and settlement terms by both parties. The Buyer shall ensure timely payment, and the Seller shall ensure timely transfer of securities/bonds as per the agreed timeline.'],
-                ['2. Intermediary Role', 'Niyom Wealth Management LLP acts solely as a facilitator/intermediary for the transaction and shall not be held liable for any payment default, transfer delay, counterparty failure, operational issue, or investment-related loss.'],
-                ['3. Risk & Disclaimer', 'Investments in unlisted shares and secondary bonds are subject to market, liquidity, credit, regulatory, and valuation risks. Niyom Wealth Management LLP does not guarantee listing, liquidity, returns, redemption, coupon payments, price appreciation, or exit opportunities. Clients are advised to undertake independent due diligence before transacting.'],
+                ['2. Intermediary Role', 'Niyom Wealth Distribution LLP acts solely as a facilitator/intermediary for the transaction and shall not be held liable for any payment default, transfer delay, counterparty failure, operational issue, or investment-related loss.'],
+                ['3. Risk & Disclaimer', 'Investments in unlisted shares and secondary bonds are subject to market, liquidity, credit, regulatory, and valuation risks. Niyom Wealth Distribution LLP does not guarantee listing, liquidity, returns, redemption, coupon payments, price appreciation, or exit opportunities. Clients are advised to undertake independent due diligence before transacting.'],
                 ['4. Compliance, Taxes & Charges', 'All parties confirm compliance with applicable KYC norms, SEBI/RBI regulations, taxation laws, and depository requirements. Applicable taxes, stamp duty, DP charges, brokerage, and statutory levies shall be borne by the respective parties as mutually agreed.'],
               ].map(([title, body]) => (
                 <div key={title} style={{ marginBottom: '6px' }}>

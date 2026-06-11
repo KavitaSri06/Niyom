@@ -59,7 +59,7 @@ export function LegalDocumentLayout({ title, subtitle, icon, onClose, children }
         </div>
 
         <div className="text-center mt-8 text-sm text-slate-500">
-          <p>&copy; 2025 Niyom Wealth Management LLP. All rights reserved.</p>
+          <p>&copy; 2025 Niyom Wealth Distribution LLP. All rights reserved.</p>
         </div>
       </div>
     </div>

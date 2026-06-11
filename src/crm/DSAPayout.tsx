@@ -205,7 +205,7 @@ export default function DSAPayout({ employee }: Props) {
     <div class="stat" style="border-top-color:#6B7280"><div class="stat-label">Total Transactions</div><div class="stat-value">${groups.reduce((s, g) => s + g.rows.length, 0)}</div></div>
   </div>
   ${groupsHtml || '<p style="text-align:center;color:#aaa;padding:20px">No DSA payout entries for this period</p>'}
-  <div class="footer">Niyom Wealth Management &nbsp;&middot;&nbsp; Confidential &nbsp;&middot;&nbsp; Generated ${new Date().toLocaleString('en-IN')}</div>
+  <div class="footer">Niyom Wealth Distribution &nbsp;&middot;&nbsp; Confidential &nbsp;&middot;&nbsp; Generated ${new Date().toLocaleString('en-IN')}</div>
 </body>
 </html>`;
 

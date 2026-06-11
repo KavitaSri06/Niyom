@@ -16,7 +16,7 @@ export function RiskDisclaimer({ onClose }: RiskDisclaimerProps) {
   return (
     <LegalDocumentLayout
       title="Risk Disclosure Statement"
-      subtitle="Niyom Wealth Management LLP"
+      subtitle="Niyom Wealth Distribution LLP"
       icon={<AlertTriangle className="w-16 h-16 text-red-600" strokeWidth={1.5} />}
       onClose={onClose}
     >
@@ -182,7 +182,7 @@ export function RiskDisclaimer({ onClose }: RiskDisclaimerProps) {
             If you have any complaints or concerns about your investments or our services, please contact:
           </p>
           <ContactBox
-            company="Niyom Wealth Management LLP"
+            company="Niyom Wealth Distribution LLP"
             email="support@niyomwealth.com"
             phone="+91 8939433113"
           />

@@ -131,7 +131,7 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
 
       {/* Footer */}
       <footer className="text-center py-6 text-xs" style={{ color: '#3A3A3A', borderTop: '1px solid rgba(201,184,150,0.06)' }}>
-        © 2026 Niyom Wealth Management. All rights reserved.
+        © 2026 Niyom Wealth Distribution. All rights reserved.
       </footer>
     </div>
   );

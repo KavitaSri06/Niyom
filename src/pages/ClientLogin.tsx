@@ -184,7 +184,7 @@ export default function ClientLogin({ onLogin, onInvestNow }: Props) {
 
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: '#D4AF37' }}>Thank You for Your Interest</p>
-              <h2 className="text-xl font-bold text-white">Welcome to Niyom Wealth Management</h2>
+              <h2 className="text-xl font-bold text-white">Welcome to Niyom Wealth Distribution</h2>
               <p className="text-sm leading-relaxed" style={{ color: '#8A8A8A' }}>
                 We are delighted to have you explore wealth management opportunities with us. To initiate your onboarding and issuance of your unique Client Code, kindly ensure you have the following documents readily available for upload.
               </p>

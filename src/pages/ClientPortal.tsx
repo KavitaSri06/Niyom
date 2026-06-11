@@ -282,7 +282,7 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
         )}
 
         <p className="text-center text-xs py-4" style={{ color: '#2A2A2A' }}>
-          Niyom Wealth Management &nbsp;&middot;&nbsp; Confidential &nbsp;&middot;&nbsp; For your eyes only
+          Niyom Wealth Distribution &nbsp;&middot;&nbsp; Confidential &nbsp;&middot;&nbsp; For your eyes only
         </p>
       </main>
 

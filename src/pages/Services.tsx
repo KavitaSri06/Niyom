@@ -332,7 +332,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
               <h2 className="text-xl font-bold" style={{ fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.1em' }}>NIYOM WEALTH</h2>
             </div>
           </div>
-          <p className="text-gray-400">&copy; 2025 Niyom Wealth Management LLP. All rights reserved.</p>
+          <p className="text-gray-400">&copy; 2025 Niyom Wealth Distribution LLP. All rights reserved.</p>
         </div>
       </footer>
     </div>

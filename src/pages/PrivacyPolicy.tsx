@@ -15,13 +15,13 @@ export function PrivacyPolicy({ onClose }: PrivacyPolicyProps) {
   return (
     <LegalDocumentLayout
       title="Privacy Policy"
-      subtitle="Niyom Wealth Management LLP"
+      subtitle="Niyom Wealth Distribution LLP"
       icon={<Shield className="w-16 h-16 text-slate-700" strokeWidth={1.5} />}
       onClose={onClose}
     >
       <LegalSection number="1" title="Introduction">
         <p>
-          Niyom Wealth Management LLP ("we," "our," or "us") is committed to protecting your privacy.
+          Niyom Wealth Distribution LLP ("we," "our," or "us") is committed to protecting your privacy.
           This Privacy Policy explains how we collect, use, disclose, and safeguard your information
           when you visit our website and use our services.
         </p>
@@ -190,7 +190,7 @@ export function PrivacyPolicy({ onClose }: PrivacyPolicyProps) {
           If you have any questions about this Privacy Policy or our data practices, please contact us at:
         </p>
         <ContactBox
-          company="Niyom Wealth Management LLP"
+          company="Niyom Wealth Distribution LLP"
           email="support@niyomwealth.com"
           phone="+91 8939433113"
         />

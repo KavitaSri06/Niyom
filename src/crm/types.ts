@@ -27,6 +27,7 @@ export interface NWClient {
   state: string;
   demat_account: string;
   dp_name: string;
+  depository: string;
   bank_account: string;
   bank_ifsc: string;
   bank_name: string;

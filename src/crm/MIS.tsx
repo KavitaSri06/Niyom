@@ -228,7 +228,7 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
     <thead><tr><th>#</th><th>Client</th><th>Product Type</th><th>Product</th><th>Revenue Type</th><th>Details</th><th style="text-align:right">Revenue</th></tr></thead>
     <tbody>${rowsHtml || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#aaa">No revenue entries for this period</td></tr>'}</tbody>
   </table>
-  <div class="footer">Niyom Wealth Management &nbsp;&middot;&nbsp; Confidential &nbsp;&middot;&nbsp; Generated ${new Date().toLocaleString('en-IN')}</div>
+  <div class="footer">Niyom Wealth Distribution &nbsp;&middot;&nbsp; Confidential &nbsp;&middot;&nbsp; Generated ${new Date().toLocaleString('en-IN')}</div>
 </body>
 </html>`;
 

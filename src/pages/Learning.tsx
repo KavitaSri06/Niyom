@@ -796,7 +796,7 @@ export function Learning({ onBack }: LearningProps) {
 
       <footer className="bg-black text-white py-8 px-6 border-t border-[#c9b896]/20">
         <div className="max-w-7xl mx-auto text-center">
-          <p className="text-gray-400">&copy; 2025 Niyom Wealth Management LLP. All rights reserved.</p>
+          <p className="text-gray-400">&copy; 2025 Niyom Wealth Distribution LLP. All rights reserved.</p>
         </div>
       </footer>
     </div>

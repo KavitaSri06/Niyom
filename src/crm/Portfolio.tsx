@@ -619,7 +619,7 @@ export default function Portfolio({ employee }: Props) {
 
   ${productSectionsHtml}
 
-  <div class="footer">Niyom Wealth Management &nbsp;&middot;&nbsp; Confidential &nbsp;&middot;&nbsp; Generated ${new Date().toLocaleString('en-IN')}</div>
+  <div class="footer">Niyom Wealth Distribution &nbsp;&middot;&nbsp; Confidential &nbsp;&middot;&nbsp; Generated ${new Date().toLocaleString('en-IN')}</div>
 </body>
 </html>`;
 
