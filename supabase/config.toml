@@ -371,6 +371,24 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# --- Deal Confirmation v2 public functions (no JWT; called from the
+#     unauthenticated public deal page). All other functions keep the default
+#     verify_jwt = true. ---
+[functions.get-deal-by-token]
+verify_jwt = false
+
+[functions.send-deal-otp]
+verify_jwt = false
+
+[functions.verify-deal-otp]
+verify_jwt = false
+
+[functions.accept-deal]
+verify_jwt = false
+
+[functions.reject-deal]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

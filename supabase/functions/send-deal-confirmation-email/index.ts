@@ -1,10 +1,41 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+// Deal Confirmation v2: sends a SECURE LINK (not a PDF attachment) to the
+// client. Requires an authenticated employee. Mints/rotates the secure token
+// and a 7-day expiry server-side, then records that the link was sent.
+//
+// Refusing to send for an ACCEPTED deal preserves the immutability rule.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
+
+const LINK_TTL_DAYS = 7;
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function generateToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function formatRole(role: string): string {
+  switch (role) {
+    case "super_admin": return "Super Admin";
+    case "admin": return "Admin";
+    case "employee": return "Relationship Manager";
+    default: return "Staff";
+  }
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -13,189 +44,161 @@ Deno.serve(async (req: Request) => {
 
   try {
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) {
-      throw new Error("RESEND_API_KEY is not configured.");
+    if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY is not configured.");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const appUrl = (Deno.env.get("PUBLIC_APP_URL") ?? "https://niyomwealth.com").replace(/\/$/, "");
+
+    // --- Authenticate the calling employee ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return json({ success: false, error: "Unauthorized" }, 401);
+
+    const callerClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authErr } = await callerClient.auth.getUser();
+    if (authErr || !user) return json({ success: false, error: "Unauthorized" }, 401);
+
+    const db = createClient(supabaseUrl, serviceKey);
+
+    const { data: employee } = await db
+      .from("nw_employees")
+      .select("id, full_name, role, email, phone")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+    if (!employee) return json({ success: false, error: "Unauthorized" }, 401);
+
+    const { dealId } = await req.json().catch(() => ({}));
+    if (!dealId) return json({ success: false, error: "Missing dealId." }, 400);
+
+    // --- Load the deal (server-side source of truth) ---
+    const { data: deal } = await db
+      .from("nw_deal_confirmations")
+      .select("id, confirmation_number, snap_client_name, snap_email, acceptance_status, employee_id")
+      .eq("id", dealId)
+      .maybeSingle();
+    if (!deal) return json({ success: false, error: "Deal not found." }, 404);
+
+    // Ownership check (admins may send any)
+    const isAdmin = employee.role === "admin" || employee.role === "super_admin";
+    if (!isAdmin && deal.employee_id !== employee.id) {
+      return json({ success: false, error: "Forbidden" }, 403);
     }
 
-    const {
-      dealId,
-      confirmationNumber,
-      clientName,
-      clientEmail,
-      employeeName,
-      employeeDesignation,
-      employeeEmail,
-      employeePhone,
-      pdfBase64,
-    } = await req.json();
-
-    // Validate required fields
-    if (!confirmationNumber || !clientName || !clientEmail || !pdfBase64) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing required fields." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (deal.acceptance_status === "accepted") {
+      return json({ success: false, error: "This deal is accepted and locked. Create a new deal for changes." }, 409);
+    }
+    if (!deal.snap_email) {
+      return json({ success: false, error: "No client email is on record for this deal." }, 400);
     }
 
-    const subject = `Deal Confirmation & Acceptance Request – Ref: ${confirmationNumber}`;
+    // --- Mint / rotate token (resets to pending for a fresh review) ---
+    const token = generateToken();
+    const expiresAt = new Date(Date.now() + LINK_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-    const emailBody = `Dear ${clientName},
+    const { error: updErr } = await db.from("nw_deal_confirmations").update({
+      secure_token: token,
+      token_expires_at: expiresAt,
+      acceptance_status: "pending",
+      viewed_at: null,
+      email_status: "sent",
+      email_sent_at: new Date().toISOString(),
+      email_sent_by: employee.id,
+    }).eq("id", deal.id);
+    if (updErr) {
+      console.error("token update error:", updErr);
+      return json({ success: false, error: "Could not prepare the secure link." }, 500);
+    }
+
+    const link = `${appUrl}/deal/${token}`;
+    const designation = formatRole(employee.role);
+    const subject = `Deal Confirmation & Acceptance Request – Ref: ${deal.confirmation_number}`;
+
+    const text = `Dear ${deal.snap_client_name},
 
 Greetings from Niyom Wealth.
 
-Please find attached the Deal Confirmation Note for the proposed transaction.
+Please review your Deal Confirmation Note securely online using the link below:
 
-We request you to kindly review the attached document and confirm your acceptance by replying to this email with:
+${link}
 
-"Accepted"
+On the secure page you can review the full deal details and either ACCEPT
+(with email OTP verification and e-signature) or REJECT the transaction.
 
-or
-
-"I confirm the above transaction details and agree to proceed with the purchase."
-
-Upon receipt of your acceptance, you may proceed with remitting the settlement amount to the bank account mentioned in the attached Deal Confirmation Note.
-
-Kindly note that payment should be initiated only after reviewing and accepting the transaction details contained in the attached confirmation.
-
-Once the payment has been completed, we request you to share the payment confirmation/UTR details for our records and further processing.
-
-Should you require any clarification regarding the transaction, please feel free to contact us.
-
-Thank you for your trust and association with Niyom Wealth.
+This link is valid for ${LINK_TTL_DAYS} days.
 
 Warm Regards,
-
-${employeeName} - ${employeeDesignation}
+${employee.full_name} - ${designation}
 Niyom Wealth Distribution LLP
-Mobile: ${employeePhone}
-Email: ${employeeEmail}
-Website: www.niyomwealth.com
+Mobile: ${employee.phone}
+Email: ${employee.email}
+Website: www.niyomwealth.com`;
 
----
-This email and the attached Deal Confirmation Note are intended solely for the recipient. The transaction shall be deemed confirmed only upon receipt of the client's acceptance and completion of settlement obligations as per the terms specified in the Deal Confirmation Note.`;
-
-    const htmlBody = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <style>
-    body { font-family: Arial, sans-serif; font-size: 14px; color: #222; line-height: 1.7; margin: 0; padding: 0; background: #fff; }
-    .container { max-width: 620px; margin: 0 auto; padding: 32px 24px; }
-    .header { border-bottom: 2px solid #D4AF37; padding-bottom: 20px; margin-bottom: 24px; }
-    .logo-row { display: flex; align-items: center; gap: 12px; }
-    .company { font-size: 20px; font-weight: 700; color: #111; }
-    .tagline { font-size: 13px; color: #8B7355; font-style: italic; margin-top: 2px; }
-    .greeting { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: #111; }
-    p { margin: 0 0 14px 0; color: #333; }
-    .acceptance-box { background: #FFF9EC; border: 1px solid #D4AF37; border-radius: 8px; padding: 16px 20px; margin: 20px 0; }
-    .acceptance-box p { margin: 6px 0; color: #7A5C00; font-style: italic; }
-    .signature { margin-top: 28px; padding-top: 20px; border-top: 1px solid #eee; }
-    .sig-name { font-weight: 700; font-size: 15px; color: #111; }
-    .sig-detail { color: #555; font-size: 13px; line-height: 1.8; }
-    .disclaimer { margin-top: 28px; padding: 14px 18px; background: #F7F7F7; border-radius: 6px; font-size: 11px; color: #888; line-height: 1.6; }
-    .footer { margin-top: 28px; text-align: center; font-size: 11px; color: #BBB; border-top: 1px solid #eee; padding-top: 14px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="company">Niyom Wealth</div>
-      <div class="tagline">Wealth Reimagined</div>
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="font-family:Arial,sans-serif;color:#222;line-height:1.7;">
+  <div style="max-width:620px;margin:0 auto;padding:32px 24px;">
+    <div style="border-bottom:2px solid #D4AF37;padding-bottom:20px;margin-bottom:24px;">
+      <div style="font-size:20px;font-weight:700;color:#111;">Niyom Wealth</div>
+      <div style="font-size:13px;color:#8B7355;font-style:italic;">Wealth Reimagined</div>
     </div>
-
-    <p class="greeting">Dear ${clientName},</p>
-
+    <p style="font-size:15px;font-weight:600;color:#111;">Dear ${deal.snap_client_name},</p>
     <p>Greetings from Niyom Wealth.</p>
-
-    <p>Please find attached the Deal Confirmation Note for the proposed transaction.</p>
-
-    <p>We request you to kindly review the attached document and confirm your acceptance by replying to this email with:</p>
-
-    <div class="acceptance-box">
-      <p>"Accepted"</p>
-      <p style="margin: 10px 0; color: #999; font-style: normal;">or</p>
-      <p>"I confirm the above transaction details and agree to proceed with the purchase."</p>
+    <p>Please review your Deal Confirmation Note securely online. On the secure page
+       you can review the full deal details and either <strong>accept</strong>
+       (with email OTP verification and e-signature) or <strong>reject</strong> the transaction.</p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${link}" style="background:linear-gradient(135deg,#D4AF37,#B8961E);color:#000;
+         text-decoration:none;font-weight:700;padding:14px 28px;border-radius:8px;display:inline-block;">
+         Review Deal Confirmation
+      </a>
     </div>
-
-    <p>Upon receipt of your acceptance, you may proceed with remitting the settlement amount to the bank account mentioned in the attached Deal Confirmation Note.</p>
-
-    <p>Kindly note that payment should be initiated only after reviewing and accepting the transaction details contained in the attached confirmation.</p>
-
-    <p>Once the payment has been completed, we request you to share the payment confirmation/UTR details for our records and further processing.</p>
-
-    <p>Should you require any clarification regarding the transaction, please feel free to contact us.</p>
-
-    <p>Thank you for your trust and association with Niyom Wealth.</p>
-
-    <div class="signature">
-      <div class="sig-name">${employeeName} — ${employeeDesignation}</div>
-      <div class="sig-detail">
+    <p style="font-size:13px;color:#777;">Or paste this link into your browser:<br/>
+       <a href="${link}" style="color:#B8961E;">${link}</a></p>
+    <p style="font-size:13px;color:#777;">This link is valid for ${LINK_TTL_DAYS} days.</p>
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid #eee;">
+      <div style="font-weight:700;color:#111;">${employee.full_name} — ${designation}</div>
+      <div style="color:#555;font-size:13px;line-height:1.8;">
         Niyom Wealth Distribution LLP<br/>
-        Mobile: ${employeePhone}<br/>
-        Email: <a href="mailto:${employeeEmail}" style="color: #D4AF37;">${employeeEmail}</a><br/>
-        Website: <a href="https://www.niyomwealth.com" style="color: #D4AF37;">www.niyomwealth.com</a>
+        Mobile: ${employee.phone}<br/>
+        Email: <a href="mailto:${employee.email}" style="color:#D4AF37;">${employee.email}</a><br/>
+        Website: <a href="https://www.niyomwealth.com" style="color:#D4AF37;">www.niyomwealth.com</a>
       </div>
     </div>
-
-    <div class="disclaimer">
-      This email and the attached Deal Confirmation Note are intended solely for the recipient. The transaction shall be deemed confirmed only upon receipt of the client's acceptance and completion of settlement obligations as per the terms specified in the Deal Confirmation Note.
+    <div style="margin-top:24px;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:12px;">
+      © Niyom Wealth Distribution LLP — Ref: ${deal.confirmation_number}
     </div>
-
-    <div class="footer">© Niyom Wealth Distribution LLP — Ref: ${confirmationNumber}</div>
   </div>
-</body>
-</html>`;
-
-    const filename = `Deal-Confirmation-${confirmationNumber}.pdf`;
-
-    const resendPayload = {
-      from: "Niyom Wealth <support@niyomwealth.com>",
-      to: [clientEmail],
-      cc: ["purushothaman@niyomwealth.com"],
-      subject,
-      text: emailBody,
-      html: htmlBody,
-      attachments: [
-        {
-          filename,
-          content: pdfBase64,
-        },
-      ],
-    };
+</body></html>`;
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(resendPayload),
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "Niyom Wealth <support@niyomwealth.com>",
+        to: [deal.snap_email],
+        cc: ["purushothaman@niyomwealth.com"],
+        subject,
+        text,
+        html,
+      }),
     });
 
-    const resendData = await resendResponse.json();
-
+    const resendData = await resendResponse.json().catch(() => ({}));
     if (!resendResponse.ok) {
       console.error("Resend API error:", resendData);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: resendData?.message || "Failed to send email via Resend.",
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ success: false, error: resendData?.message || "Failed to send email." }, 500);
     }
 
-    console.log(`Deal confirmation email sent for ${confirmationNumber} to ${clientEmail}. Resend ID: ${resendData.id}`);
+    await db.from("nw_deal_confirmation_events").insert({
+      deal_id: deal.id, event_type: "link_sent", actor: "employee",
+      metadata: { emailId: resendData.id, to: deal.snap_email },
+    });
 
-    return new Response(
-      JSON.stringify({ success: true, emailId: resendData.id }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ success: true, emailId: resendData.id });
   } catch (err: any) {
-    console.error("Edge function error:", err);
-    return new Response(
-      JSON.stringify({ success: false, error: err.message || "Internal server error." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("send-deal-confirmation-email error:", err?.message);
+    return json({ success: false, error: err.message || "Internal server error." }, 500);
   }
 });

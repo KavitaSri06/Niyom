@@ -3,9 +3,12 @@ import { supabase } from '../lib/supabase';
 import { NWEmployee, NWClient } from './types';
 import {
   FileText, Plus, Search, ChevronDown, Eye, Pencil, Trash2,
-  Download, CheckCircle2, AlertCircle, ChevronLeft, Mail,
+  Download, CheckCircle2, AlertCircle, ChevronLeft, Send, Lock,
 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
+import DealDocument from './DealDocument';
+
+type AcceptanceStatus = 'pending' | 'viewed' | 'accepted' | 'rejected' | 'expired';
 
 
 interface Props { employee: NWEmployee; }
@@ -55,6 +58,15 @@ interface DealRecord {
   email_status: 'pending' | 'sent';
   email_sent_at?: string;
   email_sent_by?: string;
+  acceptance_status: AcceptanceStatus;
+  secure_token?: string | null;
+  token_expires_at?: string | null;
+  viewed_at?: string | null;
+  accepted_at?: string | null;
+  rejected_at?: string | null;
+  rejection_reason?: string | null;
+  signer_email?: string | null;
+  signed_pdf_path?: string | null;
   client?: { full_name: string; client_code: string };
 }
 
@@ -87,15 +99,6 @@ function fmt(n: number) {
 function fmtDate(d: string) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function formatRole(role: string): string {
-  switch (role) {
-    case 'super_admin': return 'Super Admin';
-    case 'admin': return 'Admin';
-    case 'employee': return 'Relationship Manager';
-    default: return 'Staff';
-  }
 }
 
 function buildPdfOpts(confirmationNumber: string, dealDate: string, scale: number) {
@@ -147,25 +150,24 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
-// ---------- Email Status Badge ----------
-function EmailStatusBadge({ status }: { status: 'pending' | 'sent' }) {
-  if (status === 'sent') {
-    return (
-      <span
-        className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg"
-        style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.18)' }}
-      >
-        <CheckCircle2 className="w-3 h-3" />
-        Email Sent
-      </span>
-    );
-  }
+// ---------- Acceptance Status Badge ----------
+const ACCEPTANCE_STYLES: Record<AcceptanceStatus, { label: string; bg: string; color: string }> = {
+  pending:  { label: 'Pending',  bg: 'rgba(107,107,107,0.1)', color: '#9A9A9A' },
+  viewed:   { label: 'Viewed',   bg: 'rgba(96,165,250,0.12)', color: '#60a5fa' },
+  accepted: { label: 'Accepted', bg: 'rgba(16,185,129,0.1)',  color: '#10B981' },
+  rejected: { label: 'Rejected', bg: 'rgba(239,68,68,0.1)',   color: '#ef4444' },
+  expired:  { label: 'Expired',  bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b' },
+};
+
+function AcceptanceBadge({ status }: { status: AcceptanceStatus }) {
+  const s = ACCEPTANCE_STYLES[status] ?? ACCEPTANCE_STYLES.pending;
   return (
     <span
       className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg"
-      style={{ background: 'rgba(107,107,107,0.1)', color: '#6B6B6B', border: '1px solid rgba(107,107,107,0.18)' }}
+      style={{ background: s.bg, color: s.color, border: `1px solid ${s.color}33` }}
     >
-      Pending
+      {status === 'accepted' && <CheckCircle2 className="w-3 h-3" />}
+      {s.label}
     </span>
   );
 }
@@ -252,6 +254,10 @@ export default function DealConfirmation({ employee }: Props) {
   };
 
   const openEdit = (deal: DealRecord) => {
+    if (deal.acceptance_status === 'accepted') {
+      showToast('Accepted deals are locked. Create a new deal for corrections.', false);
+      return;
+    }
     setEditDeal(deal);
     setForm({
       client_id: deal.client_id,
@@ -326,10 +332,35 @@ export default function DealConfirmation({ employee }: Props) {
     };
 
     if (editDeal) {
+      if (editDeal.acceptance_status === 'accepted') {
+        setSaving(false);
+        setError('Accepted deals are locked and cannot be edited. Create a new deal confirmation.');
+        return;
+      }
+      // Editing invalidates any outstanding secure link and resets the
+      // acceptance lifecycle so the client must review the updated deal afresh.
+      const wasSent = editDeal.email_status === 'sent' || !!editDeal.secure_token;
+      payload.acceptance_status = 'pending';
+      payload.secure_token = null;
+      payload.token_expires_at = null;
+      payload.viewed_at = null;
+      payload.rejected_at = null;
+      payload.rejection_reason = null;
+      payload.email_status = 'pending';
+
       const { error: err } = await supabase.from('nw_deal_confirmations').update(payload).eq('id', editDeal.id);
       setSaving(false);
       if (err) { setError(err.message); return; }
-      showToast('Deal confirmation updated.');
+
+      if (wasSent) {
+        await supabase.from('nw_deal_confirmation_events').insert([
+          { deal_id: editDeal.id, event_type: 'edited', actor: 'employee' },
+          { deal_id: editDeal.id, event_type: 'token_invalidated', actor: 'employee' },
+        ]);
+        showToast('Deal updated. The old link is now invalid — resend to the client.');
+      } else {
+        showToast('Deal confirmation updated.');
+      }
     } else {
       const confNum = await supabase.rpc('nw_generate_confirmation_number', { p_employee_id: employee.id });
       payload.confirmation_number = confNum.data || `DC-${Date.now()}`;
@@ -351,74 +382,47 @@ export default function DealConfirmation({ employee }: Props) {
     showToast('Deleted.');
   };
 
-  // ---------- Send Email ----------
-  const handleSendEmail = async (deal: DealRecord) => {
-    if (emailSending || deal.email_status === 'sent') return;
+  // ---------- Send / Resend Secure Link ----------
+  // The edge function mints the secure token + 7-day expiry, resets the deal to
+  // 'pending', emails the link (no PDF attachment), and logs the event.
+  const handleSendSecureLink = async (deal: DealRecord) => {
+    if (emailSending) return;
+    if (deal.acceptance_status === 'accepted') {
+      showToast('Accepted deals are locked and cannot be resent.', false);
+      return;
+    }
     setEmailSending(true);
-
     try {
-      // 1. Generate PDF as base64 from DOM
-      const element = document.getElementById('deal-confirmation-pdf-content');
-      if (!element) {
-        // The PDF renderer targets this DOM element which only exists in preview view.
-        // Guard explicitly so future callers (e.g. a list-row resend button) get a
-        // clear error instead of a generic "Failed to Send Email" toast.
-        showToast('Open the deal preview before sending email.', false);
-        setEmailSending(false);
-        return;
-      }
-
-      const opt = buildPdfOpts(deal.confirmation_number, deal.deal_date, 1.5);
-
-      const base64Str = await html2pdf().set(opt).from(element).output('datauristring');
-      const pdfBase64 = base64Str.split(',')[1];
-
-      // 2. Call Supabase Edge Function
       const { data: fnData, error: fnError } = await supabase.functions.invoke(
         'send-deal-confirmation-email',
-        {
-          body: {
-            dealId: deal.id,
-            confirmationNumber: deal.confirmation_number,
-            clientName: deal.snap_client_name,
-            clientEmail: deal.snap_email,
-            employeeName: employee.full_name,
-            employeeDesignation: formatRole(employee.role),
-            employeeEmail: employee.email,
-            employeePhone: employee.phone,
-            pdfBase64,
-          },
-        }
+        { body: { dealId: deal.id } }
       );
-
       if (fnError || !fnData?.success) {
-        throw new Error(fnData?.error || fnError?.message || 'Failed to send email');
+        throw new Error(fnData?.error || fnError?.message || 'Failed to send secure link');
       }
-
-      // 3. Update database
-      await supabase
-        .from('nw_deal_confirmations')
-        .update({
-          email_status: 'sent',
-          email_sent_at: new Date().toISOString(),
-          email_sent_by: employee.id,
-        })
-        .eq('id', deal.id);
-
-      // 4. Optimistically update previewDeal and reload list
       setPreviewDeal(prev =>
         prev && prev.id === deal.id
-          ? { ...prev, email_status: 'sent', email_sent_at: new Date().toISOString() }
+          ? { ...prev, email_status: 'sent', acceptance_status: 'pending', email_sent_at: new Date().toISOString() }
           : prev
       );
       await loadDeals();
-
-      showToast('Deal Confirmation Email Sent Successfully');
+      showToast(deal.email_status === 'sent' ? 'Updated secure link sent.' : 'Secure link sent to client.');
     } catch (err: any) {
-      showToast('Failed to Send Email', false);
+      showToast(err?.message || 'Failed to send secure link', false);
     } finally {
       setEmailSending(false);
     }
+  };
+
+  // ---------- Download the stored signed PDF (accepted deals) ----------
+  const handleDownloadSigned = async (deal: DealRecord) => {
+    if (!deal.signed_pdf_path) { showToast('No signed document available yet.', false); return; }
+    const { data, error: err } = await supabase
+      .storage.from('deal-documents')
+      .createSignedUrl(deal.signed_pdf_path, 120);
+    if (err || !data?.signedUrl) { showToast('Could not open signed document.', false); return; }
+    window.open(data.signedUrl, '_blank');
+
   };
 
   const filteredDeals = deals.filter(d =>
@@ -430,60 +434,7 @@ export default function DealConfirmation({ employee }: Props) {
 
   // ===================== PREVIEW ======================
   if (view === 'preview' && previewDeal) {
-    const dpId = previewDeal.snap_demat_account.slice(0, 8);
-    const clientIdDP = previewDeal.snap_demat_account.slice(-8);
-    const alreadySent = previewDeal.email_status === 'sent';
-
-    // Format date for header: "09 Jun 2026"
-    const headerDate = fmtDate(previewDeal.deal_date);
-    // Format created_at timestamp for top-left
-    const createdAt = previewDeal.created_at
-      ? new Date(previewDeal.created_at).toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })
-      : '';
-    // Build document reference string
-    const docRef = `DEAL-CONFIRMATION-${previewDeal.confirmation_number}-${previewDeal.deal_date}`;
-
-    // Common table cell style
-    const cellStyle: React.CSSProperties = { border: '1px solid #000', color: '#000', padding: '4px 8px', fontSize: '8px' };
-    const cellLabelStyle: React.CSSProperties = { ...cellStyle, fontWeight: 600, textAlign: 'center', width: '38%' };
-    const cellValueStyle: React.CSSProperties = { ...cellStyle, textAlign: 'center' };
-    const cellValueBoldStyle: React.CSSProperties = { ...cellValueStyle, fontWeight: 700 };
-    const tableStyle: React.CSSProperties = { width: '100%', borderCollapse: 'collapse', border: '1px solid #000' };
-    const sectionTitleStyle: React.CSSProperties = { fontSize: '11px', fontWeight: 700, color: '#000', marginBottom: '6px' };
-
-    // Page header component
-    const PageHeader = ({ pageNum }: { pageNum: number }) => (
-      <div style={{ marginBottom: '12px' }}>
-        {/* Top meta line */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '7px', color: '#000', marginBottom: '10px' }}>
-          <span>{createdAt}</span>
-          <span style={{ fontWeight: 600 }}>{docRef}</span>
-          <span>{pageNum}/2</span>
-        </div>
-        {/* Logo + Title line */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src="/niyomlogo.png" alt="Niyom Wealth" style={{ height: '40px', objectFit: 'contain' }} />
-            <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '14px', color: '#8B7355' }}>Wealth Reimagined</span>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '8px', color: '#000', marginBottom: '4px' }}>Ref: {previewDeal.confirmation_number}  •  {headerDate}</p>
-            <p style={{ fontSize: '18px', fontWeight: 900, letterSpacing: '3px', color: '#000' }}>DEAL NOTE</p>
-          </div>
-        </div>
-        <div style={{ borderBottom: '2px solid #000', marginTop: '8px' }} />
-      </div>
-    );
-
-    // Page footer component
-    const PageFooter = ({ pageNum }: { pageNum: number }) => (
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: '#000', marginTop: 'auto', paddingTop: '8px' }}>
-        <span>www.niyomwealth.com</span>
-        <span>{pageNum}/2</span>
-      </div>
-    );
-
-    // PDF generation options
+    const alreadyAccepted = previewDeal.acceptance_status === 'accepted';
     const pdfOpt = buildPdfOpts(previewDeal.confirmation_number, previewDeal.deal_date, 3);
 
     return (
@@ -506,261 +457,67 @@ export default function DealConfirmation({ employee }: Props) {
           >
             <Download className="w-4 h-4" /> Download PDF
           </button>
-          {/* Send Email Button */}
-          <button
-            onClick={() => handleSendEmail(previewDeal)}
-            disabled={emailSending || alreadySent}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black transition-all disabled:cursor-not-allowed"
-            style={{
-              background: alreadySent
-                ? 'linear-gradient(135deg, #10B981, #059669)'
-                : 'linear-gradient(135deg, #D4AF37, #B8961E)',
-              opacity: emailSending ? 0.75 : 1,
-            }}
-          >
-            {emailSending ? (
-              <>
-                <div className="w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
-                Sending...
-              </>
-            ) : alreadySent ? (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                Email Sent ✓
-              </>
-            ) : (
-              <>
-                <Mail className="w-4 h-4" />
-                Send Email
-              </>
-            )}
-          </button>
+          {/* Secure Link / Locked actions */}
+          {alreadyAccepted ? (
+            <>
+              <span
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold"
+                style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.25)' }}
+              >
+                <Lock className="w-4 h-4" /> Accepted & Locked
+              </span>
+              {previewDeal.signed_pdf_path && (
+                <button
+                  onClick={() => handleDownloadSigned(previewDeal)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black"
+                  style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}
+                >
+                  <Download className="w-4 h-4" /> Signed PDF
+                </button>
+              )}
+            </>
+          ) : (
+            <button
+              onClick={() => handleSendSecureLink(previewDeal)}
+              disabled={emailSending}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black transition-all disabled:cursor-not-allowed"
+              style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)', opacity: emailSending ? 0.75 : 1 }}
+            >
+              {emailSending ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  {previewDeal.email_status === 'sent' ? 'Resend Secure Link' : 'Send Secure Link'}
+                </>
+              )}
+            </button>
+          )}
         </div>
 
-        {/* ===== PDF Content: 2-Page A4 Layout ===== */}
-        <div
-          id="deal-confirmation-pdf-content"
-          style={{
-            fontFamily: 'Calibri, Arial, sans-serif',
-            color: '#000',
-            background: '#fff',
-            margin: '0 auto',
-            maxWidth: '794px'
-          }}
-        >
-          {/* ==================== PAGE 1 ==================== */}
-          <div style={{
-            width: '210mm',
-            minHeight: '297mm',
-            maxWidth: '100%',
-            padding: '10mm 20mm',
-            background: '#fff',
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            boxSizing: 'border-box',
-          }}>
-            <PageHeader pageNum={1} />
-
-            {/* Deal Information */}
-            <div style={{ marginBottom: '14px' }}>
-              <p style={sectionTitleStyle}>Deal Information</p>
-              <table style={tableStyle}>
-                <tbody>
-                  {[
-                    ['Deal Date', fmtDate(previewDeal.deal_date)],
-                    ['Transaction Type', previewDeal.transaction_type],
-                    ['Product Type', previewDeal.product_type],
-                  ].map(([label, value]) => (
-                    <tr key={label}>
-                      <td style={cellLabelStyle}>{label}</td>
-                      <td style={cellValueStyle}>{value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Security / Instrument Details */}
-            <div style={{ marginBottom: '14px' }}>
-              <p style={sectionTitleStyle}>Security / Instrument Details</p>
-              <table style={tableStyle}>
-                <tbody>
-                  {[
-                    ['Security / Company Name', previewDeal.security_name, false],
-                    ['ISIN Number', previewDeal.isin, false],
-                    ['Quantity', previewDeal.quantity.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), false],
-                    ['Rate per Unit (₹)', `${(Math.round(previewDeal.rate_per_unit * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Per Share`, false],
-                    ['Stamp Duty / Charges (₹)', `${(Math.round((previewDeal.stamp_duty || 0) * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, false],
-                    ['Settlement Amount (₹)', fmt(previewDeal.settlement_amount), true],
-                  ].map(([label, value, bold]) => (
-                    <tr key={label as string}>
-                      <td style={cellLabelStyle}>{label}</td>
-                      <td style={bold ? cellValueBoldStyle : cellValueStyle}>{value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Buyer / Seller Details */}
-            <div style={{ marginBottom: '14px' }}>
-              <table style={tableStyle}>
-                <thead>
-                  <tr>
-                    <th colSpan={2} style={{ ...cellStyle, fontWeight: 700, textAlign: 'center', fontSize: '10px' }}>Buyer Details</th>
-                    <th colSpan={2} style={{ ...cellStyle, fontWeight: 700, textAlign: 'center', fontSize: '10px' }}>Seller Details</th>
-                  </tr>
-                  <tr>
-                    {['Particulars', 'Details', 'Particulars', 'Details'].map((h, i) => (
-                      <th key={i} style={{ ...cellStyle, fontWeight: 700, textAlign: 'center', width: '25%', fontSize: '9px' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ['Client Name', previewDeal.snap_client_name, 'Client Name', 'NIYOM WEALTH MANAGEMENT LLP'],
-                    ['PAN Number', previewDeal.snap_pan, 'PAN Number', 'AAZFN2255K'],
-                    ['DP Name', previewDeal.snap_dp_name, 'DP Name', 'Chola Securities'],
-                    ['DP ID', dpId, 'DP ID', 'IN300572'],
-                    ['Client ID', clientIdDP, 'Client ID', '10158746'],
-                    ['Depository', previewDeal.snap_depository || '-', 'Depository', 'NSDL'],
-                  ].map(([bl, bv, sl, sv], i) => (
-                    <tr key={i}>
-                      <td style={{ ...cellStyle, fontWeight: 500, textAlign: 'center' }}>{bl}</td>
-                      <td style={{ ...cellStyle, textAlign: 'center' }}>{bv}</td>
-                      <td style={{ ...cellStyle, fontWeight: 500, textAlign: 'center' }}>{sl}</td>
-                      <td style={{ ...cellStyle, textAlign: 'center' }}>{sv}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Payment Details */}
-            <div style={{ marginBottom: '14px' }}>
-              <p style={sectionTitleStyle}>Payment Details</p>
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <table style={{ ...tableStyle, width: '60%' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ ...cellStyle, fontWeight: 700, textAlign: 'center', fontSize: '9px' }}>Particulars</th>
-                      <th style={{ ...cellStyle, fontWeight: 700, textAlign: 'center', fontSize: '9px' }}>Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      ['Bank Name', 'IDFC FIRST BANK'],
-                      ['Account Name', 'NIYOM WEALTH MANAGEMENT LLP'],
-                      ['Account Number', '89394331135'],
-                      ['IFSC Code', 'IDFB0080131'],
-                      ['Branch', 'Anna Nagar West Branch'],
-                    ].map(([k, v]) => (
-                      <tr key={k}>
-                        <td style={{ ...cellStyle, fontWeight: 500, textAlign: 'center' }}>{k}</td>
-                        <td style={{ ...cellStyle, textAlign: 'center' }}>{v}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* TERMS & CONDITIONS */}
-            <div style={{ marginBottom: '0' }}>
-              <p style={{ fontSize: '11px', fontWeight: 900, color: '#000', marginBottom: '8px', textTransform: 'uppercase' }}>TERMS & CONDITIONS</p>
-              {[
-                ['1. Deal Confirmation & Settlement', 'The transaction shall be considered final upon mutual confirmation of price, quantity, and settlement terms by both parties. The Buyer shall ensure timely payment, and the Seller shall ensure timely transfer of securities/bonds as per the agreed timeline.'],
-                ['2. Intermediary Role', 'Niyom Wealth Distribution LLP acts solely as a facilitator/intermediary for the transaction and shall not be held liable for any payment default, transfer delay, counterparty failure, operational issue, or investment-related loss.'],
-                ['3. Risk & Disclaimer', 'Investments in unlisted shares and secondary bonds are subject to market, liquidity, credit, regulatory, and valuation risks. Niyom Wealth Distribution LLP does not guarantee listing, liquidity, returns, redemption, coupon payments, price appreciation, or exit opportunities. Clients are advised to undertake independent due diligence before transacting.'],
-                ['4. Compliance, Taxes & Charges', 'All parties confirm compliance with applicable KYC norms, SEBI/RBI regulations, taxation laws, and depository requirements. Applicable taxes, stamp duty, DP charges, brokerage, and statutory levies shall be borne by the respective parties as mutually agreed.'],
-              ].map(([title, body]) => (
-                <div key={title} style={{ marginBottom: '6px' }}>
-                  <p style={{ fontSize: '9px', fontWeight: 700, color: '#000', marginBottom: '2px' }}>{title}</p>
-                  <p style={{ fontSize: '8px', color: '#000', lineHeight: '1.5' }}>{body}</p>
-                </div>
-              ))}
-            </div>
-
-            <PageFooter pageNum={1} />
+        {/* Acceptance audit banner */}
+        {previewDeal.acceptance_status === 'accepted' && (
+          <div className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs"
+            style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <span style={{ color: '#10B981' }} className="font-semibold">Accepted &amp; locked</span>
+            {previewDeal.accepted_at && <span style={{ color: '#8A8A8A' }}>On: {new Date(previewDeal.accepted_at).toLocaleString('en-IN')}</span>}
+            {previewDeal.signer_email && <span style={{ color: '#8A8A8A' }}>By: {previewDeal.signer_email}</span>}
           </div>
-
-          {/* ==================== PAGE 2 ==================== */}
-          <div style={{
-            width: '210mm',
-            maxWidth: '100%',
-            padding: '10mm 20mm 15mm 20mm',
-            background: '#fff',
-            position: 'relative',
-            boxSizing: 'border-box',
-          }}>
-            <PageHeader pageNum={2} />
-
-            {/* T&C Section 5 (continued from page 1) */}
-            <div style={{ marginBottom: '14px' }}>
-              <p style={{ fontSize: '9px', fontWeight: 700, color: '#000', marginBottom: '2px' }}>5. Jurisdiction & Acceptance</p>
-              <p style={{ fontSize: '8px', color: '#000', lineHeight: '1.5' }}>
-                Any dispute, claim, default, or legal proceeding arising out of the transaction shall be subject to the exclusive jurisdiction of the courts in Chennai, Tamil Nadu, India. Execution of payment, transfer instruction, email/WhatsApp confirmation, or deal confirmation shall constitute deemed acceptance of these Terms & Conditions.
-              </p>
-            </div>
-
-
-
-            {/* Confirmation */}
-            <div style={{ marginBottom: '14px' }}>
-              <p style={{ fontSize: '11px', fontWeight: 700, color: '#000', marginBottom: '4px' }}>Confirmation</p>
-              <p style={{ fontSize: '8px', color: '#000', marginBottom: '10px' }}>We hereby confirm that the above details are true and agreed upon by both parties.</p>
-              <table style={tableStyle}>
-                <tbody>
-                  <tr>
-                    <td style={{ border: '1px solid #000', width: '50%', padding: 0, verticalAlign: 'top' }}>
-                      <div style={{ padding: '6px 10px', fontSize: '9px', fontWeight: 700, color: '#000', borderBottom: '1px solid #000' }}>For NIYOM WEALTH MANAGEMENT LLP</div>
-                      <div style={{ padding: '12px 14px' }}>
-                        <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Authorized Signatory Name: <strong>N Ramya</strong></p>
-                        <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Date: {fmtDate(previewDeal.deal_date)}</p>
-                        <p style={{ fontSize: '7px', color: '#000', marginBottom: '4px' }}>For NIYOM WEALTH MANAGEMENT LLP</p>
-                        <img src="/Screenshot_2026-04-06_at_4.02.25_PM.png" alt="Signature and Seal" style={{ height: '40px', marginBottom: '4px' }} />
-                        <p style={{ fontSize: '7px', color: '#888' }}>Designated Partner</p>
-                        <p style={{ fontSize: '8px', color: '#000', marginTop: '8px' }}>Signature & Seal</p>
-                      </div>
-                    </td>
-                    <td style={{ border: '1px solid #000', width: '50%', padding: 0, verticalAlign: 'top' }}>
-                      <div style={{ padding: '6px 10px', fontSize: '9px', fontWeight: 700, color: '#000', borderBottom: '1px solid #000' }}>Client / Counterparty</div>
-                      <div style={{ padding: '12px 14px' }}>
-                        <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Authorized Signatory Name: <strong>{previewDeal.snap_client_name}</strong></p>
-                        <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Date:</p>
-                        <div style={{ height: '40px' }} />
-                        <p style={{ fontSize: '8px', color: '#000' }}>Signature</p>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* Website */}
-            <p style={{ textAlign: 'center', fontSize: '8px', color: '#000', marginTop: '12px', marginBottom: '12px', padding: '6px 0' }}>
-              Website: www.niyomwealth.com
-            </p>
-
-            {/* Watermark Logo - absolutely positioned */}
-            <img
-              src="/niyomlogo.png"
-              alt="Niyom Wealth Watermark"
-              style={{
-                position: 'absolute',
-                bottom: '60px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '250px',
-                opacity: 0.08,
-                pointerEvents: 'none',
-              }}
-            />
-            <div style={{ height: '580px' }} />
-            <PageFooter pageNum={2} />
+        )}
+        {previewDeal.acceptance_status === 'rejected' && (
+          <div className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs"
+            style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+            <span style={{ color: '#ef4444' }} className="font-semibold">Rejected by client</span>
+            {previewDeal.rejected_at && <span style={{ color: '#8A8A8A' }}>On: {new Date(previewDeal.rejected_at).toLocaleString('en-IN')}</span>}
+            {previewDeal.rejection_reason && <span style={{ color: '#8A8A8A' }}>Reason: {previewDeal.rejection_reason}</span>}
           </div>
-        </div>
+        )}
+
+        {/* ===== Deal Note (shared 2-page A4 layout) ===== */}
+        <DealDocument deal={previewDeal} />
       </div>
     );
   }
@@ -982,9 +739,9 @@ export default function DealConfirmation({ employee }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: 'Total', value: deals.length, color: '#D4AF37' },
-          { label: 'Confirmed', value: deals.filter(d => d.status === 'confirmed').length, color: '#10B981' },
-          { label: 'Drafts', value: deals.filter(d => d.status === 'draft').length, color: '#8A8A8A' },
-          { label: 'Emails Sent', value: deals.filter(d => d.email_status === 'sent').length, color: '#60a5fa' },
+          { label: 'Accepted', value: deals.filter(d => d.acceptance_status === 'accepted').length, color: '#10B981' },
+          { label: 'Rejected', value: deals.filter(d => d.acceptance_status === 'rejected').length, color: '#ef4444' },
+          { label: 'Awaiting Client', value: deals.filter(d => d.acceptance_status === 'pending' || d.acceptance_status === 'viewed').length, color: '#60a5fa' },
         ].map(s => (
           <div key={s.label} className="rounded-2xl p-5" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
             <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#4A4A4A' }}>{s.label}</p>
@@ -1018,7 +775,7 @@ export default function DealConfirmation({ employee }: Props) {
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
-                  {['Reference', 'Client', 'Security', 'Type', 'Date', 'Settlement', 'Status', 'Email', ''].map(h => (
+                  {['Reference', 'Client', 'Security', 'Type', 'Date', 'Settlement', 'Status', 'Acceptance', ''].map(h => (
                     <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
                   ))}
                 </tr>
@@ -1052,11 +809,11 @@ export default function DealConfirmation({ employee }: Props) {
                         {d.status === 'confirmed' ? 'Confirmed' : 'Draft'}
                       </span>
                     </td>
-                    {/* Email Status — replaces Download PDF */}
+                    {/* Acceptance lifecycle */}
                     <td className="px-5 py-3.5">
-                      <EmailStatusBadge status={d.email_status ?? 'pending'} />
+                      <AcceptanceBadge status={d.acceptance_status ?? 'pending'} />
                     </td>
-                    {/* Actions: Preview | Edit | Delete */}
+                    {/* Actions */}
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1">
                         <button
@@ -1067,22 +824,52 @@ export default function DealConfirmation({ employee }: Props) {
                           onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => openEdit(d)}
-                          className="p-1.5 rounded-lg transition-colors" title="Edit"
-                          style={{ color: '#4A4A4A' }}
-                          onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
-                          onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteDeal(d)}
-                          className="p-1.5 rounded-lg transition-colors" title="Delete"
-                          style={{ color: '#4A4A4A' }}
-                          onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                          onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {d.acceptance_status === 'accepted' ? (
+                          <>
+                            <span className="p-1.5" title="Accepted & locked" style={{ color: '#10B981' }}>
+                              <Lock className="w-4 h-4" />
+                            </span>
+                            {d.signed_pdf_path && (
+                              <button
+                                onClick={() => handleDownloadSigned(d)}
+                                className="p-1.5 rounded-lg transition-colors" title="Download signed PDF"
+                                style={{ color: '#4A4A4A' }}
+                                onMouseEnter={e => (e.currentTarget.style.color = '#10B981')}
+                                onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
+                                <Download className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleSendSecureLink(d)}
+                              disabled={emailSending}
+                              className="p-1.5 rounded-lg transition-colors disabled:opacity-40"
+                              title={d.email_status === 'sent' ? 'Resend secure link' : 'Send secure link'}
+                              style={{ color: '#4A4A4A' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')}
+                              onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
+                              <Send className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => openEdit(d)}
+                              className="p-1.5 rounded-lg transition-colors" title="Edit"
+                              style={{ color: '#4A4A4A' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
+                              onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteDeal(d)}
+                              className="p-1.5 rounded-lg transition-colors" title="Delete"
+                              style={{ color: '#4A4A4A' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                              onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

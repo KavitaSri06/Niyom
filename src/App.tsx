@@ -29,6 +29,7 @@ import ClientLogin from './pages/ClientLogin';
 import ClientChangePassword from './pages/ClientChangePassword';
 import ClientPortal from './pages/ClientPortal';
 import PublicOnboarding from './pages/PublicOnboarding';
+import PublicDealView from './pages/PublicDealView';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -41,6 +42,8 @@ function AppContent() {
   // Client portal state
   const [clientPortalId, setClientPortalId] = useState<string | null>(null);
   const [clientPasswordChanged, setClientPasswordChanged] = useState(false);
+  // Public secure deal-confirmation link token (/deal/<token>)
+  const [dealToken, setDealToken] = useState<string | null>(null);
 
   useEffect(() => {
     const checkRoute = () => {
@@ -48,7 +51,13 @@ function AppContent() {
       const params = new URLSearchParams(window.location.search);
       const adminKey = params.get('admin');
 
-      if (pathname === '/onboarding' || pathname === '/onboarding/') {
+      if (pathname.startsWith('/deal/')) {
+        const t = pathname.slice('/deal/'.length).replace(/\/$/, '');
+        if (t) {
+          setDealToken(t);
+          setCurrentPage('public-deal' as any);
+        }
+      } else if (pathname === '/onboarding' || pathname === '/onboarding/') {
         setCurrentPage('client-onboarding' as any);
       } else if (pathname === '/client-login' || pathname === '/client-login/') {
         setCurrentPage('client-login');
@@ -107,6 +116,7 @@ function AppContent() {
 
     // Wait until we know whether this is a public client or CRM employee
     if (isPublicClient === null) return;
+  
 
     // Only redirect to dashboard on initial login (when on landing/showing auth)
     if (isPublicClient && (currentPage === 'landing' || showAuth)) {
@@ -174,6 +184,11 @@ function AppContent() {
   const handleKYCSuccess = () => {
     setCurrentPage('dashboard');
   };
+
+  // Public secure deal-confirmation page — fully unauthenticated, takes priority
+  if ((currentPage as any) === 'public-deal' && dealToken) {
+    return <PublicDealView token={dealToken} />;
+  }
 
   if (loading) {
     return (
