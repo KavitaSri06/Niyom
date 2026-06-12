@@ -154,7 +154,7 @@ export default function DealDocument({ deal, signatureDataUrl, acceptedDate, pdf
             </thead>
             <tbody>
               {[
-                ['Client Name', deal.snap_client_name, 'Client Name', 'NIYOM WEALTH MANAGEMENT LLP'],
+                ['Client Name', deal.snap_client_name, 'Client Name', 'NIYOM WEALTH DISTRIBUTION LLP'],
                 ['PAN Number', deal.snap_pan, 'PAN Number', 'AAZFN2255K'],
                 ['DP Name', deal.snap_dp_name, 'DP Name', 'Chola Securities'],
                 ['DP ID', dpId, 'DP ID', 'IN300572'],
@@ -185,7 +185,7 @@ export default function DealDocument({ deal, signatureDataUrl, acceptedDate, pdf
               <tbody>
                 {[
                   ['Bank Name', 'IDFC FIRST BANK'],
-                  ['Account Name', 'NIYOM WEALTH MANAGEMENT LLP'],
+                  ['Account Name', 'NIYOM WEALTH DISTRIBUTION LLP'],
                   ['Account Number', '89394331135'],
                   ['IFSC Code', 'IDFB0080131'],
                   ['Branch', 'Anna Nagar West Branch'],
@@ -239,11 +239,11 @@ export default function DealDocument({ deal, signatureDataUrl, acceptedDate, pdf
             <tbody>
               <tr>
                 <td style={{ border: '1px solid #000', width: '50%', padding: 0, verticalAlign: 'top' }}>
-                  <div style={{ padding: '6px 10px', fontSize: '9px', fontWeight: 700, color: '#000', borderBottom: '1px solid #000' }}>For NIYOM WEALTH MANAGEMENT LLP</div>
+                  <div style={{ padding: '6px 10px', fontSize: '9px', fontWeight: 700, color: '#000', borderBottom: '1px solid #000' }}>For NIYOM WEALTH DISTRIBUTION LLP</div>
                   <div style={{ padding: '12px 14px' }}>
                     <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Authorized Signatory Name: <strong>N Ramya</strong></p>
                     <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Date: {fmtDate(deal.deal_date)}</p>
-                    <p style={{ fontSize: '7px', color: '#000', marginBottom: '4px' }}>For NIYOM WEALTH MANAGEMENT LLP</p>
+                    <p style={{ fontSize: '7px', color: '#000', marginBottom: '4px' }}>For NIYOM WEALTH DISTRIBUTION LLP</p>
                     <img src="/Screenshot_2026-04-06_at_4.02.25_PM.png" alt="Signature and Seal" style={{ height: '40px', marginBottom: '4px' }} />
                     <p style={{ fontSize: '7px', color: '#888' }}>Designated Partner</p>
                     <p style={{ fontSize: '8px', color: '#000', marginTop: '8px' }}>Signature & Seal</p>

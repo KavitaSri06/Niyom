@@ -43,7 +43,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
               <Logo size="md" className={isLoaded ? 'animate-scaleIn' : 'opacity-0'} />
               <div className="text-left">
                 <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.1em' }}>NIYOM WEALTH</h1>
-                <p className="text-[#c9b896] text-xs tracking-widest">MANAGEMENT LLP</p>
+                <p className="text-[#c9b896] text-xs tracking-widest">DISTRIBUTION LLP</p>
               </div>
             </button>
 
@@ -509,7 +509,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
               <Logo size="sm" />
               <div>
                 <h2 className="text-xl font-bold" style={{ fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.1em' }}>NIYOM WEALTH</h2>
-                <p className="text-gray-400 text-sm mt-1">Management LLP</p>
+                <p className="text-gray-400 text-sm mt-1">Distribution LLP</p>
               </div>
             </div>
 

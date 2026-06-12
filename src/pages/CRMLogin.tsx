@@ -55,7 +55,7 @@ export default function CRMLogin() {
           </div>
           <div>
             <p className="text-white font-bold tracking-widest text-sm" style={{ fontFamily: 'Georgia, serif' }}>NIYOM WEALTH</p>
-            <p className="text-[#c9b896]/60 text-xs tracking-widest">MANAGEMENT LLP</p>
+            <p className="text-[#c9b896]/60 text-xs tracking-widest">DISTRIBUTION LLP</p>
           </div>
         </div>
 
@@ -96,7 +96,7 @@ export default function CRMLogin() {
             </div>
             <div>
               <p className="text-white font-bold tracking-widest text-sm" style={{ fontFamily: 'Georgia, serif' }}>NIYOM WEALTH</p>
-              <p className="text-[#c9b896]/60 text-xs tracking-widest">MANAGEMENT LLP</p>
+              <p className="text-[#c9b896]/60 text-xs tracking-widest">DISTRIBUTION LLP</p>
             </div>
           </div>
 

@@ -289,7 +289,7 @@ export function Learning({ onBack }: LearningProps) {
             <Logo size="md" />
             <div className="text-left">
               <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.1em' }}>NIYOM WEALTH</h1>
-              <p className="text-[#c9b896] text-xs tracking-widest">MANAGEMENT LLP</p>
+              <p className="text-[#c9b896] text-xs tracking-widest">DISTRIBUTION LLP</p>
             </div>
           </button>
 
