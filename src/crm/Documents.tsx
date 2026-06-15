@@ -4,7 +4,7 @@ import { NWEmployee, NWClient } from './types';
 import {
   Folder, FolderOpen, Upload, Download, Trash2, Eye, Search,
   FileText, FileImage, File, X, CheckCircle2, AlertCircle,
-  ChevronRight, ChevronDown, RefreshCw, ArrowLeft, Plus,
+  ChevronRight, ChevronDown, RefreshCw, ArrowLeft, Plus, Pencil,
 } from 'lucide-react';
 
 interface Props {
@@ -64,7 +64,7 @@ function fileIcon(mime: string) {
   return File;
 }
 
-function buildFileName(originalName: string): string {
+export function buildFileName(originalName: string): string {
   const ext = originalName.substring(originalName.lastIndexOf('.'));
   const now = new Date();
   const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}${now.getHours() < 12 ? 'AM' : 'PM'}`;
@@ -72,7 +72,7 @@ function buildFileName(originalName: string): string {
   return `${base}_${ts}${ext}`;
 }
 
-function validateFile(file: File): string | null {
+export function validateFile(file: File): string | null {
   if (file.size > MAX_SIZE) return `${file.name}: exceeds 10MB limit (${fmtSize(file.size)})`;
   const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
   if (!ALLOWED_EXT.includes(ext)) return `${file.name}: unsupported format. Allowed: PDF, JPG, PNG, DOCX, XLSX`;
@@ -111,6 +111,12 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
   const [previewDoc, setPreviewDoc] = useState<NWDocument | null>(null);
   const [deleteDoc, setDeleteDoc] = useState<NWDocument | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  // Replace-in-place (Feature #5 V1): overwrite the existing storage object and
+  // refresh the same nw_documents row. No versioning, no history.
+  const [replacingId, setReplacingId] = useState<string | null>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const replaceTargetRef = useRef<NWDocument | null>(null);
 
   const showToast = (type: 'success' | 'error', msg: string) => {
     setToast({ type, msg });
@@ -264,6 +270,47 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
     showToast('success', 'Document deleted');
   };
 
+  // Open the file picker for a specific document.
+  const triggerReplace = (doc: NWDocument) => {
+    replaceTargetRef.current = doc;
+    replaceInputRef.current?.click();
+  };
+
+  // Replace in place: overwrite the same storage object (same file_path) and
+  // refresh the same nw_documents row so only the latest document remains.
+  const handleReplaceFile = async (file: File) => {
+    const doc = replaceTargetRef.current;
+    replaceTargetRef.current = null;
+    if (!doc) return;
+
+    const err = validateFile(file);
+    if (err) { showToast('error', err); return; }
+
+    setReplacingId(doc.id);
+
+    // Overwrite the existing object at the same path (no new copy, no orphan).
+    const { error: upErr } = await supabase.storage
+      .from('crm-documents')
+      .upload(doc.file_path, file, { upsert: true, contentType: file.type });
+
+    if (upErr) { setReplacingId(null); showToast('error', upErr.message); return; }
+
+    // Refresh display metadata on the same row; document_type/file_path unchanged.
+    const { error: dbErr } = await supabase.from('nw_documents').update({
+      file_name: buildFileName(file.name),
+      file_size: file.size,
+      mime_type: file.type,
+      uploaded_by_name: employee.full_name,
+      uploaded_at: new Date().toISOString(),
+    }).eq('id', doc.id);
+
+    setReplacingId(null);
+    if (dbErr) { showToast('error', dbErr.message); return; }
+
+    await loadDocuments();
+    showToast('success', 'Document replaced successfully');
+  };
+
   const folderInfo = DOC_FOLDERS.find(f => f.key === selectedFolder);
 
   return (
@@ -299,6 +346,11 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
           {toast.msg}
         </div>
       )}
+
+      {/* Hidden input for in-place document replacement */}
+      <input ref={replaceInputRef} type="file" className="hidden"
+        accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx"
+        onChange={e => { const f = e.target.files?.[0]; if (f) handleReplaceFile(f); e.target.value = ''; }} />
 
       {/* Client selector (if no initialClientId) */}
       {!initialClientId && (
@@ -430,6 +482,12 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
                         <button onClick={() => handleDownload(doc)} title="Download"
                           className="p-1.5 rounded-lg transition-colors hover:bg-white/5">
                           <Download className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
+                        </button>
+                        <button onClick={() => triggerReplace(doc)} title="Edit / Replace" disabled={replacingId === doc.id}
+                          className="p-1.5 rounded-lg transition-colors hover:bg-white/5 disabled:opacity-50">
+                          {replacingId === doc.id
+                            ? <div className="w-3.5 h-3.5 rounded-full border-2 animate-spin" style={{ borderColor: '#D4AF37', borderTopColor: 'transparent' }} />
+                            : <Pencil className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />}
                         </button>
                         {isAdmin && (
                           <button onClick={() => setDeleteDoc(doc)} title="Delete"
