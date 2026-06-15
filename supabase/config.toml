@@ -389,6 +389,14 @@ verify_jwt = false
 [functions.reject-deal]
 verify_jwt = false
 
+# --- Forgot Password with OTP (CRM staff). Public: called from the
+#     unauthenticated login screen before the user has a session. ---
+[functions.send-reset-otp]
+verify_jwt = false
+
+[functions.reset-password-with-otp]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
