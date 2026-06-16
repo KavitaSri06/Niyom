@@ -10,6 +10,7 @@ type Intent = 'accept' | 'reject';
 type Phase =
   | 'loading'
   | 'review'
+  | 'tc'            // mandatory Terms & Conditions acceptance (accept path only)
   | 'otp-request'   // item 3
   | 'otp-verify'    // item 4
   | 'sign'          // item 5
@@ -116,6 +117,7 @@ export default function PublicDealView({ token }: Props) {
   const [otp, setOtp] = useState('');
   const [signature, setSignature] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [tcChecked, setTcChecked] = useState(false);
 
   // Load deal (item 1)
   useEffect(() => {
@@ -138,6 +140,27 @@ export default function PublicDealView({ token }: Props) {
     setError('');
     setPhase('otp-request');
   };
+
+  // Accept path begins with mandatory Terms & Conditions acceptance.
+  const startAccept = () => {
+    setIntent('accept');
+    setOtp('');
+    setSignature(null);
+    setRejectReason('');
+    setTcChecked(false);
+    setError('');
+    setPhase('tc');
+  };
+
+  // Records T&C acceptance (audit) then advances to OTP request.
+  const acceptTerms = useCallback(async () => {
+    if (!tcChecked) { setError('Please accept the Terms & Conditions to continue.'); return; }
+    setBusy(true); setError('');
+    const { data, error: fnErr } = await supabase.functions.invoke('record-tc-acceptance', { body: { token } });
+    setBusy(false);
+    if (fnErr || !data?.success) { setError(data?.error || 'Could not record your acceptance. Please try again.'); return; }
+    setPhase('otp-request');
+  }, [token, tcChecked]);
 
   // item 3 → sends the code, then advances to the verify screen
   const sendCode = useCallback(async () => {
@@ -262,9 +285,9 @@ export default function PublicDealView({ token }: Props) {
         />
       </div>
 
-      {/* Document preview */}
+      {/* Document preview — Confirmation/signature section hidden until signed */}
       <div style={{ ...card, padding: 16, overflowX: 'auto' }}>
-        <DealDocument deal={deal} pdfElementId="public-preview-content" />
+        <DealDocument deal={deal} pdfElementId="public-preview-content" showConfirmation={false} />
       </div>
 
       {error && (
@@ -283,13 +306,40 @@ export default function PublicDealView({ token }: Props) {
               Please review the deal confirmation above. To proceed you will verify a code sent to your registered email.
             </p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <button onClick={() => goRequest('accept')} style={btnGold}>
+              <button onClick={startAccept} style={btnGold}>
                 <CheckCircle2 style={{ width: 16, height: 16 }} /> Accept Deal
               </button>
               <button onClick={() => goRequest('reject')}
                 style={{ background: '#fff', color: '#b91c1c', border: '1px solid #fecaca', fontWeight: 700, padding: '12px 28px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <XCircle style={{ width: 16, height: 16 }} /> Reject Deal
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mandatory Terms & Conditions acceptance (accept path) */}
+        {phase === 'tc' && (
+          <div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ShieldCheck style={{ width: 18, height: 18, color: '#B8961E' }} /> Accept Terms & Conditions
+            </h3>
+            <p style={{ color: '#6b7280', fontSize: 13, marginTop: 6 }}>
+              Please confirm you have reviewed the deal details and Terms &amp; Conditions shown above before proceeding.
+            </p>
+            <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 16, cursor: 'pointer' }}>
+              <input type="checkbox" checked={tcChecked} onChange={(e) => setTcChecked(e.target.checked)}
+                style={{ width: 18, height: 18, marginTop: 2, flexShrink: 0, accentColor: '#B8961E', cursor: 'pointer' }} />
+              <span style={{ fontSize: 14, color: '#374151', lineHeight: 1.5 }}>
+                I have read, understood and agree to the Terms &amp; Conditions and deal details mentioned above.
+              </span>
+            </label>
+            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+              <button onClick={acceptTerms} disabled={busy || !tcChecked}
+                style={{ ...btnGold, opacity: busy || !tcChecked ? 0.5 : 1, cursor: busy || !tcChecked ? 'not-allowed' : 'pointer' }}>
+                {busy ? <Loader2 className="animate-spin" style={{ width: 16, height: 16 }} /> : <CheckCircle2 style={{ width: 16, height: 16 }} />}
+                Continue
+              </button>
+              <button onClick={() => { setPhase('review'); setError(''); }} disabled={busy} style={btnGhost}>Back</button>
             </div>
           </div>
         )}

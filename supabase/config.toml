@@ -389,6 +389,9 @@ verify_jwt = false
 [functions.reject-deal]
 verify_jwt = false
 
+[functions.record-tc-acceptance]
+verify_jwt = false
+
 # --- Forgot Password with OTP (CRM staff). Public: called from the
 #     unauthenticated login screen before the user has a session. ---
 [functions.send-reset-otp]

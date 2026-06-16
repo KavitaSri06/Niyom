@@ -42,9 +42,16 @@ interface Props {
   acceptedDate?: string;
   /** Override the html2pdf target id (defaults to the CRM preview id). */
   pdfElementId?: string;
+  /**
+   * Controls whether the final "Confirmation" block (company + client signature
+   * boxes, dates, authorized signatory) is rendered. Defaults to true so the
+   * signed PDF and CRM preview are unchanged. The public client preview passes
+   * false to hide it until the client has signed.
+   */
+  showConfirmation?: boolean;
 }
 
-export default function DealDocument({ deal, signatureDataUrl, acceptedDate, pdfElementId = 'deal-confirmation-pdf-content' }: Props) {
+export default function DealDocument({ deal, signatureDataUrl, acceptedDate, pdfElementId = 'deal-confirmation-pdf-content', showConfirmation = true }: Props) {
   const dpId = (deal.snap_demat_account || '').slice(0, 8);
   const clientIdDP = (deal.snap_demat_account || '').slice(-8);
   const headerDate = fmtDate(deal.deal_date);
@@ -232,6 +239,7 @@ export default function DealDocument({ deal, signatureDataUrl, acceptedDate, pdf
           </p>
         </div>
 
+        {showConfirmation && (
         <div style={{ marginBottom: '14px' }}>
           <p style={{ fontSize: '11px', fontWeight: 700, color: '#000', marginBottom: '4px' }}>Confirmation</p>
           <p style={{ fontSize: '8px', color: '#000', marginBottom: '10px' }}>We hereby confirm that the above details are true and agreed upon by both parties.</p>
@@ -264,6 +272,7 @@ export default function DealDocument({ deal, signatureDataUrl, acceptedDate, pdf
             </tbody>
           </table>
         </div>
+        )}
 
         <p style={{ textAlign: 'center', fontSize: '8px', color: '#000', marginTop: '12px', marginBottom: '12px', padding: '6px 0' }}>
           Website: www.niyomwealth.com
