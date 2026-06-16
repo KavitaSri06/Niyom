@@ -159,7 +159,12 @@ async function syncTransactionToHolding(txn: Record<string, any>) {
 
   const qty = txn.quantity || 0;
   const price = txn.per_unit_price || (txn.purchase_nav) || 0;
-  const amount = txn.consolidated_amount || 0;
+  // Secondary Bonds: the client's invested amount is client_price × qty. consolidated_amount
+  // carries the firm's acquisition/landing total, so use client_price when present. All other
+  // product types are unchanged.
+  const amount = (txn.product_type === 'secondary_bond' && txn.client_price)
+    ? (txn.client_price * qty)
+    : (txn.consolidated_amount || 0);
 
   // Find existing holding for same client + product_name + product_type
   const { data: existing } = await supabase
