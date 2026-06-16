@@ -94,11 +94,17 @@ sign them digitally end to end.
 - Payout tracking
 - Download and email support
 
-### 5. DSA Document Editing System — 🔜 Planned
-- Employees can edit uploaded DSA documents
-- Admins can edit uploaded DSA documents
-- Existing historical documents also editable
-- Database permission and audit controls
+### 5. Document Edit / Replace (V1) — ✅ Completed
+Lightweight "Replace Document" action in the CRM document module — overwrite an
+existing file in place; the latest upload becomes the active document.
+- **Replace** (edit) action on every document row, in both **Documents** and the admin **Document Vault**
+- Overwrite-in-place: same record, same category, same storage path — no second copy, no orphaned files
+- Refreshes file name, size, type, uploaded timestamp, and uploader on replace
+- View and Download continue to work unchanged
+- Permissions reuse existing rules: **admins replace any document; employees replace their own clients' documents**
+- No version history, no audit dashboards, no extra tracking tables (kept strictly V1)
+- **Database deployed:** additive RLS policies applied to production (`nw_documents` UPDATE + `crm-documents` storage overwrite)
+- **Frontend:** implemented and build-verified; pending release deploy
 
 ### 6. Calculation Module — 🔜 Planned
 - New Calculation section for Employees and Admins
@@ -135,6 +141,7 @@ sign them digitally end to end.
 - PDF generation
 - Digital signature flow
 - Admin login alerts
+- Document edit / replace (in-place) in CRM
 
 ### 🔄 In Progress
 - Production refinement
@@ -142,7 +149,7 @@ sign them digitally end to end.
 - Compliance updates
 
 ### 🔜 Planned
-- DSA modules (payout debit notes, document editing)
+- DSA payout debit note module
 - Calculation module
 - Security audit & hardening
 - Compliance enhancements (ARN, legal footers)
