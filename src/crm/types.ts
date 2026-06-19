@@ -66,6 +66,35 @@ export interface NWDSA {
   employee?: { full_name: string; employee_code: string };
 }
 
+export type DSADebitNoteStatus = 'generated' | 'paid' | 'cancelled';
+
+export interface NWDSADebitNote {
+  id: string;
+  dsa_id: string;
+  month: number;          // 1-12
+  year: number;
+  payout_amount: number;
+  debit_note_number: string;
+  generated_at: string;
+  pdf_url: string;
+  created_by: string | null;
+  // Payment status tracking
+  status: DSADebitNoteStatus;
+  paid_at: string | null;
+  paid_by: string | null;
+  cancelled_at: string | null;
+  cancelled_by: string | null;
+  cancel_reason: string | null;
+  // Future email support (schema prepared; sending not yet implemented)
+  email_sent: boolean;
+  email_sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+  dsa?: { full_name: string; dsa_code: string };
+  paid_by_employee?: { full_name: string } | null;
+  cancelled_by_employee?: { full_name: string } | null;
+}
+
 export interface NWClientDocument {
   id: string;
   client_id: string;
