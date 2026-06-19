@@ -37,6 +37,23 @@ function formatRole(role: string): string {
   }
 }
 
+const isValidEmail = (e: unknown): e is string =>
+  typeof e === "string" && /^\S+@\S+\.\S+$/.test(e.trim());
+
+// Build a de-duplicated CC list (lowercased) that never repeats the To address.
+function buildCc(candidates: (string | null | undefined)[], to: string): string[] {
+  const seen = new Set<string>([to.trim().toLowerCase()]);
+  const cc: string[] = [];
+  for (const c of candidates) {
+    if (!isValidEmail(c)) continue;
+    const norm = c.trim().toLowerCase();
+    if (seen.has(norm)) continue;
+    seen.add(norm);
+    cc.push(norm);
+  }
+  return cc;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -76,7 +93,7 @@ Deno.serve(async (req: Request) => {
     // --- Load the deal (server-side source of truth) ---
     const { data: deal } = await db
       .from("nw_deal_confirmations")
-      .select("id, confirmation_number, snap_client_name, snap_email, acceptance_status, employee_id")
+      .select("id, confirmation_number, snap_client_name, snap_email, acceptance_status, employee_id, email_status")
       .eq("id", dealId)
       .maybeSingle();
     if (!deal) return json({ success: false, error: "Deal not found." }, 404);
@@ -93,6 +110,21 @@ Deno.serve(async (req: Request) => {
     if (!deal.snap_email) {
       return json({ success: false, error: "No client email is on record for this deal." }, 400);
     }
+    if (!isValidEmail(deal.snap_email)) {
+      return json({ success: false, error: "The client email on record is not a valid address." }, 400);
+    }
+
+    // --- Resolve CC recipients: creating/owning employee + admin/designated ---
+    let ownerEmail: string | null = null;
+    if (deal.employee_id) {
+      const { data: owner } = await db
+        .from("nw_employees").select("email").eq("id", deal.employee_id).maybeSingle();
+      ownerEmail = owner?.email ?? null;
+    }
+    const adminEmail = Deno.env.get("NIYOM_ADMIN_EMAIL") ?? "purushothaman@niyomwealth.com";
+    const clientTo = deal.snap_email.trim();
+    const ccRecipients = buildCc([ownerEmail, adminEmail], clientTo);
+    const isResend = deal.email_status === "sent";
 
     // --- Mint / rotate token (resets to pending for a fresh review) ---
     const token = generateToken();
@@ -177,24 +209,40 @@ Website: www.niyomwealth.com`;
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: "Niyom Wealth <support@niyomwealth.com>",
-        to: [deal.snap_email],
-        cc: ["purushothaman@niyomwealth.com"],
+        to: [clientTo],
+        ...(ccRecipients.length ? { cc: ccRecipients } : {}),
         subject,
         text,
         html,
       }),
     });
 
+    // Append-only email audit row (best-effort: never let an audit-write failure
+    // break or mask the actual email outcome).
+    const logEmail = async (status: "sent" | "failed", msgId: string | null, extra: Record<string, unknown> = {}) => {
+      try {
+        await db.from("nw_deal_email_log").insert({
+          deal_confirmation_id: deal.id, email_type: "secure_link",
+          sent_to: clientTo, cc_recipients: ccRecipients, sent_by: employee.id,
+          is_resend: isResend, status, provider_message_id: msgId, metadata: extra,
+        });
+      } catch (logErr) {
+        console.error("email-log insert failed:", logErr);
+      }
+    };
+
     const resendData = await resendResponse.json().catch(() => ({}));
     if (!resendResponse.ok) {
       console.error("Resend API error:", resendData);
+      await logEmail("failed", null, { error: resendData?.message ?? "send failed" });
       return json({ success: false, error: resendData?.message || "Failed to send email." }, 500);
     }
 
     await db.from("nw_deal_confirmation_events").insert({
       deal_id: deal.id, event_type: "link_sent", actor: "employee",
-      metadata: { emailId: resendData.id, to: deal.snap_email },
+      metadata: { emailId: resendData.id, to: clientTo, cc: ccRecipients, resend: isResend },
     });
+    await logEmail("sent", resendData.id ?? null);
 
     return json({ success: true, emailId: resendData.id });
   } catch (err: any) {

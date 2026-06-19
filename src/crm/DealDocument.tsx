@@ -250,22 +250,34 @@ export default function DealDocument({ deal, signatureDataUrl, acceptedDate, pdf
                   <div style={{ padding: '6px 10px', fontSize: '9px', fontWeight: 700, color: '#000', borderBottom: '1px solid #000' }}>For NIYOM WEALTH DISTRIBUTION LLP</div>
                   <div style={{ padding: '12px 14px' }}>
                     <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Authorized Signatory Name: <strong>N Ramya</strong></p>
-                    <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Date: {fmtDate(deal.deal_date)}</p>
-                    <p style={{ fontSize: '7px', color: '#000', marginBottom: '4px' }}>For NIYOM WEALTH DISTRIBUTION LLP</p>
-                    <img src="/Screenshot_2026-04-06_at_4.02.25_PM.png" alt="Signature and Seal" style={{ height: '40px', marginBottom: '4px' }} />
-                    <p style={{ fontSize: '7px', color: '#888' }}>Designated Partner</p>
-                    <p style={{ fontSize: '8px', color: '#000', marginTop: '8px' }}>Signature & Seal</p>
+                    <p style={{ fontSize: '8px', color: '#000', marginBottom: '10px' }}>Date: {fmtDate(deal.deal_date)}</p>
+                    <div style={{ height: '64px', display: 'flex', alignItems: 'flex-end' }}>
+                      <img
+                        src="/Screenshot_2026-04-06_at_4.02.25_PM.png"
+                        alt="Signature and Seal"
+                        style={{ height: '62px', maxWidth: '190px', width: 'auto', objectFit: 'contain', display: 'block' }}
+                      />
+                    </div>
+                    <div style={{ borderTop: '1px solid #000', marginTop: '4px', paddingTop: '5px' }}>
+                      <p style={{ fontSize: '8px', color: '#000', fontWeight: 600 }}>Designated Partner</p>
+                      <p style={{ fontSize: '7px', color: '#555', marginTop: '2px' }}>Signature &amp; Seal · For NIYOM WEALTH DISTRIBUTION LLP</p>
+                    </div>
                   </div>
                 </td>
                 <td style={{ border: '1px solid #000', width: '50%', padding: 0, verticalAlign: 'top' }}>
                   <div style={{ padding: '6px 10px', fontSize: '9px', fontWeight: 700, color: '#000', borderBottom: '1px solid #000' }}>Client / Counterparty</div>
                   <div style={{ padding: '12px 14px' }}>
                     <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Authorized Signatory Name: <strong>{deal.snap_client_name}</strong></p>
-                    <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Date: {acceptedDate ? fmtDate(acceptedDate) : ''}</p>
-                    {signatureDataUrl
-                      ? <img src={signatureDataUrl} alt="Client Signature" style={{ height: '40px', marginBottom: '4px', objectFit: 'contain' }} />
-                      : <div style={{ height: '40px' }} />}
-                    <p style={{ fontSize: '8px', color: '#000' }}>Signature</p>
+                    <p style={{ fontSize: '8px', color: '#000', marginBottom: '10px' }}>Date: {acceptedDate ? fmtDate(acceptedDate) : ''}</p>
+                    <div style={{ height: '64px', display: 'flex', alignItems: 'flex-end' }}>
+                      {signatureDataUrl
+                        ? <img src={signatureDataUrl} alt="Client Signature" style={{ height: '62px', maxWidth: '230px', width: 'auto', objectFit: 'contain', display: 'block' }} />
+                        : <div style={{ height: '62px' }} />}
+                    </div>
+                    <div style={{ borderTop: '1px solid #000', marginTop: '4px', paddingTop: '5px' }}>
+                      <p style={{ fontSize: '8px', color: '#000', fontWeight: 600 }}>Signature</p>
+                      <p style={{ fontSize: '7px', color: '#555', marginTop: '2px' }}>Accepted &amp; e-signed by client</p>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -283,7 +295,7 @@ export default function DealDocument({ deal, signatureDataUrl, acceptedDate, pdf
           alt="Niyom Wealth Watermark"
           style={{ position: 'absolute', bottom: '60px', left: '50%', transform: 'translateX(-50%)', width: '250px', opacity: 0.08, pointerEvents: 'none' }}
         />
-        <div style={{ height: '580px' }} />
+        <div style={{ height: '548px' }} />
         <PageFooter pageNum={2} />
       </div>
     </div>

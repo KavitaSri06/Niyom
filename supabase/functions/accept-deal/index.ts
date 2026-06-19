@@ -143,85 +143,108 @@ Deno.serve(async (req: Request) => {
         employeeEmail = emp?.email ?? null;
       }
 
-      // Fallback rule: missing admin email is logged but never fatal.
-      if (!adminEmail) {
+      const valid = (e: unknown): e is string => typeof e === "string" && /^\S+@\S+\.\S+$/.test(e.trim());
+
+      // One email, shared communication trail:
+      //   To  -> client (primary)
+      //   CC  -> creating/owning employee + admin/designated recipient
+      // CC is de-duplicated against the To address and within itself.
+      const clientTo = valid(deal.snap_email) ? deal.snap_email.trim() : null;
+      const seen = new Set<string>();
+      if (clientTo) seen.add(clientTo.toLowerCase());
+      const cc: string[] = [];
+      for (const e of [employeeEmail, adminEmail]) {
+        if (!valid(e)) continue;
+        const norm = e.trim().toLowerCase();
+        if (seen.has(norm)) continue;
+        seen.add(norm);
+        cc.push(norm);
+      }
+      // Client address must be present; if it is somehow invalid we still get the
+      // signed copy to the team by promoting the first CC to the primary To.
+      const primaryTo = clientTo ?? (cc.length ? cc.shift()! : null);
+
+      const logEmail = async (status: "sent" | "failed", extra: Record<string, unknown> = {}, msgId: string | null = null) => {
+        await db.from("nw_deal_email_log").insert({
+          deal_confirmation_id: deal.id, email_type: "signed_pdf",
+          sent_to: primaryTo ?? "", cc_recipients: cc, sent_by: null,
+          is_resend: false, status, provider_message_id: msgId, metadata: extra,
+        });
+      };
+
+      if (!RESEND_API_KEY) {
         await db.from("nw_deal_confirmation_events").insert({
           deal_id: deal.id, event_type: "signed_pdf_emailed", actor: "system",
-          metadata: { status: "admin_email_missing", note: "NIYOM_ADMIN_EMAIL not configured" },
+          metadata: { status: "failed", note: "RESEND_API_KEY not configured" },
         });
-      }
-
-      const valid = (e: unknown): e is string => typeof e === "string" && /\S+@\S+\.\S+/.test(e);
-      const recipients = [...new Set(
-        [deal.snap_email, employeeEmail, adminEmail].filter(valid).map((e) => e.toLowerCase()),
-      )];
-
-      if (RESEND_API_KEY && recipients.length > 0) {
+        await logEmail("failed", { note: "RESEND_API_KEY not configured" });
+      } else if (!primaryTo) {
+        await db.from("nw_deal_confirmation_events").insert({
+          deal_id: deal.id, event_type: "signed_pdf_emailed", actor: "system",
+          metadata: { status: "no_recipients", note: "No valid client/RM/admin email resolved" },
+        });
+        await logEmail("failed", { note: "no_recipients" });
+      } else {
         const filename = `Deal_Confirmation_${deal.confirmation_number}.pdf`;
-        const subject = "Deal Confirmation – Signed Copy";
+        const subject = `Signed Deal Confirmation – Ref: ${deal.confirmation_number}`;
         // Normalize: Resend expects pure base64 in attachment content. Strip any
         // data-URI prefix defensively (the client already sends bare base64).
         const pdfBase64 = signedPdfBase64.includes(",") ? signedPdfBase64.split(",")[1] : signedPdfBase64;
-        const text = `Dear Recipient,
+        const text = `Dear ${deal.snap_client_name || "Valued Client"},
 
-The deal has been successfully confirmed and digitally signed.
+Your deal confirmation (Ref: ${deal.confirmation_number}) has been successfully confirmed and digitally signed.
 
-Please find the attached signed confirmation document for your records.
+Please find the signed confirmation document attached for your records. Your relationship manager and our team have been copied on this email so everyone shares the same record.
 
-Regards,
-Niyom Team`;
+Warm regards,
+Niyom Wealth Distribution LLP
+Website: www.niyomwealth.com`;
         const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;color:#222;line-height:1.7;">
   <div style="max-width:620px;margin:0 auto;padding:32px 24px;">
     <div style="border-bottom:2px solid #D4AF37;padding-bottom:20px;margin-bottom:24px;">
       <div style="font-size:20px;font-weight:700;color:#111;">Niyom Wealth</div>
       <div style="font-size:13px;color:#8B7355;font-style:italic;">Wealth Reimagined</div>
     </div>
-    <p>Dear Recipient,</p>
-    <p>The deal has been successfully confirmed and digitally signed.</p>
-    <p>Please find the attached signed confirmation document for your records.</p>
-    <p style="margin-top:20px;">Regards,<br/>Niyom Team</p>
+    <p style="font-size:15px;font-weight:600;color:#111;">Dear ${deal.snap_client_name || "Valued Client"},</p>
+    <p>Your deal confirmation (Ref: <strong>${deal.confirmation_number}</strong>) has been successfully
+       confirmed and digitally signed.</p>
+    <p>Please find the signed confirmation document attached for your records. Your relationship manager
+       and our team have been copied so everyone shares the same record.</p>
+    <p style="margin-top:20px;">Warm regards,<br/><strong>Niyom Wealth Distribution LLP</strong></p>
     <div style="margin-top:24px;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:12px;">
       © Niyom Wealth Distribution LLP — Ref: ${deal.confirmation_number}
     </div>
   </div></body></html>`;
 
-        const results: Record<string, string> = {};
-        for (const to of recipients) {
-          try {
-            const resp = await fetch("https://api.resend.com/emails", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                from: "Niyom Wealth <support@niyomwealth.com>",
-                to: [to],
-                subject,
-                text,
-                html,
-                attachments: [{ filename, content: pdfBase64 }],
-              }),
-            });
-            results[to] = resp.ok ? "sent" : "failed";
-            if (!resp.ok) console.error("signed-pdf email failed for", to, await resp.text().catch(() => ""));
-          } catch (sendErr) {
-            results[to] = "failed";
-            console.error("signed-pdf email exception for", to, sendErr);
-          }
+        let ok = false;
+        let msgId: string | null = null;
+        try {
+          const resp = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              from: "Niyom Wealth <support@niyomwealth.com>",
+              to: [primaryTo],
+              ...(cc.length ? { cc } : {}),
+              subject,
+              text,
+              html,
+              attachments: [{ filename, content: pdfBase64 }],
+            }),
+          });
+          ok = resp.ok;
+          const respData = await resp.json().catch(() => ({} as Record<string, unknown>));
+          msgId = (respData as { id?: string }).id ?? null;
+          if (!ok) console.error("signed-pdf email failed:", respData);
+        } catch (sendErr) {
+          console.error("signed-pdf email exception:", sendErr);
         }
+
         await db.from("nw_deal_confirmation_events").insert({
           deal_id: deal.id, event_type: "signed_pdf_emailed", actor: "system",
-          metadata: { status: Object.values(results).includes("sent") ? "sent" : "failed", recipients: results },
+          metadata: { status: ok ? "sent" : "failed", to: primaryTo, cc, emailId: msgId },
         });
-      } else if (!RESEND_API_KEY) {
-        await db.from("nw_deal_confirmation_events").insert({
-          deal_id: deal.id, event_type: "signed_pdf_emailed", actor: "system",
-          metadata: { status: "failed", note: "RESEND_API_KEY not configured" },
-        });
-      } else {
-        // RESEND_API_KEY present but no valid recipient address resolved.
-        await db.from("nw_deal_confirmation_events").insert({
-          deal_id: deal.id, event_type: "signed_pdf_emailed", actor: "system",
-          metadata: { status: "no_recipients", note: "No valid client/RM/admin email resolved" },
-        });
+        await logEmail(ok ? "sent" : "failed", { to: primaryTo, cc }, msgId);
       }
     } catch (mailErr: any) {
       console.error("signed-pdf distribution error:", mailErr?.message);

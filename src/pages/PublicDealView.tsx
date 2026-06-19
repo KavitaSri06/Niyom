@@ -25,29 +25,54 @@ function buildPdfOpts(deal: PublicDeal) {
     margin: 0,
     filename: `DEAL-CONFIRMATION-${deal.confirmation_number}-${deal.deal_date}.pdf`,
     image: { type: 'png' as const, quality: 1 },
-    html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794, letterRendering: true },
+    html2canvas: { scale: 3, useCORS: true, logging: false, windowWidth: 794, letterRendering: true },
     jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
     pagebreak: { mode: ['css', 'legacy'] as string[] },
   };
 }
 
 // ---------- Signature pad (item 5) ----------
+// High-resolution capture: the drawing buffer is sized to the *displayed*
+// dimensions × devicePixelRatio × an oversample factor, while the drawing
+// context is transformed to CSS-pixel space. This keeps strokes aligned to the
+// pointer (regardless of responsive width) and exports a crisp, print-quality
+// PNG that no longer blurs when scaled in the signed PDF.
+const SIG_OVERSAMPLE = 2;
+
 function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const hasInk = useRef(false);
 
-  useEffect(() => {
+  const initCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const cssW = rect.width || 520;
+    const cssH = rect.height || 160;
+    const ratio = (window.devicePixelRatio || 1) * SIG_OVERSAMPLE;
+    canvas.width = Math.round(cssW * ratio);
+    canvas.height = Math.round(cssH * ratio);
+    // Map drawing units to CSS pixels so pointer coords line up 1:1.
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, cssW, cssH);
     ctx.lineWidth = 2.2;
     ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
     ctx.strokeStyle = '#111';
   }, []);
+
+  useEffect(() => {
+    initCanvas();
+    // Re-init on resize only when the pad is still empty, so we never wipe a
+    // signature the client has already drawn.
+    const onResize = () => { if (!hasInk.current) initCanvas(); };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [initCanvas]);
 
   const pos = (e: React.PointerEvent) => {
     const r = canvasRef.current!.getBoundingClientRect();
@@ -74,10 +99,7 @@ function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) => void
     if (hasInk.current) onChange(canvasRef.current!.toDataURL('image/png'));
   };
   const clear = () => {
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    initCanvas();
     hasInk.current = false;
     onChange(null);
   };
@@ -86,8 +108,6 @@ function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) => void
     <div>
       <canvas
         ref={canvasRef}
-        width={520}
-        height={160}
         onPointerDown={start}
         onPointerMove={move}
         onPointerUp={end}
