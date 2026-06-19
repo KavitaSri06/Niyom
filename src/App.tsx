@@ -16,6 +16,7 @@ import OrderPlacement from './pages/OrderPlacement';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfUse } from './pages/TermsOfUse';
 import { RiskDisclaimer } from './pages/RiskDisclaimer';
+import { Disclaimer } from './pages/Disclaimer';
 import { MutualFundsLead } from './pages/MutualFundsLead';
 import { PrimaryBondsLead } from './pages/PrimaryBondsLead';
 import { FixedDepositsLead } from './pages/FixedDepositsLead';
@@ -33,7 +34,7 @@ import PublicDealView from './pages/PublicDealView';
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState<'landing' | 'services' | 'learning' | 'news' | 'mfresearch' | 'calculator' | 'unlisted' | 'bonds' | 'login' | 'signup' | 'dashboard' | 'kyc' | 'admin' | 'order-placement' | 'privacy' | 'terms' | 'risk' | 'mutual-funds' | 'primary-bonds' | 'fixed-deposits' | 'insurance' | 'crm-login' | 'crm-employee' | 'crm-admin' | 'crm-add-deal' | 'crm-new' | 'client-portal' | 'client-login'>('landing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'services' | 'learning' | 'news' | 'mfresearch' | 'calculator' | 'unlisted' | 'bonds' | 'login' | 'signup' | 'dashboard' | 'kyc' | 'admin' | 'order-placement' | 'privacy' | 'terms' | 'risk' | 'disclaimer' | 'mutual-funds' | 'primary-bonds' | 'fixed-deposits' | 'insurance' | 'crm-login' | 'crm-employee' | 'crm-admin' | 'crm-add-deal' | 'crm-new' | 'client-portal' | 'client-login'>('landing');
   const [showAuth, setShowAuth] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -71,6 +72,8 @@ function AppContent() {
         setCurrentPage('terms');
       } else if (pathname === '/risk') {
         setCurrentPage('risk');
+      } else if (pathname === '/disclaimer') {
+        setCurrentPage('disclaimer');
       } else if (pathname === '/mutual-funds') {
         setCurrentPage('mutual-funds');
       } else if (pathname === '/primary-bonds') {
@@ -342,6 +345,10 @@ function AppContent() {
 
   if (currentPage === 'risk') {
     return <RiskDisclaimer onClose={handleBackToLanding} />;
+  }
+
+  if (currentPage === 'disclaimer') {
+    return <Disclaimer onClose={handleBackToLanding} />;
   }
 
   if (currentPage === 'mutual-funds') {

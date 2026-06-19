@@ -1,6 +1,7 @@
 import { ArrowRight, Shield, Target, Zap, TrendingUp, Users, Award, Instagram, Linkedin, ChevronRight, Phone, Mail, MessageCircle, Menu, X, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Logo } from '../components/Logo';
+import { RegulatoryInfo } from '../components/RegulatoryInfo';
 
 interface LandingProps {
   onGetStarted: () => void;
@@ -534,6 +535,12 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                 >
                   Risk Disclosure
                 </button>
+                <button
+                  onClick={() => onNavigate('disclaimer')}
+                  className="text-gray-400 hover:text-[#c9b896] transition-colors text-left"
+                >
+                  Disclaimer
+                </button>
               </div>
             </div>
 
@@ -561,6 +568,8 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
               </div>
             </div>
           </div>
+
+          <RegulatoryInfo />
 
           <div className="text-center text-gray-400 pt-8 border-t border-gray-800">
             <p className="text-sm">&copy; 2025 Niyom Wealth Distribution LLP. All rights reserved.</p>
