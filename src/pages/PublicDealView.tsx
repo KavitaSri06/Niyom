@@ -24,8 +24,13 @@ function buildPdfOpts(deal: PublicDeal) {
   return {
     margin: 0,
     filename: `DEAL-CONFIRMATION-${deal.confirmation_number}-${deal.deal_date}.pdf`,
-    image: { type: 'png' as const, quality: 1 },
-    html2canvas: { scale: 3, useCORS: true, logging: false, windowWidth: 794, letterRendering: true },
+    // JPEG (not PNG) + scale 2 keeps the *transmitted* signed PDF small enough
+    // to stay well under the Edge Function payload limit. PNG@scale3 produced a
+    // ~47 MB / ~63 MB-base64 body that tripped WORKER_RESOURCE_LIMIT. The crisp
+    // signature is still preserved separately as signature.png (sent as its own
+    // field and stored independently).
+    image: { type: 'jpeg' as const, quality: 0.92 },
+    html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794, letterRendering: true },
     jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
     pagebreak: { mode: ['css', 'legacy'] as string[] },
   };
