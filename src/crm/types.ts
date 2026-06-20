@@ -73,7 +73,9 @@ export interface NWDSADebitNote {
   dsa_id: string;
   month: number;          // 1-12
   year: number;
-  payout_amount: number;
+  payout_amount: number;        // GROSS payout (before TDS)
+  tds_amount: number;           // fixed 2% TDS deducted from the gross
+  net_payable_amount: number;   // gross − TDS (amount actually paid out)
   debit_note_number: string;
   generated_at: string;
   pdf_url: string;

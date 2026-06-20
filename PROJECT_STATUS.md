@@ -1,6 +1,6 @@
 # Niyom Wealth Distribution LLP — Product Roadmap & Release Status
 
-**Last updated:** 2026-06-15
+**Last updated:** 2026-06-20
 **Platform:** React + TypeScript (Vite) · Supabase (PostgreSQL, RLS, Edge Functions, Storage)
 **Current release:** Version 1 — **Released / Deployed**
 
@@ -88,11 +88,21 @@ sign them digitally end to end.
 
 # Version 2 Roadmap
 
-### 4. DSA Payout Debit Note Module — 🔜 Planned
-- Debit note generation
-- PDF generation
-- Payout tracking
-- Download and email support
+### 4. DSA Payout Debit Note Module — ✅ Completed & Active
+Automated DSA payout calculation with debit note issuance, payment tracking, and a
+monochrome single-page A4 PDF.
+
+- Payout auto-calculated per DSA: `(Client Price − DSA Price) × Quantity` for holdings added in the selected period
+- Debit note generation (one per DSA per month) with concurrency-safe numbering `DN-YYYY-MM-XXXX`
+- Monochrome accounting-style PDF (logo, recipient block, ruled particulars, signatory)
+- Payment lifecycle: **Generated → Paid / Cancelled** with full audit trail and mandatory cancellation reason
+- Preview, Download, and Regenerate from the history screen; private Supabase Storage bucket
+- **Fixed 2% TDS deduction (new):** every payout now shows **Gross Payout → TDS @ 2% → Net Payable**
+  - Gross and Net amounts stored on each debit note (`payout_amount`, `tds_amount`, `net_payable_amount`)
+  - PDF, UI summary cards, DSA group cards, history table, and printable payout report all reflect Net Payable after TDS
+  - Amount-in-words uses the Net Payable Amount
+  - *Rollout note:* DB amounts are backfilled at 2%; previously generated PDFs show the new layout only after **Regenerate**
+- Email delivery: schema prepared; sending not yet implemented
 
 ### 5. Document Edit / Replace (V1) — ✅ Completed
 Lightweight "Replace Document" action in the CRM document module — overwrite an
@@ -142,6 +152,7 @@ existing file in place; the latest upload becomes the active document.
 - Digital signature flow
 - Admin login alerts
 - Document edit / replace (in-place) in CRM
+- DSA payout debit note module (with fixed 2% TDS deduction)
 
 ### 🔄 In Progress
 - Production refinement
@@ -149,7 +160,6 @@ existing file in place; the latest upload becomes the active document.
 - Compliance updates
 
 ### 🔜 Planned
-- DSA payout debit note module
 - Calculation module
 - Security audit & hardening
 - Compliance enhancements (ARN, legal footers)

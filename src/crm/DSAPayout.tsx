@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { NWEmployee, NWHolding, NWClient, NWDSA, NWDSADebitNote } from './types';
 import { fmt, PRODUCT_LABELS } from './utils';
 import { Wallet, Download, ChevronDown, FileText, RefreshCw, Loader2, FileCheck2, CheckCircle2, XCircle, Eye } from 'lucide-react';
-import { generateDebitNotePdfBlob, DebitNoteParticular } from './dsaDebitNote';
+import { generateDebitNotePdfBlob, DebitNoteParticular, computePayoutTds } from './dsaDebitNote';
 
 const DEBIT_NOTE_BUCKET = 'dsa-debit-notes';
 
@@ -149,6 +149,9 @@ export default function DSAPayout({ employee }: Props) {
   }, [selectedYear, selectedMonth, empFilter, isAdmin, employee.id, startDate, endDate]);
 
   const totalPayout = groups.reduce((s, g) => s + g.total, 0);
+  // Fixed 2% TDS applied to every payout → net total actually payable.
+  const totalTds = computePayoutTds(totalPayout).tds;
+  const totalNet = totalPayout - totalTds;
 
   // ---------- Debit Note state ----------
   const month = selectedMonth + 1; // 1-12
@@ -201,11 +204,15 @@ export default function DSAPayout({ employee }: Props) {
       payout: r.payout,
     }));
 
+    // Fixed 2% TDS on the gross payout → net amount actually paid out.
+    const { gross, tds, net } = computePayoutTds(g.total);
+
     const blob = await generateDebitNotePdfBlob({
       debitNoteNumber: number!,
       date: new Date(),
       month, year: selectedYear,
-      dsa, particulars, total: g.total,
+      dsa, particulars, total: gross,
+      tdsAmount: tds, netPayable: net,
       generatedBy: employee.full_name,
     });
 
@@ -218,7 +225,9 @@ export default function DSAPayout({ employee }: Props) {
     const { error: dbErr } = await supabase.from('dsa_debit_notes').upsert({
       dsa_id: g.dsa_id,
       month, year: selectedYear,
-      payout_amount: g.total,
+      payout_amount: gross,
+      tds_amount: tds,
+      net_payable_amount: net,
       debit_note_number: number,
       generated_at: new Date().toISOString(),
       pdf_url: path,
@@ -337,7 +346,7 @@ export default function DSAPayout({ employee }: Props) {
       await supabase.from('nw_activity_logs').insert([{
         employee_id: employee.id,
         action: 'Debit Note Cancelled',
-        description: `${note.debit_note_number} (${note.dsa?.full_name || 'DSA'}) — ${fmt(note.payout_amount)} cancelled. Reason: ${reason}`,
+        description: `${note.debit_note_number} (${note.dsa?.full_name || 'DSA'}) — ${fmt(note.net_payable_amount ?? note.payout_amount)} net payable cancelled. Reason: ${reason}`,
       }]);
       await loadDebitNotes();
       setGenStatus(`${note.debit_note_number} cancelled`);
@@ -352,6 +361,8 @@ export default function DSAPayout({ employee }: Props) {
 
   const printPayout = () => {
     const groupsHtml = groups.map(g => {
+      const gTds = computePayoutTds(g.total).tds;
+      const gNet = g.total - gTds;
       const rowsHtml = g.rows.map((r, i) => `
         <tr>
           <td>${i + 1}</td>
@@ -370,11 +381,19 @@ export default function DSAPayout({ employee }: Props) {
         <div style="margin-bottom:24px">
           <div style="background:#f5f5f5;padding:10px 14px;border-left:4px solid #D4AF37;margin-bottom:0;display:flex;align-items:center;justify-content:space-between;">
             <span style="font-weight:800;font-size:13px">${g.dsa_name} <span style="font-weight:400;color:#888">(${g.dsa_code})</span></span>
-            <span style="font-weight:800;font-size:14px;color:#059669">&#8377;${g.total.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+            <span style="text-align:right">
+              <span style="font-weight:800;font-size:14px;color:#059669">&#8377;${gNet.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+              <span style="display:block;font-weight:400;font-size:9px;color:#888">Net Payable · Gross &#8377;${g.total.toLocaleString('en-IN', { maximumFractionDigits: 2 })} · TDS &#8377;${gTds.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+            </span>
           </div>
           <table>
             <thead><tr><th>#</th><th>Client</th><th>Product Type</th><th>Product</th><th style="text-align:right">Qty</th><th style="text-align:right">DSA Price</th><th style="text-align:right">Client Price</th><th style="text-align:right">Payout</th></tr></thead>
             <tbody>${rowsHtml}</tbody>
+            <tfoot>
+              <tr><td colspan="7" style="text-align:right;font-weight:600;color:#555">Gross Payout</td><td style="text-align:right;font-weight:600">&#8377;${g.total.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td></tr>
+              <tr><td colspan="7" style="text-align:right;font-weight:600;color:#555">TDS @ 2%</td><td style="text-align:right;font-weight:600;color:#DC2626">- &#8377;${gTds.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td></tr>
+              <tr><td colspan="7" style="text-align:right;font-weight:800;color:#111">Net Payable</td><td style="text-align:right;font-weight:800;color:#059669">&#8377;${gNet.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td></tr>
+            </tfoot>
           </table>
         </div>`;
     }).join('');
@@ -404,12 +423,14 @@ export default function DSAPayout({ employee }: Props) {
       <div style="font-size:11px;color:#888">DSA Payout Report &nbsp;&middot;&nbsp; ${MONTHS[selectedMonth]} ${selectedYear} &nbsp;&middot;&nbsp; ${startDate} to ${endDate}</div>
     </div>
     <div style="text-align:right">
-      <div style="font-size:22px;font-weight:800;color:#059669">&#8377;${totalPayout.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
-      <div style="font-size:10px;color:#888">Total Payout</div>
+      <div style="font-size:22px;font-weight:800;color:#059669">&#8377;${totalNet.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
+      <div style="font-size:10px;color:#888">Net Payable (after 2% TDS)</div>
     </div>
   </div>
   <div class="stats">
-    <div class="stat" style="border-top-color:#059669"><div class="stat-label">Total Payout</div><div class="stat-value" style="color:#059669">&#8377;${totalPayout.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
+    <div class="stat" style="border-top-color:#6B7280"><div class="stat-label">Gross Payout</div><div class="stat-value">&#8377;${totalPayout.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
+    <div class="stat" style="border-top-color:#DC2626"><div class="stat-label">TDS @ 2%</div><div class="stat-value" style="color:#DC2626">- &#8377;${totalTds.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
+    <div class="stat" style="border-top-color:#059669"><div class="stat-label">Net Payable</div><div class="stat-value" style="color:#059669">&#8377;${totalNet.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
     <div class="stat" style="border-top-color:#D4AF37"><div class="stat-label">DSAs Involved</div><div class="stat-value">${groups.length}</div></div>
     <div class="stat" style="border-top-color:#6B7280"><div class="stat-label">Total Transactions</div><div class="stat-value">${groups.reduce((s, g) => s + g.rows.length, 0)}</div></div>
   </div>
@@ -496,7 +517,9 @@ export default function DSAPayout({ employee }: Props) {
       {hasLoaded && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Total Payout', value: fmt(totalPayout), color: '#10B981' },
+            { label: 'Gross Payout', value: fmt(totalPayout), color: '#8A8A8A' },
+            { label: 'TDS @ 2%', value: `- ${fmt(totalTds)}`, color: '#F87171' },
+            { label: 'Net Payable', value: fmt(totalNet), color: '#10B981' },
             { label: 'DSAs Involved', value: String(groups.length), color: '#D4AF37' },
             { label: 'Total Entries', value: String(groups.reduce((s, g) => s + g.rows.length, 0)), color: '#8A8A8A' },
           ].map(s => (
@@ -535,7 +558,7 @@ export default function DSAPayout({ employee }: Props) {
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
-                  {['Debit Note No.', 'DSA', 'Amount', 'Status', 'Payment', 'Actions'].map(h => (
+                  {['Debit Note No.', 'DSA', 'Net Payable', 'Status', 'Payment', 'Actions'].map(h => (
                     <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
                   ))}
                 </tr>
@@ -544,6 +567,11 @@ export default function DSAPayout({ employee }: Props) {
                 {debitNotes.map(note => {
                   const badge = STATUS_BADGE[note.status] || STATUS_BADGE.generated;
                   const busy = statusBusyId === note.id;
+                  // payout_amount is the gross; fall back to deriving TDS/net for
+                  // any pre-TDS legacy rows that have not been backfilled yet.
+                  const gross = note.payout_amount;
+                  const tds = note.tds_amount ?? computePayoutTds(gross).tds;
+                  const net = note.net_payable_amount ?? (gross - tds);
                   return (
                   <tr key={note.id} style={{ borderBottom: '1px solid #111' }}>
                     <td className="px-5 py-3 text-sm font-mono" style={{ color: '#D4AF37' }}>{note.debit_note_number}</td>
@@ -551,7 +579,10 @@ export default function DSAPayout({ employee }: Props) {
                       <p className="text-sm font-medium text-white">{note.dsa?.full_name || '—'}</p>
                       <p className="text-xs font-mono" style={{ color: '#4A4A4A' }}>{note.dsa?.dsa_code || ''}</p>
                     </td>
-                    <td className="px-5 py-3 text-sm font-bold text-emerald-400">{fmt(note.payout_amount)}</td>
+                    <td className="px-5 py-3">
+                      <p className="text-sm font-bold text-emerald-400">{fmt(net)}</p>
+                      <p className="text-xs" style={{ color: '#4A4A4A' }}>Gross {fmt(gross)} · TDS {fmt(tds)}</p>
+                    </td>
                     <td className="px-5 py-3">
                       <span className="inline-block px-2.5 py-1 rounded-full text-xs font-semibold"
                         style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>
@@ -640,7 +671,10 @@ export default function DSAPayout({ employee }: Props) {
               <p className="text-sm font-semibold" style={{ color: '#4A4A4A' }}>No DSA payout entries for {MONTHS[selectedMonth]} {selectedYear}</p>
               <p className="text-xs mt-1" style={{ color: '#2A2A2A' }}>DSA payouts are generated from holdings added in the selected period with DSA pricing</p>
             </div>
-          ) : groups.map(g => (
+          ) : groups.map(g => {
+            const gTds = computePayoutTds(g.total).tds;
+            const gNet = g.total - gTds;
+            return (
             <div key={g.dsa_id} className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
               <div className="px-5 py-4 flex items-center justify-between" style={{ background: 'rgba(212,175,55,0.04)', borderBottom: '1px solid #1E1E24' }}>
                 <div>
@@ -648,8 +682,9 @@ export default function DSAPayout({ employee }: Props) {
                   <p className="text-xs font-mono" style={{ color: '#4A4A4A' }}>{g.dsa_code}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs" style={{ color: '#4A4A4A' }}>Total Payout</p>
-                  <p className="text-lg font-bold text-emerald-400">{fmt(g.total)}</p>
+                  <p className="text-xs" style={{ color: '#4A4A4A' }}>Net Payable (after 2% TDS)</p>
+                  <p className="text-lg font-bold text-emerald-400">{fmt(gNet)}</p>
+                  <p className="text-xs" style={{ color: '#4A4A4A' }}>Gross {fmt(g.total)} · TDS {fmt(gTds)}</p>
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -690,19 +725,31 @@ export default function DSAPayout({ employee }: Props) {
                   </tbody>
                   <tfoot>
                     <tr style={{ borderTop: '1px solid #1E1E24' }}>
-                      <td colSpan={5} className="px-5 py-3 text-xs font-bold" style={{ color: '#4A4A4A' }}>Subtotal — {g.dsa_name}</td>
-                      <td className="px-5 py-3 text-sm font-bold text-emerald-400">{fmt(g.total)}</td>
+                      <td colSpan={5} className="px-5 py-2.5 text-xs font-bold" style={{ color: '#4A4A4A' }}>Gross Payout — {g.dsa_name}</td>
+                      <td className="px-5 py-2.5 text-sm font-semibold" style={{ color: '#8A8A8A' }}>{fmt(g.total)}</td>
+                    </tr>
+                    <tr>
+                      <td colSpan={5} className="px-5 py-2.5 text-xs font-bold" style={{ color: '#4A4A4A' }}>TDS @ 2%</td>
+                      <td className="px-5 py-2.5 text-sm font-semibold" style={{ color: '#F87171' }}>- {fmt(gTds)}</td>
+                    </tr>
+                    <tr style={{ borderTop: '1px solid #1E1E24' }}>
+                      <td colSpan={5} className="px-5 py-3 text-xs font-bold" style={{ color: '#D4AF37' }}>Net Payable — {g.dsa_name}</td>
+                      <td className="px-5 py-3 text-sm font-bold text-emerald-400">{fmt(gNet)}</td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {groups.length > 1 && (
             <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <p className="text-sm font-bold text-white">Grand Total — All DSAs</p>
-              <p className="text-xl font-bold text-emerald-400">{fmt(totalPayout)}</p>
+              <div>
+                <p className="text-sm font-bold text-white">Net Payable — All DSAs</p>
+                <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>Gross {fmt(totalPayout)} · TDS @ 2% {fmt(totalTds)}</p>
+              </div>
+              <p className="text-xl font-bold text-emerald-400">{fmt(totalNet)}</p>
             </div>
           )}
         </div>
@@ -732,7 +779,7 @@ export default function DSAPayout({ employee }: Props) {
               <div className="rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
                 <p style={{ color: '#F87171' }} className="font-mono font-semibold">{cancelTarget.debit_note_number}</p>
                 <p className="text-xs mt-0.5" style={{ color: '#8A8A8A' }}>
-                  {cancelTarget.dsa?.full_name || 'DSA'} · {fmt(cancelTarget.payout_amount)}
+                  {cancelTarget.dsa?.full_name || 'DSA'} · {fmt(cancelTarget.net_payable_amount ?? cancelTarget.payout_amount)} net payable
                 </p>
               </div>
               <p className="text-xs" style={{ color: '#6B6B6B' }}>

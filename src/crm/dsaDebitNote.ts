@@ -41,8 +41,26 @@ export interface DebitNoteInput {
   year: number;
   dsa: NWDSA;
   particulars: DebitNoteParticular[];
-  total: number;
+  total: number;        // GROSS payout (before TDS)
+  tdsAmount: number;    // fixed 2% TDS on the gross
+  netPayable: number;   // gross − TDS
   generatedBy: string;
+}
+
+// Fixed TDS rate applied to every DSA payout.
+export const TDS_RATE = 0.02; // 2%
+
+export interface PayoutTds {
+  gross: number;
+  tds: number;
+  net: number;
+}
+
+// Single source of truth for the TDS split. Rounds the TDS to paise so the
+// stored amounts, the PDF, and the on-screen UI all agree to the last decimal.
+export function computePayoutTds(gross: number): PayoutTds {
+  const tds = Math.round(gross * TDS_RATE * 100) / 100;
+  return { gross, tds, net: gross - tds };
 }
 
 const inr = (n: number) =>
@@ -101,7 +119,7 @@ export function amountInWords(amount: number): string {
 // monochrome: black ink on white, thin gray hairlines, one solid black table
 // header. No colour, fills, cards, gradients or shadows.
 export function buildDebitNoteHtml(input: DebitNoteInput): string {
-  const { debitNoteNumber, date, month, year, dsa, particulars, total, generatedBy } = input;
+  const { debitNoteNumber, date, month, year, dsa, particulars, total, tdsAmount, netPayable, generatedBy } = input;
 
   const dateStr = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
   const periodStr = `${MONTHS[month - 1]} ${year}`;
@@ -199,18 +217,26 @@ export function buildDebitNoteHtml(input: DebitNoteInput): string {
       </tbody>
     </table>
 
-    <!-- Total amount + amount in words — right-aligned group, flush with the table -->
+    <!-- Gross / TDS / Net Payable + amount in words — right-aligned group, flush with the table -->
     <div style="display:flex;justify-content:flex-end;margin-top:28px;margin-bottom:30px;">
       <div style="width:400px;">
         <table style="border-collapse:collapse;width:100%;">
           <tr>
-            <td style="font-family:${TIMES};font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:#000000;font-weight:700;text-align:left;padding:16px 14px 16px 0;border-top:2px solid #000000;border-bottom:2px solid #000000;">Total Amount</td>
-            <td style="font-family:${TIMES};font-size:23px;font-weight:700;color:#000000;text-align:right;padding:16px 0 16px 14px;border-top:2px solid #000000;border-bottom:2px solid #000000;font-variant-numeric:tabular-nums;">${inr(total)}</td>
+            <td style="font-family:${SANS};font-size:11px;color:${SUB};text-align:left;padding:9px 14px 9px 0;border-top:1px solid ${HAIR};">Gross Payout Amount</td>
+            <td style="font-family:${TIMES};font-size:14px;color:${INK};text-align:right;padding:9px 0 9px 14px;border-top:1px solid ${HAIR};font-variant-numeric:tabular-nums;">${inr(total)}</td>
+          </tr>
+          <tr>
+            <td style="font-family:${SANS};font-size:11px;color:${SUB};text-align:left;padding:9px 14px 9px 0;border-bottom:1px solid ${HAIR};">TDS @ 2%</td>
+            <td style="font-family:${TIMES};font-size:14px;color:${INK};text-align:right;padding:9px 0 9px 14px;border-bottom:1px solid ${HAIR};font-variant-numeric:tabular-nums;">&minus;&nbsp;${inr(tdsAmount)}</td>
+          </tr>
+          <tr>
+            <td style="font-family:${TIMES};font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:#000000;font-weight:700;text-align:left;padding:16px 14px 16px 0;border-top:2px solid #000000;border-bottom:2px solid #000000;">Net Payable Amount</td>
+            <td style="font-family:${TIMES};font-size:23px;font-weight:700;color:#000000;text-align:right;padding:16px 0 16px 14px;border-top:2px solid #000000;border-bottom:2px solid #000000;font-variant-numeric:tabular-nums;">${inr(netPayable)}</td>
           </tr>
         </table>
         <div style="text-align:right;margin-top:14px;">
           <div style="${label}margin-bottom:4px;">Amount in Words</div>
-          <div style="font-family:${SERIF};font-size:11px;font-style:italic;color:${INK};line-height:1.5;">${amountInWords(total)}</div>
+          <div style="font-family:${SERIF};font-size:11px;font-style:italic;color:${INK};line-height:1.5;">${amountInWords(netPayable)}</div>
         </div>
       </div>
     </div>
