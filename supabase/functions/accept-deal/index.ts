@@ -138,10 +138,26 @@ Deno.serve(async (req: Request) => {
       const adminEmail = Deno.env.get("NIYOM_ADMIN_EMAIL");
 
       let employeeEmail: string | null = null;
+      let employeeName: string | null = null;
+      let employeeRole: string | null = null;
+      let employeePhone: string | null = null;
       if (deal.employee_id) {
-        const { data: emp } = await db.from("nw_employees").select("email").eq("id", deal.employee_id).maybeSingle();
+        const { data: emp } = await db.from("nw_employees")
+          .select("email, full_name, role, phone")
+          .eq("id", deal.employee_id).maybeSingle();
         employeeEmail = emp?.email ?? null;
+        employeeName = emp?.full_name ?? null;
+        employeeRole = emp?.role ?? null;
+        employeePhone = emp?.phone ?? null;
       }
+      const formatRmRole = (role: string | null): string => {
+        switch (role) {
+          case "super_admin": return "Super Admin";
+          case "admin": return "Admin";
+          case "employee": return "Relationship Manager";
+          default: return "Relationship Manager";
+        }
+      };
 
       const valid = (e: unknown): e is string => typeof e === "string" && /^\S+@\S+\.\S+$/.test(e.trim());
 
@@ -186,33 +202,67 @@ Deno.serve(async (req: Request) => {
         await logEmail("failed", { note: "no_recipients" });
       } else {
         const filename = `Deal_Confirmation_${deal.confirmation_number}.pdf`;
-        const subject = `Signed Deal Confirmation – Ref: ${deal.confirmation_number}`;
+        const subject = `Deal Confirmation completed – Ref ${deal.confirmation_number}`;
+        const year = new Date().getFullYear();
+        const designation = formatRmRole(employeeRole);
         // Normalize: Resend expects pure base64 in attachment content. Strip any
         // data-URI prefix defensively (the client already sends bare base64).
         const pdfBase64 = signedPdfBase64.includes(",") ? signedPdfBase64.split(",")[1] : signedPdfBase64;
-        const text = `Dear ${deal.snap_client_name || "Valued Client"},
 
-Your deal confirmation (Ref: ${deal.confirmation_number}) has been successfully confirmed and digitally signed.
+        const rmBlockText = employeeName
+          ? `\n\nWarm regards,\n\n${employeeName}\n${designation} | Niyom Wealth Distribution LLP\nM: ${employeePhone ?? "-"}   E: ${employeeEmail ?? "-"}`
+          : `\n\nWarm regards,\nNiyom Wealth Distribution LLP`;
 
-Please find the signed confirmation document attached for your records. Your relationship manager and our team have been copied on this email so everyone shares the same record.
+        const rmBlockHtml = employeeName
+          ? `<p style="margin:18px 0 6px;">Warm regards,</p>
+             <div>
+               <div style="font-weight:700;color:#111;">${employeeName}</div>
+               <div style="color:#555;font-size:13px;line-height:1.7;">
+                 ${designation} &nbsp;|&nbsp; Niyom Wealth Distribution LLP<br/>
+                 M: ${employeePhone ?? "-"} &nbsp; E: <a href="mailto:${employeeEmail ?? ""}" style="color:#B8961E;">${employeeEmail ?? "-"}</a>
+               </div>
+             </div>`
+          : `<p style="margin:18px 0 0;">Warm regards,<br/><strong>Niyom Wealth Distribution LLP</strong></p>`;
 
-Warm regards,
-Niyom Wealth Distribution LLP
-Website: www.niyomwealth.com`;
-        const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;color:#222;line-height:1.7;">
-  <div style="max-width:620px;margin:0 auto;padding:32px 24px;">
-    <div style="border-bottom:2px solid #D4AF37;padding-bottom:20px;margin-bottom:24px;">
+        const text = `Dear ${deal.snap_client_name || "Client"},
+
+The confirmation process for Deal Confirmation Note Ref ${deal.confirmation_number} has been successfully completed.
+
+Please find the signed copy attached for your records. We have retained an identical copy on our side, which your Relationship Manager can share again at any time, should you need it.
+
+For any clarification on this transaction, please feel free to reach out to your Relationship Manager.${rmBlockText}
+
+---
+Niyom Wealth Distribution LLP | AMFI Registered Mutual Fund Distributor
+ARN-362707 (Valid till 11-JUN-2029)
+No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095
+
+Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.
+
+This message and attachment are intended for the named recipient only.
+© ${year} Niyom Wealth Distribution LLP.   Ref: ${deal.confirmation_number}`;
+
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="font-family:Arial,Helvetica,sans-serif;color:#222;line-height:1.7;margin:0;padding:0;background:#f6f6f6;">
+  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f6f6f6;">
+    The confirmation process has been successfully completed. Your signed copy is attached.
+  </div>
+  <div style="max-width:620px;margin:0 auto;padding:32px 24px;background:#ffffff;">
+    <div style="border-bottom:2px solid #D4AF37;padding-bottom:16px;margin-bottom:24px;">
       <div style="font-size:20px;font-weight:700;color:#111;">Niyom Wealth</div>
-      <div style="font-size:13px;color:#8B7355;font-style:italic;">Wealth Reimagined</div>
     </div>
-    <p style="font-size:15px;font-weight:600;color:#111;">Dear ${deal.snap_client_name || "Valued Client"},</p>
-    <p>Your deal confirmation (Ref: <strong>${deal.confirmation_number}</strong>) has been successfully
-       confirmed and digitally signed.</p>
-    <p>Please find the signed confirmation document attached for your records. Your relationship manager
-       and our team have been copied so everyone shares the same record.</p>
-    <p style="margin-top:20px;">Warm regards,<br/><strong>Niyom Wealth Distribution LLP</strong></p>
-    <div style="margin-top:24px;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:12px;">
-      © Niyom Wealth Distribution LLP — Ref: ${deal.confirmation_number}
+    <p style="font-size:15px;font-weight:600;color:#111;margin:0 0 16px;">Dear ${deal.snap_client_name || "Client"},</p>
+    <p style="margin:0 0 14px;">The confirmation process for Deal Confirmation Note <strong>Ref ${deal.confirmation_number}</strong> has been successfully completed.</p>
+    <p style="margin:0 0 14px;">Please find the signed copy attached for your records. We have retained an identical copy on our side, which your Relationship Manager can share again at any time, should you need it.</p>
+    <p style="margin:0 0 14px;">For any clarification on this transaction, please feel free to reach out to your Relationship Manager.</p>
+    ${rmBlockHtml}
+    <div style="margin-top:28px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#666;line-height:1.7;">
+      <p style="margin:0 0 6px;"><strong>Niyom Wealth Distribution LLP</strong> &nbsp;|&nbsp; AMFI Registered Mutual Fund Distributor</p>
+      <p style="margin:0 0 6px;">ARN-362707 (Valid till 11-JUN-2029)</p>
+      <p style="margin:0 0 12px;">No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095</p>
+      <p style="margin:0 0 12px;font-size:11px;color:#888;">Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.</p>
+      <p style="margin:0;font-size:11px;color:#888;">This message and attachment are intended for the named recipient only.<br/>
+         © ${year} Niyom Wealth Distribution LLP. &nbsp; Ref: ${deal.confirmation_number}</p>
     </div>
   </div></body></html>`;
 

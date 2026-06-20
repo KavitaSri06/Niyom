@@ -146,60 +146,82 @@ Deno.serve(async (req: Request) => {
 
     const link = `${appUrl}/deal/${token}`;
     const designation = formatRole(employee.role);
-    const subject = `Deal Confirmation & Acceptance Request – Ref: ${deal.confirmation_number}`;
+    const expiryIst = new Date(expiresAt).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit", hour12: true,
+    });
+    const year = new Date().getFullYear();
+    const subject = `Your Deal Confirmation Note – Ref ${deal.confirmation_number}`;
 
     const text = `Dear ${deal.snap_client_name},
 
-Greetings from Niyom Wealth.
+Your Deal Confirmation Note is now available for review and confirmation. The complete details are available on the secure link below for your review.
 
-Please review your Deal Confirmation Note securely online using the link below:
+Once you are comfortable with the particulars, you may confirm the transaction using a one-time password sent to this email, followed by a brief electronic signature. If you would prefer to decline, the same option is available on the page.
+
+The link is unique to you and remains active until ${expiryIst} IST.
 
 ${link}
 
-On the secure page you can review the full deal details and either ACCEPT
-(with email OTP verification and e-signature) or REJECT the transaction.
+If you have any questions before confirming, please feel free to reach out to me directly.
 
-This link is valid for ${LINK_TTL_DAYS} days.
+Warm regards,
 
-Warm Regards,
-${employee.full_name} - ${designation}
-Niyom Wealth Distribution LLP
-Mobile: ${employee.phone}
-Email: ${employee.email}
-Website: www.niyomwealth.com`;
+${employee.full_name}
+${designation} | Niyom Wealth Distribution LLP
+M: ${employee.phone}   E: ${employee.email}
+
+---
+For your security, Niyom Wealth will never ask you to share OTPs, passwords, or this secure link.
+
+Niyom Wealth Distribution LLP | AMFI Registered Mutual Fund Distributor
+ARN-362707 (Valid till 11-JUN-2029)
+No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095
+
+Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.
+
+This message is intended for the named recipient only.
+© ${year} Niyom Wealth Distribution LLP.   Ref: ${deal.confirmation_number}`;
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
-<body style="font-family:Arial,sans-serif;color:#222;line-height:1.7;">
-  <div style="max-width:620px;margin:0 auto;padding:32px 24px;">
-    <div style="border-bottom:2px solid #D4AF37;padding-bottom:20px;margin-bottom:24px;">
+<body style="font-family:Arial,Helvetica,sans-serif;color:#222;line-height:1.7;margin:0;padding:0;background:#f6f6f6;">
+  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f6f6f6;">
+    Please review and confirm the transaction at your convenience.
+  </div>
+  <div style="max-width:620px;margin:0 auto;padding:32px 24px;background:#ffffff;">
+    <div style="border-bottom:2px solid #D4AF37;padding-bottom:16px;margin-bottom:24px;">
       <div style="font-size:20px;font-weight:700;color:#111;">Niyom Wealth</div>
-      <div style="font-size:13px;color:#8B7355;font-style:italic;">Wealth Reimagined</div>
     </div>
-    <p style="font-size:15px;font-weight:600;color:#111;">Dear ${deal.snap_client_name},</p>
-    <p>Greetings from Niyom Wealth.</p>
-    <p>Please review your Deal Confirmation Note securely online. On the secure page
-       you can review the full deal details and either <strong>accept</strong>
-       (with email OTP verification and e-signature) or <strong>reject</strong> the transaction.</p>
+    <p style="font-size:15px;font-weight:600;color:#111;margin:0 0 16px;">Dear ${deal.snap_client_name},</p>
+    <p style="margin:0 0 14px;">Your Deal Confirmation Note is now available for review and confirmation. The complete details are available on the secure link below for your review.</p>
+    <p style="margin:0 0 14px;">Once you are comfortable with the particulars, you may confirm the transaction using a one-time password sent to this email, followed by a brief electronic signature. If you would prefer to decline, the same option is available on the page.</p>
+    <p style="margin:0 0 14px;">The link is unique to you and remains active until <strong>${expiryIst} IST</strong>.</p>
     <div style="text-align:center;margin:28px 0;">
       <a href="${link}" style="background:linear-gradient(135deg,#D4AF37,#B8961E);color:#000;
          text-decoration:none;font-weight:700;padding:14px 28px;border-radius:8px;display:inline-block;">
-         Review Deal Confirmation
+         Review Confirmation Note
       </a>
     </div>
-    <p style="font-size:13px;color:#777;">Or paste this link into your browser:<br/>
-       <a href="${link}" style="color:#B8961E;">${link}</a></p>
-    <p style="font-size:13px;color:#777;">This link is valid for ${LINK_TTL_DAYS} days.</p>
-    <div style="margin-top:28px;padding-top:20px;border-top:1px solid #eee;">
-      <div style="font-weight:700;color:#111;">${employee.full_name} — ${designation}</div>
-      <div style="color:#555;font-size:13px;line-height:1.8;">
-        Niyom Wealth Distribution LLP<br/>
-        Mobile: ${employee.phone}<br/>
-        Email: <a href="mailto:${employee.email}" style="color:#D4AF37;">${employee.email}</a><br/>
-        Website: <a href="https://www.niyomwealth.com" style="color:#D4AF37;">www.niyomwealth.com</a>
+    <p style="font-size:13px;color:#777;margin:0 0 14px;">If the button does not open, please copy this link into your browser:<br/>
+       <a href="${link}" style="color:#B8961E;word-break:break-all;">${link}</a></p>
+    <p style="margin:18px 0 0;">If you have any questions before confirming, please feel free to reach out to me directly.</p>
+    <p style="margin:18px 0 6px;">Warm regards,</p>
+    <div>
+      <div style="font-weight:700;color:#111;">${employee.full_name}</div>
+      <div style="color:#555;font-size:13px;line-height:1.7;">
+        ${designation} &nbsp;|&nbsp; Niyom Wealth Distribution LLP<br/>
+        M: ${employee.phone} &nbsp; E: <a href="mailto:${employee.email}" style="color:#B8961E;">${employee.email}</a>
       </div>
     </div>
-    <div style="margin-top:24px;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:12px;">
-      © Niyom Wealth Distribution LLP — Ref: ${deal.confirmation_number}
+    <div style="margin-top:28px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#666;line-height:1.7;">
+      <p style="margin:0 0 12px;">For your security, Niyom Wealth will never ask you to share OTPs, passwords, or this secure link.</p>
+      <p style="margin:0 0 6px;"><strong>Niyom Wealth Distribution LLP</strong> &nbsp;|&nbsp; AMFI Registered Mutual Fund Distributor</p>
+      <p style="margin:0 0 6px;">ARN-362707 (Valid till 11-JUN-2029)</p>
+      <p style="margin:0 0 12px;">No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095</p>
+      <p style="margin:0 0 12px;font-size:11px;color:#888;">Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.</p>
+      <p style="margin:0;font-size:11px;color:#888;">This message is intended for the named recipient only.<br/>
+         © ${year} Niyom Wealth Distribution LLP. &nbsp; Ref: ${deal.confirmation_number}</p>
     </div>
   </div>
 </body></html>`;

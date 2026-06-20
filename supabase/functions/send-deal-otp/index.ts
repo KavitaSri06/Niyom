@@ -95,23 +95,52 @@ Deno.serve(async (req: Request) => {
     // Best-effort sweep of expired OTPs
     await db.from("nw_deal_otps").delete().lt("expires_at", new Date().toISOString());
 
-    const action = purpose === "accept" ? "accept" : "reject";
-    const subject = `Your verification code – Deal ${deal.confirmation_number}`;
+    const action = purpose === "accept" ? "confirm" : "decline";
+    const year = new Date().getFullYear();
+    const subject = `OTP for Deal Confirmation – Ref ${deal.confirmation_number}`;
+
+    const text = `Dear ${deal.snap_client_name || "Client"},
+
+Please use the code below to ${action} Deal Confirmation Note Ref ${deal.confirmation_number}:
+
+${otp}
+
+This code is valid for 10 minutes.
+
+For your security, Niyom Wealth will never ask you to share this code. If you did not request it, please reach out to your Relationship Manager.
+
+Niyom Wealth Distribution LLP
+
+---
+Niyom Wealth Distribution LLP | AMFI Registered Mutual Fund Distributor
+ARN-362707 (Valid till 11-JUN-2029)
+
+Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.
+
+This is a system-generated message. Please do not reply.
+© ${year} Niyom Wealth Distribution LLP.   Ref: ${deal.confirmation_number}`;
+
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
-<body style="font-family:Arial,sans-serif;color:#222;">
-  <div style="max-width:520px;margin:0 auto;padding:28px 24px;">
-    <div style="font-size:20px;font-weight:700;color:#111;">Niyom Wealth</div>
-    <div style="font-size:13px;color:#8B7355;font-style:italic;margin-bottom:20px;">Wealth Reimagined</div>
-    <p>Dear ${deal.snap_client_name || "Client"},</p>
-    <p>Use the verification code below to <strong>${action}</strong> Deal Confirmation
-       <strong>${deal.confirmation_number}</strong>.</p>
+<body style="font-family:Arial,Helvetica,sans-serif;color:#222;line-height:1.7;margin:0;padding:0;background:#f6f6f6;">
+  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f6f6f6;">
+    Use this code to confirm or decline your Deal Confirmation Note.
+  </div>
+  <div style="max-width:520px;margin:0 auto;padding:28px 24px;background:#ffffff;">
+    <div style="font-size:20px;font-weight:700;color:#111;margin-bottom:20px;border-bottom:2px solid #D4AF37;padding-bottom:14px;">Niyom Wealth</div>
+    <p style="margin:0 0 14px;">Dear ${deal.snap_client_name || "Client"},</p>
+    <p style="margin:0 0 14px;">Please use the code below to <strong>${action}</strong> Deal Confirmation Note Ref <strong>${deal.confirmation_number}</strong>:</p>
     <div style="font-size:32px;font-weight:800;letter-spacing:8px;color:#B8961E;
                 background:#FFF9EC;border:1px solid #D4AF37;border-radius:8px;
-                text-align:center;padding:16px 0;margin:20px 0;">${otp}</div>
-    <p style="color:#555;font-size:13px;">This code expires in 10 minutes. If you did not
-       request this, please ignore this email.</p>
-    <div style="margin-top:24px;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:12px;">
-      © Niyom Wealth Distribution LLP — Ref: ${deal.confirmation_number}
+                text-align:center;padding:16px 0;margin:18px 0;">${otp}</div>
+    <p style="margin:0 0 14px;color:#555;font-size:13px;">This code is valid for 10 minutes.</p>
+    <p style="margin:0 0 14px;color:#555;font-size:13px;">For your security, Niyom Wealth will never ask you to share this code. If you did not request it, please reach out to your Relationship Manager.</p>
+    <p style="margin:18px 0 0;color:#111;font-weight:600;">Niyom Wealth Distribution LLP</p>
+    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #eee;font-size:11px;color:#888;line-height:1.7;">
+      <p style="margin:0 0 4px;"><strong>Niyom Wealth Distribution LLP</strong> &nbsp;|&nbsp; AMFI Registered Mutual Fund Distributor</p>
+      <p style="margin:0 0 10px;">ARN-362707 (Valid till 11-JUN-2029)</p>
+      <p style="margin:0 0 10px;">Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.</p>
+      <p style="margin:0;">This is a system-generated message. Please do not reply.<br/>
+         © ${year} Niyom Wealth Distribution LLP. &nbsp; Ref: ${deal.confirmation_number}</p>
     </div>
   </div>
 </body></html>`;
@@ -124,7 +153,7 @@ Deno.serve(async (req: Request) => {
         to: [deal.snap_email],
         subject,
         html,
-        text: `Your verification code to ${action} Deal ${deal.confirmation_number} is ${otp}. It expires in 10 minutes.`,
+        text,
       }),
     });
 
