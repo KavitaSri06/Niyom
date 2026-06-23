@@ -249,7 +249,7 @@ export default function DealDocument({ deal, signatureDataUrl, acceptedDate, pdf
                 <td style={{ border: '1px solid #000', width: '50%', padding: 0, verticalAlign: 'top' }}>
                   <div style={{ padding: '6px 10px', fontSize: '9px', fontWeight: 700, color: '#000', borderBottom: '1px solid #000' }}>For NIYOM WEALTH DISTRIBUTION LLP</div>
                   <div style={{ padding: '12px 14px' }}>
-                    <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Authorized Signatory Name: <strong>N Ramya</strong></p>
+                    <p style={{ fontSize: '8px', color: '#000', marginBottom: '6px' }}>Authorized Signatory Name: <strong>Purushothaman S</strong></p>
                     <p style={{ fontSize: '8px', color: '#000', marginBottom: '10px' }}>Date: {fmtDate(deal.deal_date)}</p>
                     <div style={{ height: '64px', display: 'flex', alignItems: 'flex-end' }}>
                       <img
