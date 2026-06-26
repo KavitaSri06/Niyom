@@ -100,7 +100,9 @@ export default function MIS({ employee }: Props) {
         product_name: t.product_name,
       };
 
-      // Unlisted shares / secondary bonds / primary bonds → (per_unit_price - landing_cost) × qty
+      // Unlisted shares / secondary bonds / primary bonds → profit vs landing cost.
+      // BUY:  (Client Price − Landing Cost) × qty
+      // SELL: (Landing Cost − Client Price) × qty  (direction reversed)
       if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(t.product_type)) {
         const landingCost = (t as any).landing_cost || 0;
 const qty = t.quantity || 0;
@@ -113,7 +115,9 @@ const price =
     ? ((t as any).dsa_price || 0)
     : ((t as any).per_unit_price || 0);
 
-const revenue = (price - landingCost) * qty;
+const revenue = t.txn_type === 'sell'
+  ? (landingCost - price) * qty
+  : (price - landingCost) * qty;
         if (revenue !== 0) {
           computed.push({
             ...baseRow,

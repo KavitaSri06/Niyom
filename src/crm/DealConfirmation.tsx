@@ -679,12 +679,6 @@ export default function DealConfirmation({ employee }: Props) {
               </div>
             </div>
           )}
-
-          <Field label="Internal Notes">
-            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} placeholder="Optional internal notes..."
-              className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none resize-none transition-all"
-              style={{ background: '#050505', border: '1px solid #1E1E24' }} />
-          </Field>
         </div>
 
         {/* Actions */}

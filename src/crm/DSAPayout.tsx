@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { NWEmployee, NWHolding, NWClient, NWDSA, NWDSADebitNote } from './types';
+import { NWEmployee, NWTransaction, NWClient, NWDSA, NWDSADebitNote } from './types';
 import { fmt, PRODUCT_LABELS } from './utils';
 import { Wallet, Download, ChevronDown, FileText, RefreshCw, Loader2, FileCheck2, CheckCircle2, XCircle, Eye, Send, Lock, FileArchive } from 'lucide-react';
 import JSZip from 'jszip';
@@ -97,29 +97,33 @@ export default function DSAPayout({ employee }: Props) {
 
     const clientIds = dsaClients.map(c => c.id);
 
-    // Fetch holdings created within the selected month for DSA applicable product types
-    const { data: holdingData } = await supabase
-      .from('nw_holdings')
+    // DSA payout is computed from the underlying transactions, which carry the
+    // buy/sell direction (holdings do not). DSA-priced products in the period:
+    //   BUY:  (client_price − dsa_price) × qty
+    //   SELL: (dsa_price − client_price) × qty   (direction reversed)
+    const { data: txnData } = await supabase
+      .from('nw_transactions')
       .select('*')
       .in('client_id', clientIds)
-      .in('product_type', DSA_PRICE_TYPES);
+      .in('product_type', DSA_PRICE_TYPES)
+      .gte('txn_date', startDate)
+      .lte('txn_date', endDate);
 
-    const holdings = (holdingData as NWHolding[]) || [];
+    const txns = (txnData as NWTransaction[]) || [];
 
     const rows: PayoutRow[] = [];
 
-    for (const h of holdings) {
-      const createdAt = h.created_at ? h.created_at.split('T')[0] : '';
-      if (createdAt < startDate || createdAt > endDate) continue;
-
-      const dsaPrice = h.dsa_price;
-      const clientPrice = h.client_price;
+    for (const t of txns) {
+      const dsaPrice = t.dsa_price;
+      const clientPrice = t.client_price;
       if (dsaPrice == null || clientPrice == null) continue;
 
-      const qty = h.quantity || 0;
-      const payout = (clientPrice - dsaPrice) * qty;
+      const qty = t.quantity || 0;
+      const payout = t.txn_type === 'sell'
+        ? (dsaPrice - clientPrice) * qty
+        : (clientPrice - dsaPrice) * qty;
 
-      const client = dsaClients.find(c => c.id === h.client_id);
+      const client = dsaClients.find(c => c.id === t.client_id);
       if (!client || !client.dsa) continue;
 
       rows.push({
@@ -129,8 +133,8 @@ export default function DSAPayout({ employee }: Props) {
         client_id: client.id,
         client_name: client.full_name,
         client_code: client.client_code,
-        product_type: h.product_type,
-        product_name: h.product_name,
+        product_type: t.product_type,
+        product_name: t.product_name,
         quantity: qty,
         dsa_price: dsaPrice,
         client_price: clientPrice,

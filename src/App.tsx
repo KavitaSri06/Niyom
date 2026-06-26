@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import ThemeToggle from './components/ThemeToggle';
 import { Landing } from './pages/Landing';
 import { Services } from './pages/Services';
 import { Learning } from './pages/Learning';
@@ -393,9 +395,13 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+        {/* Global, always-visible dark/light switch (every surface) */}
+        <ThemeToggle />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
