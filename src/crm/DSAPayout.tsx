@@ -112,8 +112,27 @@ export default function DSAPayout({ employee }: Props) {
     const txns = (txnData as NWTransaction[]) || [];
 
     const rows: PayoutRow[] = [];
+    // Audit trail of transactions excluded by the period safety guard below.
+    const skippedOutOfPeriod: { id: string; dsa: string; txn_date: string; selected_month: string; reason: string }[] = [];
+    const selectedMonthLabel = `${MONTHS[selectedMonth]} ${selectedYear}`;
 
     for (const t of txns) {
+      const client = dsaClients.find(c => c.id === t.client_id);
+
+      // Period safety guard — runs before any debit note is built. Even though
+      // the query already filters by txn_date, re-verify each transaction's
+      // txn_date falls within the selected month. This defends against
+      // historical/data inconsistencies and never silently lets a transaction
+      // from another month into a debit note; only validated rows flow onward.
+      const txnDate = t.txn_date || '';
+      if (txnDate < startDate || txnDate > endDate) {
+        const dsaLabel = client?.dsa ? `${client.dsa.full_name} (${client.dsa.dsa_code})` : `client ${t.client_id}`;
+        const reason = `txn_date ${txnDate || 'null'} outside selected period ${startDate}..${endDate}`;
+        skippedOutOfPeriod.push({ id: t.id, dsa: dsaLabel, txn_date: txnDate, selected_month: selectedMonthLabel, reason });
+        console.warn(`[DSAPayout] Excluded out-of-period transaction — id=${t.id}, DSA=${dsaLabel}, txn_date=${txnDate || 'null'}, selectedMonth=${selectedMonthLabel}, reason=${reason}`);
+        continue;
+      }
+
       const dsaPrice = t.dsa_price;
       const clientPrice = t.client_price;
       if (dsaPrice == null || clientPrice == null) continue;
@@ -123,7 +142,6 @@ export default function DSAPayout({ employee }: Props) {
         ? (dsaPrice - clientPrice) * qty
         : (clientPrice - dsaPrice) * qty;
 
-      const client = dsaClients.find(c => c.id === t.client_id);
       if (!client || !client.dsa) continue;
 
       rows.push({
@@ -140,6 +158,10 @@ export default function DSAPayout({ employee }: Props) {
         client_price: clientPrice,
         payout,
       });
+    }
+
+    if (skippedOutOfPeriod.length > 0) {
+      console.warn(`[DSAPayout] ${skippedOutOfPeriod.length} transaction(s) excluded from ${selectedMonthLabel} payout (txn_date out of period):`, skippedOutOfPeriod);
     }
 
     // Group by DSA
@@ -804,6 +826,7 @@ export default function DSAPayout({ employee }: Props) {
                 </div>
                 <div className="text-right">
                   <p className="text-xs" style={{ color: '#4A4A4A' }}>Net Payable (after 2% TDS)</p>
+              
                   <p className="text-lg font-bold text-emerald-400">{fmt(gNet)}</p>
                   <p className="text-xs" style={{ color: '#4A4A4A' }}>Gross {fmt(g.total)} · TDS {fmt(gTds)}</p>
                 </div>
