@@ -253,24 +253,49 @@ export default function DSAPayout({ employee }: Props) {
       generatedBy: employee.full_name,
     };
 
-    const { data: upserted, error: dbErr } = await supabase.from('dsa_debit_notes').upsert({
-      dsa_id: g.dsa_id,
-      month, year: selectedYear,
-      payout_amount: gross,
-      tds_amount: tds,
-      net_payable_amount: net,
-      debit_note_number: number,
-      generated_at: documentDate.toISOString(),
-      pdf_url: path,
-      pdf_snapshot,
-      created_by: employee.id,
-    }, { onConflict: 'dsa_id,month,year' }).select('id').single();
-    if (dbErr) throw dbErr;
+    // `existing` is only ever an ACTIVE (non-cancelled) note — a cancelled note
+    // is an immutable audit record and is never passed in here. So we update an
+    // active note in place (regenerate, same number) or insert a brand-new note
+    // (first generation, or a replacement after a prior note was cancelled).
+    let savedId: string | undefined;
+    if (existing) {
+      const { data: updated, error: dbErr } = await supabase.from('dsa_debit_notes')
+        .update({
+          payout_amount: gross,
+          tds_amount: tds,
+          net_payable_amount: net,
+          generated_at: documentDate.toISOString(),
+          pdf_url: path,
+          pdf_snapshot,
+          created_by: employee.id,
+        })
+        .eq('id', existing.id)
+        .select('id').single();
+      if (dbErr) throw dbErr;
+      savedId = updated?.id;
+    } else {
+      const { data: inserted, error: dbErr } = await supabase.from('dsa_debit_notes')
+        .insert({
+          dsa_id: g.dsa_id,
+          month, year: selectedYear,
+          payout_amount: gross,
+          tds_amount: tds,
+          net_payable_amount: net,
+          debit_note_number: number,
+          generated_at: documentDate.toISOString(),
+          pdf_url: path,
+          pdf_snapshot,
+          created_by: employee.id,
+        })
+        .select('id').single();
+      if (dbErr) throw dbErr;
+      savedId = inserted?.id;
+    }
 
     // Audit: record generation (best-effort; never block the generate flow)
-    if (upserted?.id) {
+    if (savedId) {
       await supabase.from('dsa_debit_note_events').insert({
-        debit_note_id: upserted.id, event_type: 'generated', actor: 'employee',
+        debit_note_id: savedId, event_type: 'generated', actor: 'employee',
         metadata: { debit_note_number: number, regenerated: !!existing },
       });
     }
@@ -281,13 +306,19 @@ export default function DSAPayout({ employee }: Props) {
     setGenerating(true);
     setGenStatus('');
     try {
-      const byDsa = new Map(debitNotes.map(n => [n.dsa_id, n]));
+      // Only an ACTIVE (non-cancelled) note counts as "existing". A cancelled
+      // note is an immutable audit record and must NOT block a fresh note for
+      // the same DSA/period — generation creates a new note (next sequential
+      // number) reflecting the corrected payout.
+      const activeByDsa = new Map(
+        debitNotes.filter(n => n.status !== 'cancelled').map(n => [n.dsa_id, n])
+      );
       let done = 0;
       let skipped = 0;
       for (const g of groups) {
-        const existing = byDsa.get(g.dsa_id);
-        // Never overwrite a signed (locked) or cancelled note.
-        if (existing && (existing.signature_status === 'signed' || existing.status === 'cancelled')) {
+        const existing = activeByDsa.get(g.dsa_id);
+        // A signed note is locked (audit record) — never regenerate over it.
+        if (existing && existing.signature_status === 'signed') {
           skipped++;
           continue;
         }
@@ -295,7 +326,7 @@ export default function DSAPayout({ employee }: Props) {
         await generateForGroup(g, existing);
       }
       await loadDebitNotes();
-      const note = skipped ? ` (${skipped} signed/cancelled skipped)` : '';
+      const note = skipped ? ` (${skipped} signed skipped)` : '';
       setGenStatus(`Generated ${done} debit note${done === 1 ? '' : 's'} for ${MONTHS[selectedMonth]} ${selectedYear}${note}`);
     } catch (e) {
       setGenStatus(`Error: ${e instanceof Error ? e.message : 'Failed to generate debit notes'}`);
