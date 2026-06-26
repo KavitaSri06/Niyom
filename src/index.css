@@ -2,47 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ------------------------------------------------------------------ */
-/* Theme tokens — dark is the default (matches the original design).   */
-/* Adding the `light` class to <html> (done by ThemeContext) swaps the */
-/* palette. Components migrate onto these vars surface-by-surface; use  */
-/* the matching Tailwind tokens (bg-app, text-ink, border-line, ...).   */
-/* ------------------------------------------------------------------ */
-:root {
-  --app-bg: #050505;
-  --app-surface: #0d0d0f;
-  --app-surface-2: #151519;
-  --app-line: #1E1E24;
-  --app-text: #FFFFFF;
-  --app-text-muted: #8A8A8A;
-  --app-text-dim: #4A4A4A;
-  --app-accent: #D4AF37;
-  color-scheme: dark;
-}
-
-:root.light {
-  --app-bg: #F6F6F8;
-  --app-surface: #FFFFFF;
-  --app-surface-2: #EFEFF2;
-  --app-line: #E3E3EA;
-  --app-text: #15151A;
-  --app-text-muted: #5C5C66;
-  --app-text-dim: #8A8A93;
-  --app-accent: #A87C1F;
-  color-scheme: light;
-}
-
-html, body, #root {
-  background-color: var(--app-bg);
-  color: var(--app-text);
-}
-
-/* Smooth the flip between themes (colors only — avoid animating layout). */
-html.theme-transition,
-html.theme-transition * {
-  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
-}
-
 @keyframes fadeInUp {
   from {
     opacity: 0;
