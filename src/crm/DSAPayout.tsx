@@ -186,6 +186,11 @@ export default function DSAPayout({ employee }: Props) {
       .select('*, dsa:nw_dsa(full_name, dsa_code), paid_by_employee:nw_employees!paid_by(full_name), cancelled_by_employee:nw_employees!cancelled_by(full_name)')
       .eq('year', selectedYear)
       .eq('month', month)
+      // Default operational listing shows only ACTIVE notes. Cancelled notes
+      // are retained in the database for audit and intentionally excluded here;
+      // a regenerated note (new number) for the same period takes their place.
+      // A future audit/history view can query cancelled notes separately.
+      .neq('status', 'cancelled')
       .order('debit_note_number', { ascending: true });
     setDebitNotes((data as NWDSADebitNote[]) || []);
   }, [selectedYear, month]);
