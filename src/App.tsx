@@ -31,6 +31,7 @@ import ClientChangePassword from './pages/ClientChangePassword';
 import ClientPortal from './pages/ClientPortal';
 import PublicOnboarding from './pages/PublicOnboarding';
 import PublicDealView from './pages/PublicDealView';
+import PublicDebitNoteView from './pages/PublicDebitNoteView';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -45,6 +46,8 @@ function AppContent() {
   const [clientPasswordChanged, setClientPasswordChanged] = useState(false);
   // Public secure deal-confirmation link token (/deal/<token>)
   const [dealToken, setDealToken] = useState<string | null>(null);
+  // Public secure debit-note link token (/debit-note/<token>)
+  const [debitNoteToken, setDebitNoteToken] = useState<string | null>(null);
 
   useEffect(() => {
     const checkRoute = () => {
@@ -52,7 +55,13 @@ function AppContent() {
       const params = new URLSearchParams(window.location.search);
       const adminKey = params.get('admin');
 
-      if (pathname.startsWith('/deal/')) {
+      if (pathname.startsWith('/debit-note/')) {
+        const t = pathname.slice('/debit-note/'.length).replace(/\/$/, '');
+        if (t) {
+          setDebitNoteToken(t);
+          setCurrentPage('public-debit-note' as any);
+        }
+      } else if (pathname.startsWith('/deal/')) {
         const t = pathname.slice('/deal/'.length).replace(/\/$/, '');
         if (t) {
           setDealToken(t);
@@ -191,6 +200,11 @@ function AppContent() {
   // Public secure deal-confirmation page — fully unauthenticated, takes priority
   if ((currentPage as any) === 'public-deal' && dealToken) {
     return <PublicDealView token={dealToken} />;
+  }
+
+  // Public secure debit-note signing page — fully unauthenticated, takes priority
+  if ((currentPage as any) === 'public-debit-note' && debitNoteToken) {
+    return <PublicDebitNoteView token={debitNoteToken} />;
   }
 
   if (loading) {

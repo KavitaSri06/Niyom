@@ -1,0 +1,125 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders, json, hashOTP, base64ToBytes } from "../_shared/signing.ts";
+
+// Public function (verify_jwt = false). Re-verifies + consumes the email OTP,
+// stores the e-signature PNG and the signed PDF (SEPARATELY from the original
+// generated PDF — the original is never overwritten), and permanently locks the
+// debit note as signed.
+//
+// Unlike the Deal Confirmation accept flow, NO email is sent after completion:
+// the signed copy is retained inside the CRM only.
+
+const DEBIT_NOTE_BUCKET = "dsa-debit-notes";
+const MAX_ATTEMPTS = 5;
+function pepper(): string { return Deno.env.get("DEBIT_NOTE_OTP_PEPPER") ?? Deno.env.get("DEAL_OTP_PEPPER") ?? ""; }
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response(null, { status: 200, headers: corsHeaders });
+
+  try {
+    const { token, otp, signatureBase64, signedPdfBase64 } = await req.json().catch(() => ({}));
+    if (!token || !otp || !signatureBase64 || !signedPdfBase64) {
+      return json({ error: "Missing required fields." }, 400);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const db = createClient(supabaseUrl, serviceKey);
+
+    const { data: note } = await db
+      .from("dsa_debit_notes")
+      .select("id, debit_note_number, month, year, signature_status, status, token_expires_at, dsa:nw_dsa(email)")
+      .eq("secure_token", token)
+      .maybeSingle();
+
+    if (!note) return json({ error: "This link is no longer valid." }, 400);
+    if (note.signature_status === "signed") return json({ error: "This debit note has already been signed." }, 400);
+    if (note.status === "cancelled") return json({ error: "This debit note has been cancelled." }, 400);
+    if (note.token_expires_at && new Date(note.token_expires_at) < new Date()) {
+      return json({ error: "This link has expired." }, 400);
+    }
+
+    // --- Verify + consume OTP ---
+    const { data: otpRow } = await db
+      .from("dsa_debit_note_otps")
+      .select("*")
+      .eq("debit_note_id", note.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!otpRow) return json({ error: "No verification code found. Please request a new one." }, 400);
+    if (new Date(otpRow.expires_at) < new Date()) {
+      await db.from("dsa_debit_note_otps").delete().eq("id", otpRow.id);
+      return json({ error: "Verification code expired. Please request a new one." }, 400);
+    }
+    if (otpRow.attempts >= MAX_ATTEMPTS) {
+      await db.from("dsa_debit_note_otps").delete().eq("id", otpRow.id);
+      return json({ error: "Too many attempts. Please request a new code." }, 429);
+    }
+    const candidate = await hashOTP(String(otp).trim(), token, pepper());
+    if (candidate !== otpRow.otp_hash) {
+      await db.from("dsa_debit_note_otps").update({ attempts: otpRow.attempts + 1 }).eq("id", otpRow.id);
+      return json({ error: "Incorrect verification code." }, 400);
+    }
+
+    // --- Store artifacts ALONGSIDE the original (never overwrite pdf_url) ---
+    const mm = String(note.month).padStart(2, "0");
+    const base = `${note.year}/${mm}/${note.debit_note_number}`;
+    const sigPath = `${base}-signature.png`;
+    const signedPdfPath = `${base}-signed.pdf`;
+
+    const sigUp = await db.storage.from(DEBIT_NOTE_BUCKET)
+      .upload(sigPath, base64ToBytes(signatureBase64), { contentType: "image/png", upsert: true });
+    const pdfUp = await db.storage.from(DEBIT_NOTE_BUCKET)
+      .upload(signedPdfPath, base64ToBytes(signedPdfBase64), { contentType: "application/pdf", upsert: true });
+
+    if (sigUp.error || pdfUp.error) {
+      console.error("Storage upload error:", sigUp.error || pdfUp.error);
+      return json({ error: "Could not store the signed document. Please try again." }, 500);
+    }
+
+    const dsaEmail = ((note as any).dsa?.email ?? null) as string | null;
+
+    // --- Lock the note (single UPDATE; OLD.signature_status is still 'viewed') ---
+    const { error: updErr } = await db.from("dsa_debit_notes").update({
+      signature_status: "signed",
+      signed_at: new Date().toISOString(),
+      signer_email: dsaEmail,
+      signer_ip: req.headers.get("x-forwarded-for") ?? null,
+      signer_user_agent: req.headers.get("user-agent") ?? null,
+      signature_image_path: sigPath,
+      signed_pdf_url: signedPdfPath,
+    }).eq("id", note.id);
+
+    if (updErr) {
+      console.error("sign update error:", updErr);
+      return json({ error: "Could not finalize signing. Please try again." }, 500);
+    }
+
+    await db.from("dsa_debit_note_otps").delete().eq("debit_note_id", note.id);
+    await db.from("dsa_debit_note_events").insert([
+      {
+        debit_note_id: note.id, event_type: "otp_verified", actor: "dsa",
+        ip: req.headers.get("x-forwarded-for") ?? undefined,
+        user_agent: req.headers.get("user-agent") ?? undefined,
+      },
+      {
+        debit_note_id: note.id, event_type: "signed", actor: "dsa",
+        metadata: { signer_email: dsaEmail },
+        ip: req.headers.get("x-forwarded-for") ?? undefined,
+        user_agent: req.headers.get("user-agent") ?? undefined,
+      },
+      {
+        debit_note_id: note.id, event_type: "signed_pdf_stored", actor: "system",
+        metadata: { signed_pdf_url: signedPdfPath, signature_image_path: sigPath },
+      },
+    ]);
+
+    return json({ success: true });
+  } catch (err: any) {
+    console.error("sign-debit-note error:", err?.message);
+    return json({ error: "Internal error." }, 500);
+  }
+});

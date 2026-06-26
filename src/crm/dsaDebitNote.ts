@@ -45,6 +45,14 @@ export interface DebitNoteInput {
   tdsAmount: number;    // fixed 2% TDS on the gross
   netPayable: number;   // gross − TDS
   generatedBy: string;
+  /**
+   * When present, rendered as the client (DSA) signature in the left-hand
+   * signature block of the signed copy. Omitted for the generated (unsigned)
+   * document, which shows a blank signature line.
+   */
+  clientSignatureDataUrl?: string;
+  /** Date string shown under the client signature when signed. */
+  signedDate?: string;
 }
 
 // Fixed TDS rate applied to every DSA payout.
@@ -119,7 +127,7 @@ export function amountInWords(amount: number): string {
 // monochrome: black ink on white, thin gray hairlines, one solid black table
 // header. No colour, fills, cards, gradients or shadows.
 export function buildDebitNoteHtml(input: DebitNoteInput): string {
-  const { debitNoteNumber, date, month, year, dsa, particulars, total, tdsAmount, netPayable, generatedBy } = input;
+  const { debitNoteNumber, date, month, year, dsa, particulars, total, tdsAmount, netPayable, generatedBy, clientSignatureDataUrl, signedDate } = input;
 
   const dateStr = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
   const periodStr = `${MONTHS[month - 1]} ${year}`;
@@ -263,9 +271,27 @@ export function buildDebitNoteHtml(input: DebitNoteInput): string {
       </div>
     </div>
 
-    <!-- Authorized signatory with digital signature -->
-    <div style="display:flex;justify-content:flex-end;margin-top:44px;">
-      <div style="width:320px;text-align:center;">
+    <!-- Two signature blocks: Client (DSA) on the left, Niyom on the right.
+         The Designated Partner block on the right is unchanged from the
+         original document. The left client block is blank on the generated
+         copy and carries the DSA's e-signature on the signed copy. -->
+    <div style="display:flex;justify-content:space-between;margin-top:44px;gap:32px;">
+      <!-- Left: Client (DSA) signature -->
+      <div style="width:300px;text-align:center;">
+        <div style="height:96px;display:flex;align-items:flex-end;justify-content:center;">
+          ${clientSignatureDataUrl
+            ? `<img src="${clientSignatureDataUrl}" alt="Client Signature" style="height:80px;max-width:260px;width:auto;object-fit:contain;display:inline-block;" />`
+            : ``}
+        </div>
+        <div style="border-top:1px solid ${RULE};margin-top:6px;padding-top:7px;">
+          <div style="${label}">Client Signature</div>
+          ${signedDate
+            ? `<div style="font-size:9px;color:${SUB};margin-top:4px;">Date: ${signedDate}</div>`
+            : `<div style="font-size:9px;color:${MUTE};margin-top:4px;">Date: ____________________</div>`}
+        </div>
+      </div>
+      <!-- Right: For Niyom Wealth — existing Designated Partner signature -->
+      <div style="width:300px;text-align:center;">
         <img src="${NIYOM_SIGNATURE}" alt="Authorized Signature" style="height:96px;max-width:280px;width:auto;object-fit:contain;display:inline-block;filter:grayscale(1);" />
         <div style="border-top:1px solid ${RULE};margin-top:6px;padding-top:7px;">
           <div style="font-family:${SERIF};font-size:11px;font-weight:700;color:${INK};">S. Purushothaman</div>
@@ -316,6 +342,36 @@ export async function generateDebitNotePdfBlob(input: DebitNoteInput): Promise<B
     };
     const blob: Blob = await html2pdf().set(opt).from(container.firstElementChild as HTMLElement).outputPdf('blob');
     return blob;
+  } finally {
+    document.body.removeChild(container);
+  }
+}
+
+// Generates the SIGNED debit note PDF and returns the bare base64 body (no
+// data-URI prefix) for transmission to the sign-debit-note edge function.
+// Uses JPEG@scale2 — mirroring the Deal Confirmation signed-PDF settings — so
+// the transmitted payload stays well under the Edge Function limit. The crisp
+// signature PNG is preserved separately (sent as its own field and stored).
+export async function generateSignedDebitNotePdfBase64(input: DebitNoteInput): Promise<string> {
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-10000px';
+  container.style.top = '0';
+  container.innerHTML = buildDebitNoteHtml(input);
+  document.body.appendChild(container);
+
+  try {
+    await waitForImages(container);
+    const opt = {
+      margin: 0,
+      filename: `${input.debitNoteNumber}-signed.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.92 },
+      html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794, letterRendering: true },
+      jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
+      pagebreak: { mode: ['css', 'legacy'] as string[] },
+    };
+    const dataUri: string = await html2pdf().set(opt).from(container.firstElementChild as HTMLElement).output('datauristring');
+    return dataUri.split(',')[1];
   } finally {
     document.body.removeChild(container);
   }

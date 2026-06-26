@@ -2,16 +2,28 @@ import React, { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { NWEmployee, NWHolding, NWClient, NWDSA, NWDSADebitNote } from './types';
 import { fmt, PRODUCT_LABELS } from './utils';
-import { Wallet, Download, ChevronDown, FileText, RefreshCw, Loader2, FileCheck2, CheckCircle2, XCircle, Eye } from 'lucide-react';
+import { Wallet, Download, ChevronDown, FileText, RefreshCw, Loader2, FileCheck2, CheckCircle2, XCircle, Eye, Send, Lock, FileArchive } from 'lucide-react';
+import JSZip from 'jszip';
 import { generateDebitNotePdfBlob, DebitNoteParticular, computePayoutTds } from './dsaDebitNote';
 
 const DEBIT_NOTE_BUCKET = 'dsa-debit-notes';
 
-const STATUS_BADGE: Record<string, { label: string; bg: string; color: string; border: string }> = {
-  generated: { label: 'Generated', bg: 'rgba(212,175,55,0.12)', color: '#D4AF37', border: 'rgba(212,175,55,0.4)' },
-  paid: { label: 'Paid', bg: 'rgba(16,185,129,0.12)', color: '#10B981', border: 'rgba(16,185,129,0.4)' },
-  cancelled: { label: 'Cancelled', bg: 'rgba(239,68,68,0.12)', color: '#F87171', border: 'rgba(239,68,68,0.4)' },
-};
+type StageStyle = { label: string; bg: string; color: string; border: string };
+
+// Combined lifecycle stage derived from payment `status` + `signature_status`:
+//   Generated → Sent for Signature → Viewed → Signed → Paid   (Cancelled is terminal)
+function deriveStage(note: NWDSADebitNote): StageStyle {
+  if (note.status === 'cancelled') return { label: 'Cancelled', bg: 'rgba(239,68,68,0.12)', color: '#F87171', border: 'rgba(239,68,68,0.4)' };
+  if (note.status === 'paid') return { label: 'Paid', bg: 'rgba(16,185,129,0.12)', color: '#10B981', border: 'rgba(16,185,129,0.4)' };
+  switch (note.signature_status) {
+    case 'signed': return { label: 'Signed', bg: 'rgba(52,211,153,0.12)', color: '#34D399', border: 'rgba(52,211,153,0.4)' };
+    case 'viewed': return { label: 'Viewed', bg: 'rgba(96,165,250,0.12)', color: '#60A5FA', border: 'rgba(96,165,250,0.4)' };
+    case 'sent': return { label: 'Sent for Signature', bg: 'rgba(168,139,250,0.12)', color: '#A78BFA', border: 'rgba(168,139,250,0.4)' };
+    default: return { label: 'Generated', bg: 'rgba(212,175,55,0.12)', color: '#D4AF37', border: 'rgba(212,175,55,0.4)' };
+  }
+}
+
+const fmtDateTime = (d: string | null) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }) : null;
 
 interface Props { employee: NWEmployee; }
 
@@ -162,6 +174,8 @@ export default function DSAPayout({ employee }: Props) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [statusBusyId, setStatusBusyId] = useState<string | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [zipping, setZipping] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<NWDSADebitNote | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelError, setCancelError] = useState('');
@@ -207,14 +221,19 @@ export default function DSAPayout({ employee }: Props) {
     // Fixed 2% TDS on the gross payout → net amount actually paid out.
     const { gross, tds, net } = computePayoutTds(g.total);
 
-    const blob = await generateDebitNotePdfBlob({
+    // Single document date shared by the rendered PDF and the snapshot, so the
+    // signed copy (rebuilt from the snapshot) is byte-for-byte equivalent.
+    const documentDate = new Date();
+    const noteInput = {
       debitNoteNumber: number!,
-      date: new Date(),
+      date: documentDate,
       month, year: selectedYear,
       dsa, particulars, total: gross,
       tdsAmount: tds, netPayable: net,
       generatedBy: employee.full_name,
-    });
+    };
+
+    const blob = await generateDebitNotePdfBlob(noteInput);
 
     const path = `${selectedYear}/${String(month).padStart(2, '0')}/${number}.pdf`;
     const { error: upErr } = await supabase.storage
@@ -222,18 +241,39 @@ export default function DSAPayout({ employee }: Props) {
       .upload(path, blob, { upsert: true, contentType: 'application/pdf' });
     if (upErr) throw upErr;
 
-    const { error: dbErr } = await supabase.from('dsa_debit_notes').upsert({
+    // Immutable render snapshot (serializable DebitNoteInput) — lets the public
+    // signing page rebuild the identical document and embed the DSA signature
+    // without recomputing any payout/TDS values.
+    const pdf_snapshot = {
+      debitNoteNumber: number,
+      dateISO: documentDate.toISOString(),
+      month, year: selectedYear,
+      dsa, particulars,
+      total: gross, tdsAmount: tds, netPayable: net,
+      generatedBy: employee.full_name,
+    };
+
+    const { data: upserted, error: dbErr } = await supabase.from('dsa_debit_notes').upsert({
       dsa_id: g.dsa_id,
       month, year: selectedYear,
       payout_amount: gross,
       tds_amount: tds,
       net_payable_amount: net,
       debit_note_number: number,
-      generated_at: new Date().toISOString(),
+      generated_at: documentDate.toISOString(),
       pdf_url: path,
+      pdf_snapshot,
       created_by: employee.id,
-    }, { onConflict: 'dsa_id,month,year' });
+    }, { onConflict: 'dsa_id,month,year' }).select('id').single();
     if (dbErr) throw dbErr;
+
+    // Audit: record generation (best-effort; never block the generate flow)
+    if (upserted?.id) {
+      await supabase.from('dsa_debit_note_events').insert({
+        debit_note_id: upserted.id, event_type: 'generated', actor: 'employee',
+        metadata: { debit_note_number: number, regenerated: !!existing },
+      });
+    }
   }
 
   const generateAllDebitNotes = async () => {
@@ -243,12 +283,20 @@ export default function DSAPayout({ employee }: Props) {
     try {
       const byDsa = new Map(debitNotes.map(n => [n.dsa_id, n]));
       let done = 0;
+      let skipped = 0;
       for (const g of groups) {
+        const existing = byDsa.get(g.dsa_id);
+        // Never overwrite a signed (locked) or cancelled note.
+        if (existing && (existing.signature_status === 'signed' || existing.status === 'cancelled')) {
+          skipped++;
+          continue;
+        }
         setGenStatus(`Generating ${++done}/${groups.length} — ${g.dsa_name}`);
-        await generateForGroup(g, byDsa.get(g.dsa_id));
+        await generateForGroup(g, existing);
       }
       await loadDebitNotes();
-      setGenStatus(`Generated ${groups.length} debit note${groups.length > 1 ? 's' : ''} for ${MONTHS[selectedMonth]} ${selectedYear}`);
+      const note = skipped ? ` (${skipped} signed/cancelled skipped)` : '';
+      setGenStatus(`Generated ${done} debit note${done === 1 ? '' : 's'} for ${MONTHS[selectedMonth]} ${selectedYear}${note}`);
     } catch (e) {
       setGenStatus(`Error: ${e instanceof Error ? e.message : 'Failed to generate debit notes'}`);
     } finally {
@@ -257,6 +305,10 @@ export default function DSAPayout({ employee }: Props) {
   };
 
   const regenerateOne = async (note: NWDSADebitNote) => {
+    if (note.signature_status === 'signed') {
+      setGenStatus('Signed debit notes are locked and cannot be regenerated.');
+      return;
+    }
     if (note.status !== 'generated') {
       setGenStatus(`Cannot regenerate a ${note.status} debit note.`);
       return;
@@ -279,12 +331,18 @@ export default function DSAPayout({ employee }: Props) {
     }
   };
 
+  // When a signed copy exists, Preview/Download act on it; otherwise on the
+  // original generated PDF. The original is always preserved separately.
+  const noteObjectPath = (note: NWDSADebitNote) => note.signed_pdf_url || note.pdf_url;
+  const noteFileName = (note: NWDSADebitNote) =>
+    note.signed_pdf_url ? `${note.debit_note_number}-signed.pdf` : `${note.debit_note_number}.pdf`;
+
   const downloadNote = async (note: NWDSADebitNote) => {
     setDownloadingId(note.id);
     try {
       const { data, error } = await supabase.storage
         .from(DEBIT_NOTE_BUCKET)
-        .createSignedUrl(note.pdf_url, 120, { download: `${note.debit_note_number}.pdf` });
+        .createSignedUrl(noteObjectPath(note), 120, { download: noteFileName(note) });
       if (error || !data) throw error || new Error('Could not create download link');
       window.open(data.signedUrl, '_blank');
     } catch (e) {
@@ -300,13 +358,85 @@ export default function DSAPayout({ employee }: Props) {
       // No `download` option → the PDF opens inline in a new browser tab
       const { data, error } = await supabase.storage
         .from(DEBIT_NOTE_BUCKET)
-        .createSignedUrl(note.pdf_url, 120);
+        .createSignedUrl(noteObjectPath(note), 120);
       if (error || !data) throw error || new Error('Could not create preview link');
       window.open(data.signedUrl, '_blank');
     } catch (e) {
       setGenStatus(`Error: ${e instanceof Error ? e.message : 'Preview failed'}`);
     } finally {
       setPreviewingId(null);
+    }
+  };
+
+  // Send (or resend) the secure signing link to the DSA via the edge function.
+  const sendForSignature = async (note: NWDSADebitNote) => {
+    if (sendingId) return;
+    if (note.signature_status === 'signed') { setGenStatus('This debit note is already signed.'); return; }
+    setSendingId(note.id);
+    setGenStatus('');
+    try {
+      const { data, error } = await supabase.functions.invoke('send-debit-note-email', {
+        body: { debitNoteId: note.id },
+      });
+      if (error || !data?.success) throw new Error(data?.error || error?.message || 'Failed to send link');
+      await loadDebitNotes();
+      setGenStatus(note.signature_status === 'not_sent'
+        ? `Signing link sent to ${note.dsa?.full_name || 'DSA'}`
+        : `Signing link resent to ${note.dsa?.full_name || 'DSA'}`);
+    } catch (e) {
+      setGenStatus(`Error: ${e instanceof Error ? e.message : 'Failed to send signing link'}`);
+    } finally {
+      setSendingId(null);
+    }
+  };
+
+  // Monthly ZIP: bundle one PDF per debit note (signed copy when available,
+  // else the generated copy), preserving the debit note number as the filename.
+  const downloadZip = async () => {
+    if (zipping) return;
+    const notes = debitNotes.filter(n => noteObjectPath(n));
+    if (notes.length === 0) { setGenStatus('No debit notes to download for this period.'); return; }
+    setZipping(true);
+    setGenStatus('');
+    try {
+      const zip = new JSZip();
+      let added = 0;
+      for (const n of notes) {
+        const { data, error } = await supabase.storage
+          .from(DEBIT_NOTE_BUCKET)
+          .createSignedUrl(noteObjectPath(n), 300);
+        if (error || !data?.signedUrl) continue;
+        const resp = await fetch(data.signedUrl);
+        if (!resp.ok) continue;
+        const buf = await resp.arrayBuffer();
+        zip.file(`${n.debit_note_number}.pdf`, buf);
+        added++;
+      }
+      if (added === 0) throw new Error('Could not retrieve any debit note PDFs');
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const fileName = `Debit_Notes_${selectedYear}_${String(month).padStart(2, '0')}.zip`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = fileName;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+
+      // Audit: per-document event trail + a single activity-log entry.
+      await supabase.from('dsa_debit_note_events').insert(
+        notes.map(n => ({ debit_note_id: n.id, event_type: 'zip_downloaded', actor: 'employee', metadata: { fileName } }))
+      );
+      await supabase.from('nw_activity_logs').insert([{
+        employee_id: employee.id,
+        action: 'Debit Notes ZIP Downloaded',
+        description: `${fileName} — ${added} debit note${added === 1 ? '' : 's'} for ${MONTHS[selectedMonth]} ${selectedYear}`,
+      }]);
+
+      setGenStatus(`Downloaded ${fileName} (${added} debit note${added === 1 ? '' : 's'})`);
+    } catch (e) {
+      setGenStatus(`Error: ${e instanceof Error ? e.message : 'ZIP download failed'}`);
+    } finally {
+      setZipping(false);
     }
   };
 
@@ -318,6 +448,10 @@ export default function DSAPayout({ employee }: Props) {
         .update({ status: 'paid', paid_at: new Date().toISOString(), paid_by: employee.id })
         .eq('id', note.id);
       if (error) throw error;
+      await supabase.from('dsa_debit_note_events').insert({
+        debit_note_id: note.id, event_type: 'marked_paid', actor: 'employee',
+        metadata: { net_payable: note.net_payable_amount ?? note.payout_amount },
+      });
       await loadDebitNotes();
       setGenStatus(`${note.debit_note_number} marked as Paid`);
     } catch (e) {
@@ -332,6 +466,7 @@ export default function DSAPayout({ employee }: Props) {
     const reason = cancelReason.trim();
     if (!reason) { setCancelError('A cancellation reason is required.'); return; }
     const note = cancelTarget;
+    if (note.signature_status === 'signed') { setCancelError('Signed debit notes are locked and cannot be cancelled.'); return; }
     setStatusBusyId(note.id);
     setCancelError('');
     setGenStatus('');
@@ -348,6 +483,10 @@ export default function DSAPayout({ employee }: Props) {
         action: 'Debit Note Cancelled',
         description: `${note.debit_note_number} (${note.dsa?.full_name || 'DSA'}) — ${fmt(note.net_payable_amount ?? note.payout_amount)} net payable cancelled. Reason: ${reason}`,
       }]);
+      await supabase.from('dsa_debit_note_events').insert({
+        debit_note_id: note.id, event_type: 'cancelled', actor: 'employee',
+        metadata: { reason },
+      });
       await loadDebitNotes();
       setGenStatus(`${note.debit_note_number} cancelled`);
       setCancelTarget(null);
@@ -359,90 +498,6 @@ export default function DSAPayout({ employee }: Props) {
     }
   };
 
-  const printPayout = () => {
-    const groupsHtml = groups.map(g => {
-      const gTds = computePayoutTds(g.total).tds;
-      const gNet = g.total - gTds;
-      const rowsHtml = g.rows.map((r, i) => `
-        <tr>
-          <td>${i + 1}</td>
-          <td><strong>${r.client_name}</strong><br><span style="color:#888;font-size:11px">${r.client_code}</span></td>
-          <td>${PRODUCT_LABELS[r.product_type] || r.product_type}</td>
-          <td>${r.product_name}</td>
-          <td style="text-align:right">${r.quantity.toLocaleString('en-IN')}</td>
-          <td style="text-align:right">&#8377;${r.dsa_price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
-          <td style="text-align:right">&#8377;${r.client_price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
-          <td style="text-align:right;font-weight:700;color:${r.payout >= 0 ? '#059669' : '#DC2626'}">
-            ${r.payout >= 0 ? '' : '-'}&#8377;${Math.abs(r.payout).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-          </td>
-        </tr>`).join('');
-
-      return `
-        <div style="margin-bottom:24px">
-          <div style="background:#f5f5f5;padding:10px 14px;border-left:4px solid #D4AF37;margin-bottom:0;display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-weight:800;font-size:13px">${g.dsa_name} <span style="font-weight:400;color:#888">(${g.dsa_code})</span></span>
-            <span style="text-align:right">
-              <span style="font-weight:800;font-size:14px;color:#059669">&#8377;${gNet.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-              <span style="display:block;font-weight:400;font-size:9px;color:#888">Net Payable · Gross &#8377;${g.total.toLocaleString('en-IN', { maximumFractionDigits: 2 })} · TDS &#8377;${gTds.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-            </span>
-          </div>
-          <table>
-            <thead><tr><th>#</th><th>Client</th><th>Product Type</th><th>Product</th><th style="text-align:right">Qty</th><th style="text-align:right">DSA Price</th><th style="text-align:right">Client Price</th><th style="text-align:right">Payout</th></tr></thead>
-            <tbody>${rowsHtml}</tbody>
-            <tfoot>
-              <tr><td colspan="7" style="text-align:right;font-weight:600;color:#555">Gross Payout</td><td style="text-align:right;font-weight:600">&#8377;${g.total.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td></tr>
-              <tr><td colspan="7" style="text-align:right;font-weight:600;color:#555">TDS @ 2%</td><td style="text-align:right;font-weight:600;color:#DC2626">- &#8377;${gTds.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td></tr>
-              <tr><td colspan="7" style="text-align:right;font-weight:800;color:#111">Net Payable</td><td style="text-align:right;font-weight:800;color:#059669">&#8377;${gNet.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td></tr>
-            </tfoot>
-          </table>
-        </div>`;
-    }).join('');
-
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>DSA Payout — ${MONTHS[selectedMonth]} ${selectedYear}</title>
-  <style>
-    @page { margin: 18mm 14mm; }
-    body { font-family: Arial, sans-serif; color: #111; font-size: 12px; }
-    .header { display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #D4AF37; padding-bottom:12px; margin-bottom:20px; }
-    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
-    .stat { background:#f8f8f8; border-radius:6px; padding:10px 12px; border-top:3px solid #eee; }
-    .stat-label { font-size:9px; color:#999; text-transform:uppercase; letter-spacing:0.08em; }
-    .stat-value { font-size:16px; font-weight:800; margin-top:3px; }
-    table { width:100%; border-collapse:collapse; margin-bottom:0; }
-    th { background:#f2f2f2; padding:7px 9px; text-align:left; font-size:10px; text-transform:uppercase; color:#777; border-bottom:1px solid #e0e0e0; }
-    td { padding:7px 9px; border-bottom:1px solid #f0f0f0; font-size:11px; vertical-align:top; }
-    .footer { margin-top:28px; text-align:center; font-size:10px; color:#aaa; border-top:1px solid #eee; padding-top:10px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <div style="font-weight:900;font-size:22px;color:#111;font-family:Georgia,serif;">Niyom Wealth</div>
-      <div style="font-size:11px;color:#888">DSA Payout Report &nbsp;&middot;&nbsp; ${MONTHS[selectedMonth]} ${selectedYear} &nbsp;&middot;&nbsp; ${startDate} to ${endDate}</div>
-    </div>
-    <div style="text-align:right">
-      <div style="font-size:22px;font-weight:800;color:#059669">&#8377;${totalNet.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
-      <div style="font-size:10px;color:#888">Net Payable (after 2% TDS)</div>
-    </div>
-  </div>
-  <div class="stats">
-    <div class="stat" style="border-top-color:#6B7280"><div class="stat-label">Gross Payout</div><div class="stat-value">&#8377;${totalPayout.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
-    <div class="stat" style="border-top-color:#DC2626"><div class="stat-label">TDS @ 2%</div><div class="stat-value" style="color:#DC2626">- &#8377;${totalTds.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
-    <div class="stat" style="border-top-color:#059669"><div class="stat-label">Net Payable</div><div class="stat-value" style="color:#059669">&#8377;${totalNet.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
-    <div class="stat" style="border-top-color:#D4AF37"><div class="stat-label">DSAs Involved</div><div class="stat-value">${groups.length}</div></div>
-    <div class="stat" style="border-top-color:#6B7280"><div class="stat-label">Total Transactions</div><div class="stat-value">${groups.reduce((s, g) => s + g.rows.length, 0)}</div></div>
-  </div>
-  ${groupsHtml || '<p style="text-align:center;color:#aaa;padding:20px">No DSA payout entries for this period</p>'}
-  <div class="footer">Niyom Wealth Distribution &nbsp;&middot;&nbsp; Confidential &nbsp;&middot;&nbsp; Generated ${new Date().toLocaleString('en-IN')}</div>
-</body>
-</html>`;
-
-    const w = window.open('', '_blank');
-    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 400); }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -452,11 +507,12 @@ export default function DSAPayout({ employee }: Props) {
           <p className="text-xs mt-1" style={{ color: '#6B6B6B' }}>Automated payout based on client price − DSA price × quantity</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {hasLoaded && groups.length > 0 && (
-            <button onClick={printPayout}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
+          {debitNotes.length > 0 && (
+            <button onClick={downloadZip} disabled={zipping}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
               style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
-              <Download className="w-4 h-4" /> Download PDF
+              {zipping ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileArchive className="w-4 h-4" />}
+              {zipping ? 'Preparing ZIP...' : 'Download ZIP'}
             </button>
           )}
           {hasLoaded && groups.length > 0 && (
@@ -558,23 +614,35 @@ export default function DSAPayout({ employee }: Props) {
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
-                  {['Debit Note No.', 'DSA', 'Net Payable', 'Status', 'Payment', 'Actions'].map(h => (
+                  {['Debit Note No.', 'DSA', 'Net Payable', 'Status', 'Timeline', 'Actions'].map(h => (
                     <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {debitNotes.map(note => {
-                  const badge = STATUS_BADGE[note.status] || STATUS_BADGE.generated;
+                  const stage = deriveStage(note);
                   const busy = statusBusyId === note.id;
+                  const signed = note.signature_status === 'signed';
+                  const locked = signed || note.status === 'cancelled';
                   // payout_amount is the gross; fall back to deriving TDS/net for
                   // any pre-TDS legacy rows that have not been backfilled yet.
                   const gross = note.payout_amount;
                   const tds = note.tds_amount ?? computePayoutTds(gross).tds;
                   const net = note.net_payable_amount ?? (gross - tds);
+                  // Completed-step timestamps for the Generated→…→Paid timeline.
+                  const steps: { label: string; at: string | null; color: string }[] = [
+                    { label: 'Sent', at: fmtDateTime(note.sent_at), color: '#A78BFA' },
+                    { label: 'Viewed', at: fmtDateTime(note.viewed_at), color: '#60A5FA' },
+                    { label: 'Signed', at: fmtDateTime(note.signed_at), color: '#34D399' },
+                    { label: 'Paid', at: note.paid_at ? fmtDateTime(note.paid_at) : null, color: '#10B981' },
+                  ].filter(s => s.at);
                   return (
                   <tr key={note.id} style={{ borderBottom: '1px solid #111' }}>
-                    <td className="px-5 py-3 text-sm font-mono" style={{ color: '#D4AF37' }}>{note.debit_note_number}</td>
+                    <td className="px-5 py-3 text-sm font-mono" style={{ color: '#D4AF37' }}>
+                      {note.debit_note_number}
+                      {signed && <Lock className="w-3 h-3 inline-block ml-1.5 -mt-0.5" style={{ color: '#34D399' }} />}
+                    </td>
                     <td className="px-5 py-3">
                       <p className="text-sm font-medium text-white">{note.dsa?.full_name || '—'}</p>
                       <p className="text-xs font-mono" style={{ color: '#4A4A4A' }}>{note.dsa?.dsa_code || ''}</p>
@@ -585,25 +653,26 @@ export default function DSAPayout({ employee }: Props) {
                     </td>
                     <td className="px-5 py-3">
                       <span className="inline-block px-2.5 py-1 rounded-full text-xs font-semibold"
-                        style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.border}` }}>
-                        {badge.label}
+                        style={{ background: stage.bg, color: stage.color, border: `1px solid ${stage.border}` }}>
+                        {stage.label}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-xs" style={{ color: '#6B6B6B' }}>
-                      {note.status === 'paid' ? (
-                        <>
-                          <p style={{ color: '#10B981' }}>{note.paid_at ? new Date(note.paid_at).toLocaleDateString('en-IN') : '—'}</p>
-                          <p style={{ color: '#4A4A4A' }}>by {note.paid_by_employee?.full_name || '—'}</p>
-                        </>
-                      ) : note.status === 'cancelled' ? (
-                        <div className="max-w-[260px]">
-                          <p style={{ color: '#F87171' }}>{note.cancelled_at ? new Date(note.cancelled_at).toLocaleString('en-IN') : '—'}</p>
+                      {note.status === 'cancelled' ? (
+                        <div className="max-w-[240px]">
+                          <p style={{ color: '#F87171' }}>Cancelled {note.cancelled_at ? new Date(note.cancelled_at).toLocaleDateString('en-IN') : ''}</p>
                           <p style={{ color: '#4A4A4A' }}>by {note.cancelled_by_employee?.full_name || '—'}</p>
                           {note.cancel_reason && (
                             <p className="mt-1" style={{ color: '#8A8A8A' }}>
                               <span style={{ color: '#5A5A5A' }}>Reason: </span>{note.cancel_reason}
                             </p>
                           )}
+                        </div>
+                      ) : steps.length ? (
+                        <div className="space-y-0.5">
+                          {steps.map(s => (
+                            <p key={s.label}><span style={{ color: s.color }}>{s.label} On:</span> {s.at}</p>
+                          ))}
                         </div>
                       ) : (
                         <span style={{ color: '#4A4A4A' }}>—</span>
@@ -615,15 +684,26 @@ export default function DSAPayout({ employee }: Props) {
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
                           style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
                           {previewingId === note.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5" />}
-                          Preview
+                          {signed ? 'Preview Signed' : 'Preview'}
                         </button>
                         <button onClick={() => downloadNote(note)} disabled={downloadingId === note.id}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
                           style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
                           {downloadingId === note.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                          Download
+                          {signed ? 'Download Signed' : 'Download'}
                         </button>
-                        {note.status === 'generated' && (
+                        {/* Send / Resend for signature — until signed, while active */}
+                        {!locked && (
+                          <button onClick={() => sendForSignature(note)} disabled={sendingId === note.id}
+                            title={note.signature_status === 'not_sent' ? 'Email the DSA a secure signing link' : 'Resend the secure signing link'}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
+                            style={{ background: 'rgba(168,139,250,0.1)', color: '#A78BFA', border: '1px solid rgba(168,139,250,0.3)' }}>
+                            {sendingId === note.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                            {note.signature_status === 'not_sent' ? 'Send for Signature' : 'Resend Link'}
+                          </button>
+                        )}
+                        {/* Regenerate / Cancel — disabled once signed or cancelled */}
+                        {note.status === 'generated' && !signed && (
                           <>
                             <button onClick={() => regenerateOne(note)}
                               disabled={regenDsaId === note.dsa_id || !groups.some(g => g.dsa_id === note.dsa_id)}
@@ -634,22 +714,23 @@ export default function DSAPayout({ employee }: Props) {
                               Regenerate
                             </button>
                             {isAdmin && (
-                              <>
-                                <button onClick={() => markAsPaid(note)} disabled={busy}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
-                                  style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}>
-                                  {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                                  Mark as Paid
-                                </button>
-                                <button onClick={() => { setCancelTarget(note); setCancelReason(''); setCancelError(''); }} disabled={busy}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
-                                  style={{ background: 'rgba(239,68,68,0.08)', color: '#F87171', border: '1px solid rgba(239,68,68,0.3)' }}>
-                                  <XCircle className="w-3.5 h-3.5" />
-                                  Cancel
-                                </button>
-                              </>
+                              <button onClick={() => { setCancelTarget(note); setCancelReason(''); setCancelError(''); }} disabled={busy}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
+                                style={{ background: 'rgba(239,68,68,0.08)', color: '#F87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                                <XCircle className="w-3.5 h-3.5" />
+                                Cancel
+                              </button>
                             )}
                           </>
+                        )}
+                        {/* Mark as Paid — admin; available for generated notes (incl. after signing) */}
+                        {isAdmin && note.status === 'generated' && (
+                          <button onClick={() => markAsPaid(note)} disabled={busy}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
+                            style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                            {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                            Mark as Paid
+                          </button>
                         )}
                       </div>
                     </td>

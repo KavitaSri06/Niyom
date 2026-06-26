@@ -67,6 +67,7 @@ export interface NWDSA {
 }
 
 export type DSADebitNoteStatus = 'generated' | 'paid' | 'cancelled';
+export type DSADebitNoteSignatureStatus = 'not_sent' | 'sent' | 'viewed' | 'signed';
 
 export interface NWDSADebitNote {
   id: string;
@@ -90,6 +91,20 @@ export interface NWDSADebitNote {
   // Future email support (schema prepared; sending not yet implemented)
   email_sent: boolean;
   email_sent_at: string | null;
+  // Client (DSA) signing lifecycle — independent of payment `status`
+  signature_status: DSADebitNoteSignatureStatus;
+  secure_token: string | null;
+  token_expires_at: string | null;
+  sent_at: string | null;
+  viewed_at: string | null;
+  signed_at: string | null;
+  sent_by: string | null;
+  signer_email: string | null;
+  signer_ip: string | null;
+  signer_user_agent: string | null;
+  signature_image_path: string | null;
+  signed_pdf_url: string | null;   // stored separately from pdf_url (original preserved)
+  pdf_snapshot: unknown | null;    // immutable render snapshot used for the signed copy
   created_at: string;
   updated_at: string;
   dsa?: { full_name: string; dsa_code: string };
