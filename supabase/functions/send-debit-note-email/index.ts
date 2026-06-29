@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
-  corsHeaders, json, generateToken, formatRole, isValidEmail, buildCc, INR, sendEmail,
+  corsHeaders, json, generateToken, formatDesignation, isValidEmail, buildCc, INR, sendEmail,
 } from "../_shared/signing.ts";
 
 // Debit Note signing: sends a SECURE LINK (no PDF attachment) to the DSA
@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: employee } = await db
       .from("nw_employees")
-      .select("id, full_name, role, email, phone")
+      .select("id, full_name, role, designation, email, phone")
       .eq("auth_user_id", user.id)
       .maybeSingle();
     if (!employee) return json({ success: false, error: "Unauthorized" }, 401);
@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const link = `${appUrl}/debit-note/${token}`;
-    const designation = formatRole(employee.role);
+    const designation = formatDesignation(employee.designation);
     const expiryIst = new Date(expiresAt).toLocaleString("en-IN", {
       timeZone: "Asia/Kolkata",
       day: "2-digit", month: "short", year: "numeric",

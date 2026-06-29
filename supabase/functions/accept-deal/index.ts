@@ -139,25 +139,20 @@ Deno.serve(async (req: Request) => {
 
       let employeeEmail: string | null = null;
       let employeeName: string | null = null;
-      let employeeRole: string | null = null;
+      let employeeDesignation: string | null = null;
       let employeePhone: string | null = null;
       if (deal.employee_id) {
         const { data: emp } = await db.from("nw_employees")
-          .select("email, full_name, role, phone")
+          .select("email, full_name, designation, phone")
           .eq("id", deal.employee_id).maybeSingle();
         employeeEmail = emp?.email ?? null;
         employeeName = emp?.full_name ?? null;
-        employeeRole = emp?.role ?? null;
+        employeeDesignation = emp?.designation ?? null;
         employeePhone = emp?.phone ?? null;
       }
-      const formatRmRole = (role: string | null): string => {
-        switch (role) {
-          case "super_admin": return "Super Admin";
-          case "admin": return "Admin";
-          case "employee": return "Relationship Manager";
-          default: return "Relationship Manager";
-        }
-      };
+      // Client-facing job title — display-only `designation`, never the internal `role`.
+      const formatDesignation = (designation: string | null): string =>
+        (designation && designation.trim()) || "Relationship Manager";
 
       const valid = (e: unknown): e is string => typeof e === "string" && /^\S+@\S+\.\S+$/.test(e.trim());
 
@@ -204,7 +199,7 @@ Deno.serve(async (req: Request) => {
         const filename = `Deal_Confirmation_${deal.confirmation_number}.pdf`;
         const subject = `Deal Confirmation completed – Ref ${deal.confirmation_number}`;
         const year = new Date().getFullYear();
-        const designation = formatRmRole(employeeRole);
+        const designation = formatDesignation(employeeDesignation);
         // Normalize: Resend expects pure base64 in attachment content. Strip any
         // data-URI prefix defensively (the client already sends bare base64).
         const pdfBase64 = signedPdfBase64.includes(",") ? signedPdfBase64.split(",")[1] : signedPdfBase64;

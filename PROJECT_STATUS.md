@@ -366,6 +366,33 @@ live, and the single uncommitted `DSAPayout.tsx` change is reviewed and committe
 
 ---
 
+## 11. Changelog
+
+### 2026-06-29 — Employee `designation` separated from authorization `role`
+
+**Architectural rule (now enforced):** `nw_employees.role`
+(`super_admin` / `admin` / `employee`) is an **internal authorization value only** —
+used for authentication, RLS, routing, and feature gating. It must **never** be shown to a
+client. A new **`designation`** column holds the **business/job title** (e.g. *Designated
+Partner*, *Senior Relationship Manager*, *Relationship Manager*) and is the **only** value
+rendered in client-facing UI, emails, and documents.
+
+| Area | Change |
+|------|--------|
+| **DB** | New migration `20260629120000_add_designation_to_nw_employees.sql` — adds nullable `designation text` (idempotent `ADD COLUMN IF NOT EXISTS`), backfills the four named partners/seniors, defaults everyone else to *Relationship Manager*. No RLS/authorization change. |
+| **Types** | `NWEmployee.designation: string \| null` added (`src/crm/types.ts`); `role` retained for auth. |
+| **CRM UI** | Employee list, Settings profile, and sidebar now show `designation` (fallback *Relationship Manager*). Add/Edit Employee forms gained an editable **Designation** selector (Role selector kept, relabelled "access level — internal only") with empty-value validation. |
+| **Emails** | `accept-deal`, `send-deal-confirmation-email`, `send-debit-note-email`, and `_shared/signing.ts` now derive the sign-off title from `designation` via `formatDesignation()` — the previous `formatRole()` could leak "Super Admin" to clients. `role` is still read **only** for the internal `isAdmin` check. |
+| **New hires** | `create-crm-user` defaults `designation` to *Relationship Manager* when unset. |
+| **PDFs** | Deal Confirmation & DSA Debit Note PDFs already used a hardcoded "Designated Partner" signatory — unchanged. |
+
+**Audit:** see `DESIGNATION_FEATURE_AUDIT.md`. Repository-wide sweep confirmed no remaining
+client-facing path (UI, email, PDF, public token endpoints, SQL views/functions, cron) exposes
+the internal role. **To deploy:** apply the migration and redeploy `accept-deal`,
+`send-deal-confirmation-email`, `send-debit-note-email`, `create-crm-user`.
+
+---
+
 *Maintained for Niyom Wealth Distribution LLP. Update whenever a feature changes release
 status or a workflow rule changes. Generated 2026-06-26 — documentation only; no application
 code, migrations, or deployments were modified.*

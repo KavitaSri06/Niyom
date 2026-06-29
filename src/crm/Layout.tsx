@@ -195,7 +195,7 @@ export default function Layout({ children, page, onNavigate, employee }: Props) 
               </div>
               <div className="hidden md:block">
                 <p className="text-xs font-semibold leading-none" style={{ color: 'var(--text-primary)' }}>{employee.full_name.split(' ')[0]}</p>
-                <p className="text-xs mt-0.5 capitalize" style={{ color: 'var(--text-faint)' }}>{employee.role.replace('_', ' ')}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>{employee.designation ?? 'Relationship Manager'}</p>
               </div>
             </div>
           </div>

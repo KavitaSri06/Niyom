@@ -52,7 +52,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { email, password, full_name, role, employee_code } = await req.json();
+    const { email, password, full_name, role, designation, employee_code } = await req.json();
 
     if (!email || !password || !full_name || !employee_code) {
       return new Response(JSON.stringify({ error: "Missing required fields: email, password, full_name, employee_code" }), {
@@ -123,6 +123,8 @@ Deno.serve(async (req: Request) => {
       full_name,
       email,
       role: role || "employee",
+      // Display-only job title (never derived from role). Safe default for new hires.
+      designation: (typeof designation === "string" && designation.trim()) || "Relationship Manager",
       status: "active",
       password_changed: false,
     }]);

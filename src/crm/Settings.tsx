@@ -6,8 +6,6 @@ import { User, Lock, Bell, CheckCircle2, AlertCircle, Eye, EyeOff, Shield } from
 
 interface Props { employee: NWEmployee; }
 
-const ROLE_LABELS: Record<string, string> = { super_admin: 'Super Admin', admin: 'Admin', employee: 'Employee' };
-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -89,7 +87,7 @@ export default function Settings({ employee }: Props) {
               {employee.employee_code}
             </span>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'rgba(96,165,250,0.1)', color: 'rgb(var(--info-soft-rgb))', border: '1px solid rgba(96,165,250,0.2)' }}>
-              {ROLE_LABELS[employee.role]}
+              {employee.designation ?? 'Relationship Manager'}
             </span>
           </div>
         </div>

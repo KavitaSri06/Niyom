@@ -20,12 +20,8 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-const ROLE_LABELS: Record<string, string> = { super_admin: 'Super Admin', admin: 'Admin', employee: 'Employee' };
-const ROLE_COLORS: Record<string, string> = {
-  super_admin: 'text-c-amber bg-c-amber/10 border-c-amber/20',
-  admin: 'text-c-blue bg-c-blue/10 border-c-blue/20',
-  employee: 'text-c-emerald bg-c-emerald/10 border-c-emerald/20',
-};
+// Display-only job titles (NOT authorization — that stays on `role`).
+const DESIGNATIONS = ['Relationship Manager', 'Senior Relationship Manager', 'Designated Partner'];
 
 export default function Employees({ employee }: Props) {
   const [employees, setEmployees] = useState<NWEmployee[]>([]);
@@ -36,8 +32,8 @@ export default function Employees({ employee }: Props) {
   const [saving, setSaving] = useState(false);
   const [showPw, setShowPw] = useState(false);
 
-  const [addForm, setAddForm] = useState({ full_name: '', email: '', password: '', role: 'employee', employee_code: '' });
-  const [editForm, setEditForm] = useState({ full_name: '', phone: '', role: 'employee', status: 'active' });
+  const [addForm, setAddForm] = useState({ full_name: '', email: '', password: '', role: 'employee', designation: 'Relationship Manager', employee_code: '' });
+  const [editForm, setEditForm] = useState({ full_name: '', phone: '', role: 'employee', designation: 'Relationship Manager', status: 'active' });
   const [addError, setAddError] = useState('');
 
   const isSuperAdmin = employee.role === 'super_admin';
@@ -60,6 +56,7 @@ export default function Employees({ employee }: Props) {
     if (!addForm.employee_code || !addForm.full_name || !addForm.email || !addForm.password) { setAddError('All fields are required.'); return; }
     if (!/^NIYOM-\d+$/i.test(addForm.employee_code.trim())) { setAddError('Employee ID must be in format NIYOM-001'); return; }
     if (addForm.password.length < 8) { setAddError('Password must be at least 8 characters.'); return; }
+    if (!addForm.designation.trim()) { setAddError('Designation is required.'); return; }
     setAddError('');
     setSaving(true);
 
@@ -67,21 +64,22 @@ export default function Employees({ employee }: Props) {
     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-crm-user`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-      body: JSON.stringify({ email: addForm.email, password: addForm.password, full_name: addForm.full_name, role: addForm.role, employee_code: addForm.employee_code.trim().toUpperCase() }),
+      body: JSON.stringify({ email: addForm.email, password: addForm.password, full_name: addForm.full_name, role: addForm.role, designation: addForm.designation, employee_code: addForm.employee_code.trim().toUpperCase() }),
     });
     const json = await res.json();
     setSaving(false);
     if (!res.ok || json.error) { setAddError(json.error || 'Failed to create employee'); return; }
     setShowAdd(false);
-    setAddForm({ full_name: '', email: '', password: '', role: 'employee', employee_code: '' });
+    setAddForm({ full_name: '', email: '', password: '', role: 'employee', designation: 'Relationship Manager', employee_code: '' });
     showToast(`Employee created with code ${json.employee_code}`);
     load();
   };
 
   const handleEdit = async () => {
     if (!editEmp) return;
+    if (!editForm.designation.trim()) { showToast('Designation is required.', false); return; }
     setSaving(true);
-    const { error } = await supabase.from('nw_employees').update({ full_name: editForm.full_name, phone: editForm.phone, role: editForm.role, status: editForm.status, updated_at: new Date().toISOString() }).eq('id', editEmp.id);
+    const { error } = await supabase.from('nw_employees').update({ full_name: editForm.full_name, phone: editForm.phone, role: editForm.role, designation: editForm.designation, status: editForm.status, updated_at: new Date().toISOString() }).eq('id', editEmp.id);
     setSaving(false);
     if (error) { showToast(error.message, false); return; }
     setEditEmp(null);
@@ -155,7 +153,7 @@ export default function Employees({ employee }: Props) {
           <table className="w-full">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                {['Employee', 'Code', 'Role', 'Status', 'Joined', 'Actions'].map(h => (
+                {['Employee', 'Code', 'Designation', 'Status', 'Joined', 'Actions'].map(h => (
                   <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                 ))}
               </tr>
@@ -180,7 +178,7 @@ export default function Employees({ employee }: Props) {
                   </td>
                   <td className="px-5 py-3.5"><span className="text-xs font-mono px-2 py-1 rounded" style={{ background: 'var(--bg-raised)', color: 'var(--accent)' }}>{e.employee_code}</span></td>
                   <td className="px-5 py-3.5">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-lg border ${ROLE_COLORS[e.role]}`}>{ROLE_LABELS[e.role]}</span>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-lg border text-c-blue bg-c-blue/10 border-c-blue/20">{e.designation ?? 'Relationship Manager'}</span>
                   </td>
                   <td className="px-5 py-3.5">
                     <span className={`text-xs font-semibold px-2 py-1 rounded-lg border ${e.status === 'active' ? 'text-c-emerald bg-c-emerald/10 border-c-emerald/20' : 'text-c-red bg-c-red/10 border-c-red/20'}`}>
@@ -191,7 +189,7 @@ export default function Employees({ employee }: Props) {
                   <td className="px-5 py-3.5">
                     {e.id !== employee.id && (
                       <div className="flex items-center gap-1">
-                        <button onClick={() => { setEditEmp(e); setEditForm({ full_name: e.full_name, phone: e.phone || '', role: e.role, status: e.status }); }}
+                        <button onClick={() => { setEditEmp(e); setEditForm({ full_name: e.full_name, phone: e.phone || '', role: e.role, designation: e.designation ?? 'Relationship Manager', status: e.status }); }}
                           className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }}
                           onMouseEnter={ev => (ev.currentTarget.style.color = 'rgb(var(--info-soft-rgb))')} onMouseLeave={ev => (ev.currentTarget.style.color = 'var(--text-faint)')}>
                           <Pencil className="w-4 h-4" />
@@ -237,11 +235,17 @@ export default function Employees({ employee }: Props) {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Role</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Role <span className="normal-case font-normal" style={{ color: 'var(--text-faint)' }}>(access level — internal only)</span></label>
               <select value={addForm.role} onChange={e => setAddForm(f => ({ ...f, role: e.target.value }))} className={inputClass} style={inputStyle}>
                 <option value="employee">Employee</option>
                 <option value="admin">Admin</option>
                 {isSuperAdmin && <option value="super_admin">Super Admin</option>}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Designation <span className="normal-case font-normal" style={{ color: 'var(--text-faint)' }}>(shown on documents &amp; emails)</span></label>
+              <select value={addForm.designation} onChange={e => setAddForm(f => ({ ...f, designation: e.target.value }))} className={inputClass} style={inputStyle}>
+                {DESIGNATIONS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Employee will be prompted to change password on first login.</p>
@@ -266,11 +270,17 @@ export default function Employees({ employee }: Props) {
               </div>
             ))}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Role</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Role <span className="normal-case font-normal" style={{ color: 'var(--text-faint)' }}>(access level — internal only)</span></label>
               <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))} className={inputClass} style={inputStyle}>
                 <option value="employee">Employee</option>
                 <option value="admin">Admin</option>
                 {isSuperAdmin && <option value="super_admin">Super Admin</option>}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Designation <span className="normal-case font-normal" style={{ color: 'var(--text-faint)' }}>(shown on documents &amp; emails)</span></label>
+              <select value={editForm.designation} onChange={e => setEditForm(f => ({ ...f, designation: e.target.value }))} className={inputClass} style={inputStyle}>
+                {DESIGNATIONS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <div>

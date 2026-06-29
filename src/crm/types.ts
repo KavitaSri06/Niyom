@@ -5,7 +5,8 @@ export interface NWEmployee {
   full_name: string;
   email: string;
   phone: string;
-  role: 'super_admin' | 'admin' | 'employee';
+  role: 'super_admin' | 'admin' | 'employee'; // authorization only — never shown to clients
+  designation: string | null;                 // display-only job title (Designated Partner, etc.)
   status: 'active' | 'inactive';
   password_changed: boolean;
   joining_date: string;

@@ -28,13 +28,9 @@ function generateToken(): string {
   return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function formatRole(role: string): string {
-  switch (role) {
-    case "super_admin": return "Super Admin";
-    case "admin": return "Admin";
-    case "employee": return "Relationship Manager";
-    default: return "Staff";
-  }
+// Client-facing job title — use display-only `designation`, never the internal `role`.
+function formatDesignation(designation: string | null | undefined): string {
+  return (designation && designation.trim()) || "Relationship Manager";
 }
 
 const isValidEmail = (e: unknown): e is string =>
@@ -82,7 +78,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: employee } = await db
       .from("nw_employees")
-      .select("id, full_name, role, email, phone")
+      .select("id, full_name, role, designation, email, phone")
       .eq("auth_user_id", user.id)
       .maybeSingle();
     if (!employee) return json({ success: false, error: "Unauthorized" }, 401);
@@ -145,7 +141,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const link = `${appUrl}/deal/${token}`;
-    const designation = formatRole(employee.role);
+    const designation = formatDesignation(employee.designation);
     const expiryIst = new Date(expiresAt).toLocaleString("en-IN", {
       timeZone: "Asia/Kolkata",
       day: "2-digit", month: "short", year: "numeric",

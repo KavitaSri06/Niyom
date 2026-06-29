@@ -68,13 +68,11 @@ export function base64ToBytes(b64: string): Uint8Array {
   return bytes;
 }
 
-export function formatRole(role: string | null | undefined): string {
-  switch (role) {
-    case "super_admin": return "Super Admin";
-    case "admin": return "Admin";
-    case "employee": return "Relationship Manager";
-    default: return "Relationship Manager";
-  }
+// Client-facing job title. NEVER derive this from `role` (super_admin/admin/employee are
+// internal authorization values and must never reach a client). Use the employee's
+// display-only `designation`, falling back to a safe generic title.
+export function formatDesignation(designation: string | null | undefined): string {
+  return (designation && designation.trim()) || "Relationship Manager";
 }
 
 export const INR = (n: number): string =>
