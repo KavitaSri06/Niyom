@@ -116,9 +116,9 @@ function buildPdfOpts(confirmationNumber: string, dealDate: string, scale: numbe
 function ROField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>{label}</label>
+      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>{label}</label>
       <div className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none"
-        style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.12)', color: '#A8A8A8' }}>
+        style={{ background: 'rgba(var(--accent-rgb),0.04)', border: '1px solid rgba(var(--accent-rgb),0.12)', color: 'var(--text-bright)' }}>
         {value || '—'}
       </div>
     </div>
@@ -129,11 +129,11 @@ function ROField({ label, value }: { label: string; value: string }) {
 function Field({ label, required, children, hint }: { label: string; required?: boolean; children: React.ReactNode; hint?: string }) {
   return (
     <div>
-      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#8A8A8A' }}>
-        {label}{required && <span className="ml-0.5" style={{ color: '#D4AF37' }}>*</span>}
+      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+        {label}{required && <span className="ml-0.5" style={{ color: 'var(--accent)' }}>*</span>}
       </label>
       {children}
-      {hint && <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>{hint}</p>}
+      {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>{hint}</p>}
     </div>
   );
 }
@@ -142,8 +142,8 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const [focused, setFocused] = useState(false);
   return (
     <input {...props}
-      className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none transition-all"
-      style={{ background: '#050505', border: `1px solid ${focused ? '#D4AF37' : '#1E1E24'}` }}
+      className="w-full px-3.5 py-2.5 rounded-xl text-sm text-text-primary outline-none transition-all"
+      style={{ background: 'var(--bg-base)', border: `1px solid ${focused ? 'var(--accent)' : 'var(--border)'}` }}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
     />
@@ -152,11 +152,11 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
 
 // ---------- Acceptance Status Badge ----------
 const ACCEPTANCE_STYLES: Record<AcceptanceStatus, { label: string; bg: string; color: string }> = {
-  pending:  { label: 'Pending',  bg: 'rgba(107,107,107,0.1)', color: '#9A9A9A' },
-  viewed:   { label: 'Viewed',   bg: 'rgba(96,165,250,0.12)', color: '#60a5fa' },
-  accepted: { label: 'Accepted', bg: 'rgba(16,185,129,0.1)',  color: '#10B981' },
-  rejected: { label: 'Rejected', bg: 'rgba(239,68,68,0.1)',   color: '#ef4444' },
-  expired:  { label: 'Expired',  bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b' },
+  pending:  { label: 'Pending',  bg: 'rgba(107,107,107,0.1)', color: 'var(--text-secondary)' },
+  viewed:   { label: 'Viewed',   bg: 'rgba(96,165,250,0.12)', color: 'rgb(var(--info-soft-rgb))' },
+  accepted: { label: 'Accepted', bg: 'rgba(16,185,129,0.1)',  color: 'var(--success)' },
+  rejected: { label: 'Rejected', bg: 'rgba(239,68,68,0.1)',   color: 'var(--danger)' },
+  expired:  { label: 'Expired',  bg: 'rgba(245,158,11,0.1)',  color: 'var(--warning)' },
 };
 
 function AcceptanceBadge({ status }: { status: AcceptanceStatus }) {
@@ -164,7 +164,7 @@ function AcceptanceBadge({ status }: { status: AcceptanceStatus }) {
   return (
     <span
       className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg"
-      style={{ background: s.bg, color: s.color, border: `1px solid ${s.color}33` }}
+      style={{ background: s.bg, color: s.color, border: `1px solid color-mix(in srgb, ${s.color} 20%, transparent)` }}
     >
       {status === 'accepted' && <CheckCircle2 className="w-3 h-3" />}
       {s.label}
@@ -441,7 +441,7 @@ export default function DealConfirmation({ employee }: Props) {
       <div className="space-y-6">
         {/* Top Action Bar */}
         <div className="flex items-center gap-4 flex-wrap">
-          <button onClick={() => setView('list')} className="flex items-center gap-2 text-sm" style={{ color: '#8A8A8A' }}>
+          <button onClick={() => setView('list')} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
             <ChevronLeft className="w-4 h-4" /> Back to List
           </button>
           <div className="flex-1" />
@@ -452,8 +452,8 @@ export default function DealConfirmation({ employee }: Props) {
               if (!element) return;
               html2pdf().set(pdfOpt).from(element).save();
             }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black"
-            style={{ background: 'linear-gradient(135deg, #B8961E, #9C7D18)' }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent"
+            style={{ background: 'linear-gradient(135deg, var(--accent-strong), var(--accent-strong-deep))' }}
           >
             <Download className="w-4 h-4" /> Download PDF
           </button>
@@ -462,15 +462,15 @@ export default function DealConfirmation({ employee }: Props) {
             <>
               <span
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold"
-                style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.25)' }}
+                style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.25)' }}
               >
                 <Lock className="w-4 h-4" /> Accepted & Locked
               </span>
               {previewDeal.signed_pdf_path && (
                 <button
                   onClick={() => handleDownloadSigned(previewDeal)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black"
-                  style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent"
+                  style={{ background: 'linear-gradient(135deg, var(--success), var(--success-deep))' }}
                 >
                   <Download className="w-4 h-4" /> Signed PDF
                 </button>
@@ -480,8 +480,8 @@ export default function DealConfirmation({ employee }: Props) {
             <button
               onClick={() => handleSendSecureLink(previewDeal)}
               disabled={emailSending}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black transition-all disabled:cursor-not-allowed"
-              style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)', opacity: emailSending ? 0.75 : 1 }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent transition-all disabled:cursor-not-allowed"
+              style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', opacity: emailSending ? 0.75 : 1 }}
             >
               {emailSending ? (
                 <>
@@ -502,17 +502,17 @@ export default function DealConfirmation({ employee }: Props) {
         {previewDeal.acceptance_status === 'accepted' && (
           <div className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs"
             style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
-            <span style={{ color: '#10B981' }} className="font-semibold">Accepted &amp; locked</span>
-            {previewDeal.accepted_at && <span style={{ color: '#8A8A8A' }}>On: {new Date(previewDeal.accepted_at).toLocaleString('en-IN')}</span>}
-            {previewDeal.signer_email && <span style={{ color: '#8A8A8A' }}>By: {previewDeal.signer_email}</span>}
+            <span style={{ color: 'var(--success)' }} className="font-semibold">Accepted &amp; locked</span>
+            {previewDeal.accepted_at && <span style={{ color: 'var(--text-secondary)' }}>On: {new Date(previewDeal.accepted_at).toLocaleString('en-IN')}</span>}
+            {previewDeal.signer_email && <span style={{ color: 'var(--text-secondary)' }}>By: {previewDeal.signer_email}</span>}
           </div>
         )}
         {previewDeal.acceptance_status === 'rejected' && (
           <div className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs"
             style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <span style={{ color: '#ef4444' }} className="font-semibold">Rejected by client</span>
-            {previewDeal.rejected_at && <span style={{ color: '#8A8A8A' }}>On: {new Date(previewDeal.rejected_at).toLocaleString('en-IN')}</span>}
-            {previewDeal.rejection_reason && <span style={{ color: '#8A8A8A' }}>Reason: {previewDeal.rejection_reason}</span>}
+            <span style={{ color: 'var(--danger)' }} className="font-semibold">Rejected by client</span>
+            {previewDeal.rejected_at && <span style={{ color: 'var(--text-secondary)' }}>On: {new Date(previewDeal.rejected_at).toLocaleString('en-IN')}</span>}
+            {previewDeal.rejection_reason && <span style={{ color: 'var(--text-secondary)' }}>Reason: {previewDeal.rejection_reason}</span>}
           </div>
         )}
 
@@ -527,50 +527,50 @@ export default function DealConfirmation({ employee }: Props) {
     return (
       <div className="space-y-6 max-w-3xl">
         <div className="flex items-center gap-3">
-          <button onClick={() => setView('list')} className="flex items-center gap-2 text-sm" style={{ color: '#8A8A8A' }}>
+          <button onClick={() => setView('list')} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
           <div>
-            <p className="text-xs uppercase tracking-widest mb-0.5" style={{ color: '#D4AF37' }}>Deal Confirmation</p>
-            <h1 className="text-xl font-bold text-white">{editDeal ? 'Edit Deal' : 'Create Deal Confirmation'}</h1>
+            <p className="text-xs uppercase tracking-widest mb-0.5" style={{ color: 'var(--accent)' }}>Deal Confirmation</p>
+            <h1 className="text-xl font-bold text-text-primary">{editDeal ? 'Edit Deal' : 'Create Deal Confirmation'}</h1>
           </div>
         </div>
 
         {error && (
           <div className="p-4 rounded-2xl flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-            <p className="text-sm text-red-400">{error}</p>
+            <AlertCircle className="w-4 h-4 text-c-red flex-shrink-0" />
+            <p className="text-sm text-c-red">{error}</p>
           </div>
         )}
 
         {/* Client Selection */}
-        <div className="rounded-2xl p-6 space-y-4" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#D4AF37' }}>Step 1 — Select Client</p>
+        <div className="rounded-2xl p-6 space-y-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Step 1 — Select Client</p>
           <div ref={clientDropRef} className="relative">
-            <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#8A8A8A' }}>
-              Client Code / Name <span style={{ color: '#D4AF37' }}>*</span>
+            <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Client Code / Name <span style={{ color: 'var(--accent)' }}>*</span>
             </label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
               <input
                 value={clientSearch}
                 onChange={e => { setClientSearch(e.target.value); setShowClientDrop(true); setSelectedClient(null); setForm(f => ({ ...f, client_id: '' })); }}
                 onFocus={() => setShowClientDrop(true)}
                 placeholder="Search by client name or code..."
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white outline-none"
-                style={{ background: '#050505', border: `1px solid ${selectedClient ? '#10B981' : '#1E1E24'}` }}
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+                style={{ background: 'var(--bg-base)', border: `1px solid ${selectedClient ? 'var(--success)' : 'var(--border)'}` }}
               />
-              {selectedClient && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />}
+              {selectedClient && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-c-emerald" />}
             </div>
             {showClientDrop && filteredClientOptions.length > 0 && (
-              <div className="absolute z-20 w-full mt-1 rounded-xl overflow-hidden shadow-2xl" style={{ background: '#0D0D0D', border: '1px solid #1E1E24', maxHeight: 220, overflowY: 'auto' }}>
+              <div className="absolute z-20 w-full mt-1 rounded-xl overflow-hidden shadow-2xl" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', maxHeight: 220, overflowY: 'auto' }}>
                 {filteredClientOptions.slice(0, 30).map(c => (
                   <button key={c.id} onClick={() => selectClient(c)}
                     className="w-full text-left px-4 py-3 text-sm transition-colors"
-                    style={{ color: '#fff', borderBottom: '1px solid #111' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,175,55,0.08)')}
+                    style={{ color: 'var(--text-primary)', borderBottom: '1px solid var(--bg-raised)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(var(--accent-rgb),0.08)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <span className="font-mono text-xs mr-2" style={{ color: '#D4AF37' }}>{c.client_code}</span>
+                    <span className="font-mono text-xs mr-2" style={{ color: 'var(--accent)' }}>{c.client_code}</span>
                     {c.full_name}
                   </button>
                 ))}
@@ -581,8 +581,8 @@ export default function DealConfirmation({ employee }: Props) {
 
         {/* Auto-filled client details */}
         {selectedClient && (
-          <div className="rounded-2xl p-6 space-y-4" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#D4AF37' }}>Buyer Details (Auto-filled)</p>
+          <div className="rounded-2xl p-6 space-y-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Buyer Details (Auto-filled)</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ROField label="Client Name" value={selectedClient.full_name} />
               <ROField label="PAN Number" value={selectedClient.pan} />
@@ -601,8 +601,8 @@ export default function DealConfirmation({ employee }: Props) {
         )}
 
         {/* Deal Details */}
-        <div className="rounded-2xl p-6 space-y-4" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#D4AF37' }}>Step 2 — Deal Information</p>
+        <div className="rounded-2xl p-6 space-y-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Step 2 — Deal Information</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Field label="Deal Date" required>
               <Input type="date" value={form.deal_date} onChange={e => setForm(f => ({ ...f, deal_date: e.target.value }))} />
@@ -610,32 +610,32 @@ export default function DealConfirmation({ employee }: Props) {
             <Field label="Transaction Type" required>
               <div className="relative">
                 <select value={form.transaction_type} onChange={e => setForm(f => ({ ...f, transaction_type: e.target.value as 'Buy' | 'Sell' }))}
-                  className="w-full pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-                  style={{ background: '#050505', border: '1px solid #1E1E24' }}>
+                  className="w-full pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+                  style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
                   <option value="">Select type</option>
                   <option value="Buy">Buy</option>
                   <option value="Sell">Sell</option>
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#4A4A4A' }} />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--text-faint)' }} />
               </div>
             </Field>
             <Field label="Product Type" required>
               <div className="relative">
                 <select value={form.product_type} onChange={e => setForm(f => ({ ...f, product_type: e.target.value }))}
-                  className="w-full pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-                  style={{ background: '#050505', border: '1px solid #1E1E24' }}>
+                  className="w-full pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+                  style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
                   <option value="">Select product</option>
                   {PRODUCT_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#4A4A4A' }} />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--text-faint)' }} />
               </div>
             </Field>
           </div>
         </div>
 
         {/* Security Details */}
-        <div className="rounded-2xl p-6 space-y-4" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#D4AF37' }}>Step 3 — Security / Instrument Details</p>
+        <div className="rounded-2xl p-6 space-y-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Step 3 — Security / Instrument Details</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Security / Company Name" required>
               <Input value={form.security_name} onChange={e => setForm(f => ({ ...f, security_name: e.target.value }))} placeholder="e.g. Tata Motors Ltd" />
@@ -657,7 +657,7 @@ export default function DealConfirmation({ employee }: Props) {
                 placeholder="Enter base rate"
               />
               {form.rate_per_unit && (
-                <p className="text-xs mt-1.5 font-semibold" style={{ color: '#D4AF37' }}>
+                <p className="text-xs mt-1.5 font-semibold" style={{ color: 'var(--accent)' }}>
                   Adjusted Rate: ₹{parseFloat(form.rate_per_unit).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               )}
@@ -668,14 +668,14 @@ export default function DealConfirmation({ employee }: Props) {
           {(qty > 0 && adjRate > 0) && (
             <div className="rounded-xl p-4 grid grid-cols-2 gap-4 mt-2" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)' }}>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: '#4A4A4A' }}>Stamp Duty / Charges</p>
-                <p className="text-lg font-black" style={{ color: '#D4AF37' }}>{fmt(stampDuty)}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#3A3A3A' }}>(Rate × Qty) × 0.015%</p>
+                <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-faint)' }}>Stamp Duty / Charges</p>
+                <p className="text-lg font-black" style={{ color: 'var(--accent)' }}>{fmt(stampDuty)}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--border-stronger)' }}>(Rate × Qty) × 0.015%</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: '#4A4A4A' }}>Settlement Amount</p>
-                <p className="text-lg font-black" style={{ color: '#10B981' }}>{fmt(settlementAmount)}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#3A3A3A' }}>(Rate × Qty) + Stamp Duty</p>
+                <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-faint)' }}>Settlement Amount</p>
+                <p className="text-lg font-black" style={{ color: 'var(--success)' }}>{fmt(settlementAmount)}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--border-stronger)' }}>(Rate × Qty) + Stamp Duty</p>
               </div>
             </div>
           )}
@@ -683,18 +683,18 @@ export default function DealConfirmation({ employee }: Props) {
 
         {/* Actions */}
         <div className="flex items-center gap-3 flex-wrap">
-          <button onClick={() => setView('list')} className="px-4 py-2.5 rounded-xl text-sm" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
+          <button onClick={() => setView('list')} className="px-4 py-2.5 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
             Cancel
           </button>
           <div className="flex-1" />
           <button onClick={() => handleSave('draft')} disabled={saving}
             className="px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
-            style={{ background: '#111', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.3)' }}>
+            style={{ background: 'var(--bg-raised)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.3)' }}>
             {saving ? 'Saving...' : 'Save Draft'}
           </button>
           <button onClick={() => handleSave('confirmed')} disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-black disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
             <CheckCircle2 className="w-4 h-4" />
             {saving ? 'Saving...' : 'Confirm & Save'}
           </button>
@@ -709,21 +709,21 @@ export default function DealConfirmation({ employee }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Documents</p>
-          <h1 className="text-2xl font-bold text-white">Deal Confirmations</h1>
-          <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>Generate, preview and email deal confirmation notes</p>
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Documents</p>
+          <h1 className="text-2xl font-bold text-text-primary">Deal Confirmations</h1>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Generate, preview and email deal confirmation notes</p>
         </div>
         <button onClick={openCreate}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black"
-          style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent"
+          style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
           <Plus className="w-4 h-4" /> Create Deal Confirmation
         </button>
       </div>
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold transition-all ${toast.ok ? 'text-emerald-400' : 'text-red-400'}`}
-          style={{ background: '#0D0D0D', border: `1px solid ${toast.ok ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+        <div className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold transition-all ${toast.ok ? 'text-c-emerald' : 'text-c-red'}`}
+          style={{ background: 'var(--bg-surface)', border: `1px solid ${toast.ok ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
           {toast.ok ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
           {toast.msg}
         </div>
@@ -732,13 +732,13 @@ export default function DealConfirmation({ employee }: Props) {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total', value: deals.length, color: '#D4AF37' },
-          { label: 'Accepted', value: deals.filter(d => d.acceptance_status === 'accepted').length, color: '#10B981' },
-          { label: 'Rejected', value: deals.filter(d => d.acceptance_status === 'rejected').length, color: '#ef4444' },
-          { label: 'Awaiting Client', value: deals.filter(d => d.acceptance_status === 'pending' || d.acceptance_status === 'viewed').length, color: '#60a5fa' },
+          { label: 'Total', value: deals.length, color: 'var(--accent)' },
+          { label: 'Accepted', value: deals.filter(d => d.acceptance_status === 'accepted').length, color: 'var(--success)' },
+          { label: 'Rejected', value: deals.filter(d => d.acceptance_status === 'rejected').length, color: 'var(--danger)' },
+          { label: 'Awaiting Client', value: deals.filter(d => d.acceptance_status === 'pending' || d.acceptance_status === 'viewed').length, color: 'rgb(var(--info-soft-rgb))' },
         ].map(s => (
-          <div key={s.label} className="rounded-2xl p-5" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#4A4A4A' }}>{s.label}</p>
+          <div key={s.label} className="rounded-2xl p-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-faint)' }}>{s.label}</p>
             <p className="text-2xl font-black" style={{ color: s.color }}>{s.value}</p>
           </div>
         ))}
@@ -746,60 +746,60 @@ export default function DealConfirmation({ employee }: Props) {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by reference, client or security..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-white outline-none"
-          style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }} />
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }} />
       </div>
 
       {/* Table */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
         {loading ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#D4AF37', borderTopColor: 'transparent' }} />
+            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
           </div>
         ) : filteredDeals.length === 0 ? (
           <div className="text-center py-16">
-            <FileText className="w-10 h-10 mx-auto mb-3" style={{ color: '#2A2A2A' }} />
-            <p className="text-sm font-semibold" style={{ color: '#4A4A4A' }}>No deal confirmations yet</p>
-            <p className="text-xs mt-1" style={{ color: '#2A2A2A' }}>Click "Create Deal Confirmation" to get started</p>
+            <FileText className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--border-strong)' }} />
+            <p className="text-sm font-semibold" style={{ color: 'var(--text-faint)' }}>No deal confirmations yet</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--border-strong)' }}>Click "Create Deal Confirmation" to get started</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   {['Reference', 'Client', 'Security', 'Type', 'Date', 'Settlement', 'Status', 'Acceptance', ''].map(h => (
-                    <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                    <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filteredDeals.map(d => (
-                  <tr key={d.id} style={{ borderBottom: '1px solid #111' }}>
+                  <tr key={d.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}>
                     <td className="px-5 py-3.5">
-                      <span className="text-xs font-mono font-bold" style={{ color: '#D4AF37' }}>{d.confirmation_number}</span>
+                      <span className="text-xs font-mono font-bold" style={{ color: 'var(--accent)' }}>{d.confirmation_number}</span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <p className="text-sm font-medium text-white">{d.snap_client_name}</p>
-                      <p className="text-xs font-mono" style={{ color: '#4A4A4A' }}>{(d.client as any)?.client_code}</p>
+                      <p className="text-sm font-medium text-text-primary">{d.snap_client_name}</p>
+                      <p className="text-xs font-mono" style={{ color: 'var(--text-faint)' }}>{(d.client as any)?.client_code}</p>
                     </td>
                     <td className="px-5 py-3.5">
-                      <p className="text-sm text-white">{d.security_name}</p>
-                      <p className="text-xs font-mono" style={{ color: '#4A4A4A' }}>{d.isin}</p>
+                      <p className="text-sm text-text-primary">{d.security_name}</p>
+                      <p className="text-xs font-mono" style={{ color: 'var(--text-faint)' }}>{d.isin}</p>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className={`text-xs font-bold px-2 py-1 rounded-lg ${d.transaction_type === 'Buy' ? 'text-emerald-400 bg-emerald-900/20' : 'text-red-400 bg-red-900/20'}`}>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-lg ${d.transaction_type === 'Buy' ? 'text-c-emerald bg-emerald-900/20' : 'text-c-red bg-red-900/20'}`}>
                         {d.transaction_type}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-xs" style={{ color: '#8A8A8A' }}>{fmtDate(d.deal_date)}</td>
+                    <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-secondary)' }}>{fmtDate(d.deal_date)}</td>
                     <td className="px-5 py-3.5">
-                      <p className="text-sm font-bold text-white">{fmt(d.settlement_amount || 0)}</p>
-                      <p className="text-xs" style={{ color: '#4A4A4A' }}>Qty: {d.quantity?.toLocaleString('en-IN')}</p>
+                      <p className="text-sm font-bold text-text-primary">{fmt(d.settlement_amount || 0)}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Qty: {d.quantity?.toLocaleString('en-IN')}</p>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${d.status === 'confirmed' ? 'text-emerald-400 bg-emerald-900/20' : 'text-amber-400 bg-amber-900/20'}`}>
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${d.status === 'confirmed' ? 'text-c-emerald bg-emerald-900/20' : 'text-c-amber bg-amber-900/20'}`}>
                         {d.status === 'confirmed' ? 'Confirmed' : 'Draft'}
                       </span>
                     </td>
@@ -813,23 +813,23 @@ export default function DealConfirmation({ employee }: Props) {
                         <button
                           onClick={() => { setPreviewDeal(d); setView('preview'); }}
                           className="p-1.5 rounded-lg transition-colors" title="Preview"
-                          style={{ color: '#4A4A4A' }}
-                          onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')}
-                          onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
+                          style={{ color: 'var(--text-faint)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
                           <Eye className="w-4 h-4" />
                         </button>
                         {d.acceptance_status === 'accepted' ? (
                           <>
-                            <span className="p-1.5" title="Accepted & locked" style={{ color: '#10B981' }}>
+                            <span className="p-1.5" title="Accepted & locked" style={{ color: 'var(--success)' }}>
                               <Lock className="w-4 h-4" />
                             </span>
                             {d.signed_pdf_path && (
                               <button
                                 onClick={() => handleDownloadSigned(d)}
                                 className="p-1.5 rounded-lg transition-colors" title="Download signed PDF"
-                                style={{ color: '#4A4A4A' }}
-                                onMouseEnter={e => (e.currentTarget.style.color = '#10B981')}
-                                onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
+                                style={{ color: 'var(--text-faint)' }}
+                                onMouseEnter={e => (e.currentTarget.style.color = 'var(--success)')}
+                                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
                                 <Download className="w-4 h-4" />
                               </button>
                             )}
@@ -841,25 +841,25 @@ export default function DealConfirmation({ employee }: Props) {
                               disabled={emailSending}
                               className="p-1.5 rounded-lg transition-colors disabled:opacity-40"
                               title={d.email_status === 'sent' ? 'Resend secure link' : 'Send secure link'}
-                              style={{ color: '#4A4A4A' }}
-                              onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')}
-                              onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
+                              style={{ color: 'var(--text-faint)' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
                               <Send className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => openEdit(d)}
                               className="p-1.5 rounded-lg transition-colors" title="Edit"
-                              style={{ color: '#4A4A4A' }}
-                              onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
-                              onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
+                              style={{ color: 'var(--text-faint)' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = 'rgb(var(--info-soft-rgb))')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
                               <Pencil className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setDeleteDeal(d)}
                               className="p-1.5 rounded-lg transition-colors" title="Delete"
-                              style={{ color: '#4A4A4A' }}
-                              onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                              onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
+                              style={{ color: 'var(--text-faint)' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </>
@@ -877,20 +877,20 @@ export default function DealConfirmation({ employee }: Props) {
       {/* Delete confirm modal */}
       {deleteDeal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
-          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+          <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
-                <Trash2 className="w-5 h-5 text-red-400" />
+                <Trash2 className="w-5 h-5 text-c-red" />
               </div>
               <div>
-                <p className="text-sm font-bold text-white">Delete Deal Confirmation</p>
-                <p className="text-xs" style={{ color: '#6B6B6B' }}>{deleteDeal.confirmation_number}</p>
+                <p className="text-sm font-bold text-text-primary">Delete Deal Confirmation</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{deleteDeal.confirmation_number}</p>
               </div>
             </div>
-            <p className="text-sm" style={{ color: '#8A8A8A' }}>This action is permanent and cannot be undone.</p>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>This action is permanent and cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteDeal(null)} className="flex-1 py-2.5 rounded-xl text-sm" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>Cancel</button>
-              <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: '#ef4444' }}>Delete</button>
+              <button onClick={() => setDeleteDeal(null)} className="flex-1 py-2.5 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
+              <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: 'var(--danger)' }}>Delete</button>
             </div>
           </div>
         </div>

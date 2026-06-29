@@ -16,7 +16,7 @@ export function PrivacyPolicy({ onClose }: PrivacyPolicyProps) {
     <LegalDocumentLayout
       title="Privacy Policy"
       subtitle="Niyom Wealth Distribution LLP"
-      icon={<Shield className="w-16 h-16 text-slate-700" strokeWidth={1.5} />}
+      icon={<Shield className="w-16 h-16 text-text-secondary" strokeWidth={1.5} />}
       onClose={onClose}
     >
       <LegalSection number="1" title="Introduction">
@@ -126,7 +126,7 @@ export function PrivacyPolicy({ onClose }: PrivacyPolicyProps) {
           'Employee training on data protection',
           'Secure data centers with physical security measures'
         ]} />
-        <p className="mt-4 italic text-slate-600">
+        <p className="mt-4 italic text-text-secondary">
           However, no method of transmission over the Internet or electronic storage is 100% secure.
           While we strive to protect your information, we cannot guarantee absolute security.
         </p>

@@ -138,34 +138,34 @@ export default function OrderPlacement({ onClose }: OrderPlacementProps) {
   if (showConfirmation) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center">
+        <div className="max-w-md w-full bg-bg-elevated rounded-2xl shadow-2xl p-8 text-center">
           <div className="mb-6">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Submitted Successfully!</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className="text-2xl font-bold text-text-primary mb-2">Order Submitted Successfully!</h2>
+            <p className="text-text-secondary mb-6">
               Your order is under process. You will soon receive a call or message from our team.
               Thank you for doing business with us!
             </p>
-            <div className="bg-slate-50 rounded-lg p-4 mb-6 text-left">
+            <div className="bg-bg-base rounded-lg p-4 mb-6 text-left">
               <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Company:</span>
-                <span className="font-semibold text-gray-900">{share.company_name}</span>
+                <span className="text-text-secondary">Company:</span>
+                <span className="font-semibold text-text-primary">{share.company_name}</span>
               </div>
               <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Order Type:</span>
-                <span className="font-semibold text-gray-900 uppercase">{orderType}</span>
+                <span className="text-text-secondary">Order Type:</span>
+                <span className="font-semibold text-text-primary uppercase">{orderType}</span>
               </div>
               <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Lots:</span>
-                <span className="font-semibold text-gray-900">{lots}</span>
+                <span className="text-text-secondary">Lots:</span>
+                <span className="font-semibold text-text-primary">{lots}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Total Amount:</span>
-                <span className="font-semibold text-gray-900">₹{totalInvestment.toLocaleString('en-IN')}</span>
+                <span className="text-text-secondary">Total Amount:</span>
+                <span className="font-semibold text-text-primary">₹{totalInvestment.toLocaleString('en-IN')}</span>
               </div>
             </div>
           </div>
@@ -193,14 +193,14 @@ export default function OrderPlacement({ onClose }: OrderPlacementProps) {
           </button>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-text-muted hover:text-white transition-colors"
             title="Close and return to landing page"
           >
             <X size={28} />
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-bg-elevated rounded-2xl shadow-2xl overflow-hidden">
           <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white">
             <h1 className="text-3xl font-bold mb-2">{share.company_name}</h1>
             <p className="text-emerald-100 mb-4">{share.sector}</p>
@@ -226,7 +226,7 @@ export default function OrderPlacement({ onClose }: OrderPlacementProps) {
                   className={`flex-1 py-3 rounded-lg font-semibold transition-all ${
                     orderType === 'buy'
                       ? 'bg-emerald-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-bg-raised text-text-secondary hover:bg-bg-raised'
                   }`}
                 >
                   BUY
@@ -236,32 +236,32 @@ export default function OrderPlacement({ onClose }: OrderPlacementProps) {
                   className={`flex-1 py-3 rounded-lg font-semibold transition-all ${
                     orderType === 'sell'
                       ? 'bg-red-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-bg-raised text-text-secondary hover:bg-bg-raised'
                   }`}
                 >
                   SELL
                 </button>
               </div>
 
-              <div className="bg-slate-50 rounded-lg p-4 mb-6">
+              <div className="bg-bg-base rounded-lg p-4 mb-6">
                 <div className="flex justify-between mb-3">
-                  <span className="text-gray-600">Lot Size:</span>
-                  <span className="font-semibold text-gray-900">{share.lot_size} shares</span>
+                  <span className="text-text-secondary">Lot Size:</span>
+                  <span className="font-semibold text-text-primary">{share.lot_size} shares</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Price per Share:</span>
-                  <span className="font-semibold text-gray-900">₹{share.current_price.toLocaleString('en-IN')}</span>
+                  <span className="text-text-secondary">Price per Share:</span>
+                  <span className="font-semibold text-text-primary">₹{share.current_price.toLocaleString('en-IN')}</span>
                 </div>
               </div>
 
               <div className="mb-6">
-                <label className="block text-gray-700 font-semibold mb-2">
+                <label className="block text-text-secondary font-semibold mb-2">
                   Number of Lots
                 </label>
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => handleLotsChange(lots - 1)}
-                    className="w-12 h-12 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-xl transition-colors"
+                    className="w-12 h-12 rounded-lg bg-bg-raised hover:bg-gray-300 text-text-secondary font-bold text-xl transition-colors"
                     disabled={lots <= 1}
                   >
                     -
@@ -271,11 +271,11 @@ export default function OrderPlacement({ onClose }: OrderPlacementProps) {
                     min="1"
                     value={lots}
                     onChange={(e) => handleLotsChange(parseInt(e.target.value) || 1)}
-                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg text-center text-xl font-semibold focus:border-emerald-500 focus:outline-none"
+                    className="flex-1 px-4 py-3 border-2 border-border-strong rounded-lg text-center text-xl font-semibold focus:border-emerald-500 focus:outline-none"
                   />
                   <button
                     onClick={() => handleLotsChange(lots + 1)}
-                    className="w-12 h-12 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-xl transition-colors"
+                    className="w-12 h-12 rounded-lg bg-bg-raised hover:bg-gray-300 text-text-secondary font-bold text-xl transition-colors"
                     disabled={exceedsLimit}
                   >
                     +
@@ -285,15 +285,15 @@ export default function OrderPlacement({ onClose }: OrderPlacementProps) {
 
               <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg p-4 mb-4">
                 <div className="flex justify-between mb-2">
-                  <span className="text-gray-600">Total Shares:</span>
-                  <span className="font-semibold text-gray-900">{totalShares.toLocaleString('en-IN')}</span>
+                  <span className="text-text-secondary">Total Shares:</span>
+                  <span className="font-semibold text-text-primary">{totalShares.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between mb-2">
-                  <span className="text-gray-600">Total Investment:</span>
-                  <span className="font-bold text-xl text-gray-900">₹{totalInvestment.toLocaleString('en-IN')}</span>
+                  <span className="text-text-secondary">Total Investment:</span>
+                  <span className="font-bold text-xl text-text-primary">₹{totalInvestment.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Remaining Limit:</span>
+                  <span className="text-text-secondary">Remaining Limit:</span>
                   <span className={`font-semibold ${exceedsLimit ? 'text-red-600' : 'text-emerald-600'}`}>
                     ₹{Math.max(0, MAX_INVESTMENT - totalInvestment).toLocaleString('en-IN')}
                   </span>

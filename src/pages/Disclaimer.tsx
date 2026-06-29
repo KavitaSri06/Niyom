@@ -32,7 +32,7 @@ export function Disclaimer({ onClose }: DisclaimerProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100">
+    <div className="min-h-screen bg-bg-base">
       {/* Top navigation bar */}
       <header className="sticky top-0 z-50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl border-b border-slate-700">
         <div className="max-w-6xl mx-auto px-6 sm:px-8 py-5 flex justify-between items-center">
@@ -55,26 +55,26 @@ export function Disclaimer({ onClose }: DisclaimerProps) {
       </header>
 
       <main className="max-w-5xl mx-auto px-6 sm:px-8 py-12 sm:py-16">
-        <article className="bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
+        <article className="bg-bg-elevated rounded-xl shadow-2xl border border-border overflow-hidden">
           {/* Header area */}
-          <div className="bg-gradient-to-r from-slate-50 to-white p-8 sm:p-12 border-b-2 border-slate-200">
+          <div className="bg-gradient-to-r from-bg-raised to-bg-elevated p-8 sm:p-12 border-b-2 border-border">
             <div className="flex items-start gap-6 mb-6">
               <div className="flex-shrink-0" aria-hidden="true">
-                <ShieldAlert className="w-16 h-16 text-[#c9b896]" strokeWidth={1.5} />
+                <ShieldAlert className="w-16 h-16 text-accent" strokeWidth={1.5} />
               </div>
               <div className="flex-1">
                 <h1
-                  className="text-4xl sm:text-5xl font-bold text-slate-900 mb-3 leading-tight"
+                  className="text-4xl sm:text-5xl font-bold text-text-primary mb-3 leading-tight"
                   style={{ fontFamily: 'Georgia, "Times New Roman", serif', letterSpacing: '-0.025em' }}
                 >
                   Disclaimer
                 </h1>
-                <p className="text-lg text-slate-600 font-light tracking-wide">{COMPANY}</p>
+                <p className="text-lg text-text-secondary font-light tracking-wide">{COMPANY}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="font-semibold text-slate-700 uppercase tracking-wider">Last Updated:</span>
-              <span className="text-slate-600">{LAST_UPDATED}</span>
+              <span className="font-semibold text-text-secondary uppercase tracking-wider">Last Updated:</span>
+              <span className="text-text-secondary">{LAST_UPDATED}</span>
             </div>
           </div>
 
@@ -107,14 +107,14 @@ export function Disclaimer({ onClose }: DisclaimerProps) {
           </div>
 
           {/* Document footer */}
-          <div className="border-t-2 border-slate-200 bg-slate-50 px-8 sm:px-12 py-8 text-center">
+          <div className="border-t-2 border-border bg-bg-base px-8 sm:px-12 py-8 text-center">
             <p
-              className="text-base font-semibold text-slate-800"
+              className="text-base font-semibold text-text-primary"
               style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
             >
               {COMPANY}
             </p>
-            <p className="text-sm text-slate-500 mt-2">
+            <p className="text-sm text-text-muted mt-2">
               &copy; 2026 Niyom Wealth Distribution LLP. All Rights Reserved.
             </p>
           </div>

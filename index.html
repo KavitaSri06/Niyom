@@ -17,6 +17,27 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Resolve theme before first paint to avoid a flash (FOUC).
+         Precedence: saved preference -> OS preference -> dark (production default). -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('niyom-theme');
+          var theme =
+            saved === 'light' || saved === 'dark'
+              ? saved
+              : window.matchMedia &&
+                window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark';
+          var el = document.documentElement;
+          el.setAttribute('data-theme', theme);
+          el.classList.add(theme);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

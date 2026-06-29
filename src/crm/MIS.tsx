@@ -176,10 +176,11 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
     insurance: 'Insurance',
     trail: 'MF Trail',
   };
+  // RGB triplets so on-screen badges can composite tint + solid via rgba()/rgb().
   const revenueTypeColor: Record<string, string> = {
-    landing_cost: '#D4AF37',
-    insurance: '#F97316',
-    trail: '#EC4899',
+    landing_cost: 'var(--accent-rgb)',
+    insurance: '249, 115, 22',
+    trail: '236, 72, 153',
   };
 
   const printMIS = () => {
@@ -205,7 +206,7 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
   <style>
     @page { margin: 18mm 14mm; }
     body { font-family: Arial, sans-serif; color: #111; font-size: 12px; }
-    .header { display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #D4AF37; padding-bottom:12px; margin-bottom:16px; }
+    .header { display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #d4af37; padding-bottom:12px; margin-bottom:16px; }
     .period { font-size:11px; color:#888; }
     .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
     .stat { background:#f8f8f8; border-radius:6px; padding:10px 12px; border-top:3px solid #eee; }
@@ -223,9 +224,9 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
     <div style="text-align:right"><div style="font-size:20px;font-weight:800;color:#059669">&#8377;${totalRevenue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div><div style="font-size:10px;color:#888">Total Revenue</div></div>
   </div>
   <div class="stats">
-    <div class="stat" style="border-top-color:#D4AF37"><div class="stat-label">Unlisted / Bonds</div><div class="stat-value" style="color:#D4AF37">&#8377;${byType.landing_cost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
-    <div class="stat" style="border-top-color:#F97316"><div class="stat-label">Insurance</div><div class="stat-value" style="color:#F97316">&#8377;${byType.insurance.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
-    <div class="stat" style="border-top-color:#EC4899"><div class="stat-label">MF Trail</div><div class="stat-value" style="color:#EC4899">&#8377;${byType.trail.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
+    <div class="stat" style="border-top-color:#d4af37"><div class="stat-label">Unlisted / Bonds</div><div class="stat-value" style="color:#d4af37">&#8377;${byType.landing_cost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
+    <div class="stat" style="border-top-color:#f97316"><div class="stat-label">Insurance</div><div class="stat-value" style="color:#f97316">&#8377;${byType.insurance.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
+    <div class="stat" style="border-top-color:#ec4899"><div class="stat-label">MF Trail</div><div class="stat-value" style="color:#ec4899">&#8377;${byType.trail.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div></div>
     <div class="stat" style="border-top-color:#059669"><div class="stat-label">Total Entries</div><div class="stat-value">${rows.length}</div></div>
   </div>
   <table>
@@ -248,21 +249,21 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Revenue</p>
-          <h1 className="text-2xl font-bold text-white">MIS Report</h1>
-          <p className="text-xs mt-1" style={{ color: '#6B6B6B' }}>Management Information System — monthly revenue overview</p>
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Revenue</p>
+          <h1 className="text-2xl font-bold text-text-primary">MIS Report</h1>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Management Information System — monthly revenue overview</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {hasLoaded && rows.length > 0 && (
             <button onClick={printMIS}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
-              style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
+              style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
               <Download className="w-4 h-4" /> Download PDF
             </button>
           )}
           <button onClick={calculate} disabled={loading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
             <BarChart3 className="w-4 h-4" />
             {loading ? 'Calculating...' : 'Generate MIS'}
           </button>
@@ -270,37 +271,37 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
       </div>
 
       {/* Period selector */}
-      <div className="rounded-2xl p-5" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-        <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#6B6B6B' }}>Select Period</p>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+        <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>Select Period</p>
         <div className="flex items-center gap-3 flex-wrap">
           {isAdmin && (
             <div className="relative">
               <select value={empFilter} onChange={e => setEmpFilter(e.target.value)}
-                className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-                style={{ background: '#050505', border: '1px solid rgba(212,175,55,0.4)' }}>
+                className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+                style={{ background: 'var(--bg-base)', border: '1px solid rgba(var(--accent-rgb),0.4)' }}>
                 <option value="all">All Employees</option>
                 {empList.map(e => <option key={e.id} value={e.id}>{e.full_name} ({e.employee_code})</option>)}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#D4AF37' }} />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--accent)' }} />
             </div>
           )}
           <div className="relative">
             <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))}
-              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-              style={{ background: '#050505', border: '1px solid #1E1E24' }}>
+              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+              style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
               {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#4A4A4A' }} />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--text-faint)' }} />
           </div>
           <div className="relative">
             <select value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))}
-              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-              style={{ background: '#050505', border: '1px solid #1E1E24' }}>
+              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+              style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#4A4A4A' }} />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--text-faint)' }} />
           </div>
-          <div className="px-3 py-2.5 rounded-xl text-sm" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', color: '#D4AF37' }}>
+          <div className="px-3 py-2.5 rounded-xl text-sm" style={{ background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.2)', color: 'var(--accent)' }}>
             {startDate} &rarr; {endDate}
           </div>
         </div>
@@ -310,13 +311,13 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
       {hasLoaded && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total Revenue', value: fmt(totalRevenue), color: '#10B981' },
-            { label: 'Unlisted / Bonds', value: fmt(byType.landing_cost), color: '#D4AF37' },
-            { label: 'Insurance', value: fmt(byType.insurance), color: '#F97316' },
-            { label: 'MF Trail', value: fmt(byType.trail), color: '#EC4899' },
+            { label: 'Total Revenue', value: fmt(totalRevenue), color: 'var(--success)' },
+            { label: 'Unlisted / Bonds', value: fmt(byType.landing_cost), color: 'var(--accent)' },
+            { label: 'Insurance', value: fmt(byType.insurance), color: 'var(--chart-6)' },
+            { label: 'MF Trail', value: fmt(byType.trail), color: 'var(--chart-4)' },
           ].map(s => (
-            <div key={s.label} className="rounded-2xl p-5" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#4A4A4A' }}>{s.label}</p>
+            <div key={s.label} className="rounded-2xl p-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-faint)' }}>{s.label}</p>
               <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
             </div>
           ))}
@@ -325,53 +326,53 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
 
       {/* Revenue table */}
       {hasLoaded && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #1E1E24' }}>
-            <p className="text-sm font-bold text-white">Revenue Breakdown — {MONTHS[selectedMonth]} {selectedYear}</p>
-            <p className="text-xs" style={{ color: '#4A4A4A' }}>{rows.length} {rows.length === 1 ? 'entry' : 'entries'}</p>
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
+            <p className="text-sm font-bold text-text-primary">Revenue Breakdown — {MONTHS[selectedMonth]} {selectedYear}</p>
+            <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{rows.length} {rows.length === 1 ? 'entry' : 'entries'}</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   {['Client', 'Product', 'Type', 'Revenue Type', 'Details', 'Revenue'].map(h => (
-                    <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                    <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-12 text-sm" style={{ color: '#4A4A4A' }}>
+                  <tr><td colSpan={6} className="text-center py-12 text-sm" style={{ color: 'var(--text-faint)' }}>
                     No revenue entries for {MONTHS[selectedMonth]} {selectedYear}
                   </td></tr>
                 ) : rows.map((r, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #111' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#0D0D0D')}
+                  <tr key={i} style={{ borderBottom: '1px solid var(--bg-raised)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                     <td className="px-5 py-3.5">
-                      <p className="text-sm font-medium text-white">{r.client_name}</p>
-                      <p className="text-xs font-mono" style={{ color: '#4A4A4A' }}>{r.client_code}</p>
+                      <p className="text-sm font-medium text-text-primary">{r.client_name}</p>
+                      <p className="text-xs font-mono" style={{ color: 'var(--text-faint)' }}>{r.client_code}</p>
                     </td>
                     <td className="px-5 py-3.5">
-                      <p className="text-sm text-white">{r.product_name}</p>
-                      <p className="text-xs" style={{ color: '#6B6B6B' }}>{PRODUCT_LABELS[r.product_type] || r.product_type}</p>
+                      <p className="text-sm text-text-primary">{r.product_name}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{PRODUCT_LABELS[r.product_type] || r.product_type}</p>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded border" style={{ color: '#8A8A8A', borderColor: '#2A2A2A' }}>
+                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded border" style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-strong)' }}>
                         {PRODUCT_LABELS[r.product_type]}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
                       <span className="text-xs font-bold px-2 py-1 rounded-lg"
-                        style={{ background: `${revenueTypeColor[r.revenue_type]}15`, color: revenueTypeColor[r.revenue_type] }}>
+                        style={{ background: `rgba(${revenueTypeColor[r.revenue_type]}, 0.08)`, color: `rgb(${revenueTypeColor[r.revenue_type]})` }}>
                         {revenueTypeLabel[r.revenue_type]}
                       </span>
                     </td>
                     <td className="px-5 py-3.5 max-w-[200px]">
-                      <p className="text-xs" style={{ color: '#6B6B6B' }}>{r.notes}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.notes}</p>
                     </td>
                     <td className="px-5 py-3.5">
-                      <p className={`text-sm font-bold ${r.revenue >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <p className={`text-sm font-bold ${r.revenue >= 0 ? 'text-c-emerald' : 'text-c-red'}`}>
                         {r.revenue >= 0 ? '' : '-'}{fmt(Math.abs(r.revenue))}
                       </p>
                     </td>
@@ -380,9 +381,9 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
               </tbody>
               {rows.length > 0 && (
                 <tfoot>
-                  <tr style={{ borderTop: '2px solid #1E1E24' }}>
-                    <td colSpan={5} className="px-5 py-3.5 text-sm font-bold text-white">Total Revenue</td>
-                    <td className="px-5 py-3.5 text-sm font-bold text-emerald-400">{fmt(totalRevenue)}</td>
+                  <tr style={{ borderTop: '2px solid var(--border)' }}>
+                    <td colSpan={5} className="px-5 py-3.5 text-sm font-bold text-text-primary">Total Revenue</td>
+                    <td className="px-5 py-3.5 text-sm font-bold text-c-emerald">{fmt(totalRevenue)}</td>
                   </tr>
                 </tfoot>
               )}
@@ -392,10 +393,10 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
       )}
 
       {!hasLoaded && (
-        <div className="rounded-2xl p-12 text-center" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-          <BarChart3 className="w-10 h-10 mx-auto mb-3" style={{ color: '#2A2A2A' }} />
-          <p className="text-sm font-semibold" style={{ color: '#4A4A4A' }}>Select a period and click Generate MIS</p>
-          <p className="text-xs mt-1" style={{ color: '#2A2A2A' }}>Revenue is calculated based on holdings data entered by your team</p>
+        <div className="rounded-2xl p-12 text-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+          <BarChart3 className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--border-strong)' }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-faint)' }}>Select a period and click Generate MIS</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--border-strong)' }}>Revenue is calculated based on holdings data entered by your team</p>
         </div>
       )}
     </div>

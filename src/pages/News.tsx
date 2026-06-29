@@ -119,12 +119,12 @@ export default function News({ onBack }: NewsProps) {
       'mutual funds': 'bg-indigo-100 text-indigo-800',
       'unlisted shares': 'bg-orange-100 text-orange-800',
     };
-    return colors[category] || 'bg-gray-100 text-gray-800';
+    return colors[category] || 'bg-bg-raised text-text-primary';
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-8">
+      <div className="min-h-screen bg-bg-base p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
@@ -135,7 +135,7 @@ export default function News({ onBack }: NewsProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-bg-base">
       <nav className="bg-black shadow-lg border-b border-[#c9b896]/20 sticky top-0 z-50 relative">
         <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
           <button
@@ -186,11 +186,11 @@ export default function News({ onBack }: NewsProps) {
       <div className="max-w-7xl mx-auto p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-3">
+            <h1 className="text-4xl font-bold text-text-primary flex items-center gap-3">
               <Newspaper className="w-10 h-10 text-blue-600" />
               Financial News & Information
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-text-secondary mt-2">
               Latest market news for your information and awareness
               {lastUpdated && (
                 <span className="ml-2 text-sm">
@@ -229,7 +229,7 @@ export default function News({ onBack }: NewsProps) {
               className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${
                 selectedCategory === category
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  : 'bg-bg-elevated text-text-secondary hover:bg-bg-raised'
               }`}
             >
               {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -238,17 +238,17 @@ export default function News({ onBack }: NewsProps) {
         </div>
 
         {filteredNews.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-            <Newspaper className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No news available</h3>
-            <p className="text-gray-600 mb-4">Click "Refresh News" to fetch the latest articles</p>
+          <div className="bg-bg-elevated rounded-2xl shadow-sm p-12 text-center">
+            <Newspaper className="w-16 h-16 text-text-muted mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-text-primary mb-2">No news available</h3>
+            <p className="text-text-secondary mb-4">Click "Refresh News" to fetch the latest articles</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredNews.map((article) => (
               <div
                 key={article.id}
-                className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow"
+                className="bg-bg-elevated rounded-2xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow"
               >
                 <div className="p-6">
                   <div className="mb-4">
@@ -258,21 +258,21 @@ export default function News({ onBack }: NewsProps) {
                   </div>
 
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                    <span className="flex items-center gap-1 text-xs text-text-muted">
                       <Clock className="w-3 h-3" />
                       {formatDate(article.published_at)}
                     </span>
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <span className="text-xs text-text-muted flex items-center gap-1">
                       <TrendingUp className="w-3 h-3" />
                       {article.source}
                     </span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2">
+                  <h3 className="text-lg font-bold text-text-primary mb-3 line-clamp-2">
                     {article.title}
                   </h3>
 
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                  <p className="text-text-secondary text-sm mb-4 line-clamp-3">
                     {article.description}
                   </p>
 

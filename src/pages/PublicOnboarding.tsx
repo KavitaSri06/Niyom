@@ -28,11 +28,11 @@ interface Form {
 function Field({ label, required, children, hint }: { label: string; required?: boolean; children: React.ReactNode; hint?: string }) {
   return (
     <div>
-      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#8A8A8A' }}>
+      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
         {label}{required && <span className="ml-0.5" style={{ color: '#D4AF37' }}>*</span>}
       </label>
       {children}
-      {hint && <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>{hint}</p>}
+      {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>{hint}</p>}
     </div>
   );
 }
@@ -221,7 +221,7 @@ export default function PublicOnboarding({ onBack }: Props) {
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: '#D4AF37' }}>Onboarding Complete</p>
               <h2 className="text-2xl font-bold text-white">Welcome to Niyom Wealth!</h2>
-              <p className="text-sm leading-relaxed" style={{ color: '#8A8A8A' }}>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                 Dear <span className="text-white font-semibold">{successData.client_name}</span>, your onboarding request has been successfully submitted.
               </p>
             </div>
@@ -229,7 +229,7 @@ export default function PublicOnboarding({ onBack }: Props) {
             <div className="p-4 rounded-2xl space-y-1" style={{ background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.15)' }}>
               <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: '#D4AF37' }}>Your Reference Code</p>
               <p className="text-2xl font-black font-mono" style={{ color: '#D4AF37' }}>{successData.client_code}</p>
-              <p className="text-xs" style={{ color: '#6B6B6B' }}>Please save this code for your records.</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Please save this code for your records.</p>
             </div>
 
             <div className="p-4 rounded-2xl text-left space-y-3" style={{ background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.12)' }}>
@@ -243,12 +243,12 @@ export default function PublicOnboarding({ onBack }: Props) {
                 <div key={i} className="flex items-start gap-2.5">
                   <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold mt-0.5"
                     style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981' }}>{i + 1}</div>
-                  <p className="text-xs leading-relaxed" style={{ color: '#6B6B6B' }}>{line}</p>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{line}</p>
                 </div>
               ))}
             </div>
 
-            <p className="text-xs" style={{ color: '#4A4A4A' }}>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
               For any queries, reach us at <span className="text-white">support@niyomwealth.com</span>
             </p>
 
@@ -268,9 +268,9 @@ export default function PublicOnboarding({ onBack }: Props) {
     <div className="min-h-screen" style={{ background: '#050505' }}>
       {/* Top nav */}
       <div className="sticky top-0 z-10 px-6 py-4 flex items-center gap-4" style={{ background: 'rgba(5,5,5,0.95)', borderBottom: '1px solid #111', backdropFilter: 'blur(8px)' }}>
-        <button onClick={onBack} className="flex items-center gap-2 text-sm transition-colors" style={{ color: '#6B6B6B' }}
+        <button onClick={onBack} className="flex items-center gap-2 text-sm transition-colors" style={{ color: 'var(--text-muted)' }}
           onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#6B6B6B')}>
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
           <ArrowLeft className="w-4 h-4" /> Back to Login
         </button>
         <div className="flex-1" />
@@ -282,7 +282,7 @@ export default function PublicOnboarding({ onBack }: Props) {
         <div>
           <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Client Onboarding</p>
           <h1 className="text-2xl font-bold text-white">Begin Your Wealth Journey</h1>
-          <p className="text-sm mt-1" style={{ color: '#6B6B6B' }}>Complete all steps to register with Niyom Wealth Distribution.</p>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Complete all steps to register with Niyom Wealth Distribution.</p>
         </div>
 
         {/* Stepper */}
@@ -402,7 +402,7 @@ export default function PublicOnboarding({ onBack }: Props) {
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Upload className="w-4 h-4" style={{ color: '#D4AF37' }} /> KYC Document Upload
               </h3>
-              <p className="text-xs leading-relaxed" style={{ color: '#6B6B6B' }}>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                 All three documents are <span style={{ color: '#D4AF37' }}>mandatory</span> for KYC compliance. Accepted formats: PDF, JPG, PNG.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -421,8 +421,8 @@ export default function PublicOnboarding({ onBack }: Props) {
                           : <FileText className="w-5 h-5" style={{ color: '#D4AF37' }} />}
                       </div>
                       <div>
-                        <p className="text-xs font-semibold" style={{ color: uploaded ? '#10B981' : '#A8A8A8' }}>{label}</p>
-                        <p className="text-xs mt-0.5 truncate max-w-full" style={{ color: '#4A4A4A' }}>
+                        <p className="text-xs font-semibold" style={{ color: uploaded ? '#10B981' : 'var(--text-faint)' }}>{label}</p>
+                        <p className="text-xs mt-0.5 truncate max-w-full" style={{ color: 'var(--text-secondary)' }}>
                           {uploaded ? uploaded.file.name : 'Tap to upload'}
                         </p>
                       </div>
@@ -444,7 +444,7 @@ export default function PublicOnboarding({ onBack }: Props) {
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4" style={{ color: '#D4AF37' }} /> Review Your Details
               </h3>
-              <p className="text-xs" style={{ color: '#6B6B6B' }}>Please verify all details before submitting. You may go back to make corrections.</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Please verify all details before submitting. You may go back to make corrections.</p>
 
               {[
                 { title: 'Personal', icon: User, rows: [['Name', form.full_name], ['PAN', form.pan], ['Date of Birth', form.dob], ['Mobile', form.phone], ['Email', form.email]] },
@@ -459,7 +459,7 @@ export default function PublicOnboarding({ onBack }: Props) {
                   <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1A1A1A' }}>
                     {section.rows.filter(r => r[1]).map(([k, v]) => (
                       <div key={k} className="flex gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid #111' }}>
-                        <p className="text-xs w-28 flex-shrink-0 font-medium" style={{ color: '#4A4A4A' }}>{k}</p>
+                        <p className="text-xs w-28 flex-shrink-0 font-medium" style={{ color: 'var(--text-secondary)' }}>{k}</p>
                         <p className="text-xs text-white">{v}</p>
                       </div>
                     ))}
@@ -485,7 +485,7 @@ export default function PublicOnboarding({ onBack }: Props) {
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl text-xs leading-relaxed" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.12)', color: '#6B6B6B' }}>
+              <div className="p-4 rounded-xl text-xs leading-relaxed" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.12)', color: 'var(--text-muted)' }}>
                 By submitting this form, you confirm that all information provided is accurate and you consent to Niyom Wealth Distribution LLP processing your details for account creation and KYC verification purposes.
               </div>
             </>
@@ -496,7 +496,7 @@ export default function PublicOnboarding({ onBack }: Props) {
         <div className="flex justify-between">
           <button onClick={() => { setError(''); setStep(s => Math.max(0, s - 1)); }} disabled={step === 0}
             className="px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-30 transition-colors flex items-center gap-2"
-            style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
+            style={{ background: '#111', color: 'var(--text-muted)', border: '1px solid #1E1E24' }}>
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           {step < STEPS.length - 1 ? (

@@ -20,17 +20,17 @@ export function RegulatoryInfo() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 text-center md:text-left">
         {items.map((it) => (
           <div key={it.label}>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">{it.label}</p>
-            <p className="text-sm text-gray-200 font-medium mt-1">{it.value}</p>
+            <p className="text-xs text-text-muted uppercase tracking-wide">{it.label}</p>
+            <p className="text-sm text-text-faint font-medium mt-1">{it.value}</p>
           </div>
         ))}
       </div>
 
-      <p className="text-sm text-gray-300 font-medium mt-6 text-center md:text-left">
+      <p className="text-sm text-text-faint font-medium mt-6 text-center md:text-left">
         AMFI Registered Mutual Fund Distributor
       </p>
 
-      <p className="text-xs text-gray-500 leading-relaxed mt-3 text-center md:text-left">
+      <p className="text-xs text-text-muted leading-relaxed mt-3 text-center md:text-left">
         Mutual fund investments are subject to market risks. Past performance does not indicate
         future performance of the schemes of the fund. Please read all scheme-related offer
         documents carefully before investing.

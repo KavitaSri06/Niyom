@@ -13,13 +13,13 @@ type StageStyle = { label: string; bg: string; color: string; border: string };
 // Combined lifecycle stage derived from payment `status` + `signature_status`:
 //   Generated → Sent for Signature → Viewed → Signed → Paid   (Cancelled is terminal)
 function deriveStage(note: NWDSADebitNote): StageStyle {
-  if (note.status === 'cancelled') return { label: 'Cancelled', bg: 'rgba(239,68,68,0.12)', color: '#F87171', border: 'rgba(239,68,68,0.4)' };
-  if (note.status === 'paid') return { label: 'Paid', bg: 'rgba(16,185,129,0.12)', color: '#10B981', border: 'rgba(16,185,129,0.4)' };
+  if (note.status === 'cancelled') return { label: 'Cancelled', bg: 'rgba(239,68,68,0.12)', color: 'rgb(var(--danger-soft-rgb))', border: 'rgba(239,68,68,0.4)' };
+  if (note.status === 'paid') return { label: 'Paid', bg: 'rgba(16,185,129,0.12)', color: 'var(--success)', border: 'rgba(16,185,129,0.4)' };
   switch (note.signature_status) {
-    case 'signed': return { label: 'Signed', bg: 'rgba(52,211,153,0.12)', color: '#34D399', border: 'rgba(52,211,153,0.4)' };
-    case 'viewed': return { label: 'Viewed', bg: 'rgba(96,165,250,0.12)', color: '#60A5FA', border: 'rgba(96,165,250,0.4)' };
-    case 'sent': return { label: 'Sent for Signature', bg: 'rgba(168,139,250,0.12)', color: '#A78BFA', border: 'rgba(168,139,250,0.4)' };
-    default: return { label: 'Generated', bg: 'rgba(212,175,55,0.12)', color: '#D4AF37', border: 'rgba(212,175,55,0.4)' };
+    case 'signed': return { label: 'Signed', bg: 'rgba(52,211,153,0.12)', color: 'rgb(var(--success-soft-rgb))', border: 'rgba(52,211,153,0.4)' };
+    case 'viewed': return { label: 'Viewed', bg: 'rgba(96,165,250,0.12)', color: 'rgb(var(--info-soft-rgb))', border: 'rgba(96,165,250,0.4)' };
+    case 'sent': return { label: 'Sent for Signature', bg: 'rgba(168,139,250,0.12)', color: 'rgb(var(--c-violet-rgb))', border: 'rgba(168,139,250,0.4)' };
+    default: return { label: 'Generated', bg: 'rgba(var(--accent-rgb),0.12)', color: 'var(--accent)', border: 'rgba(var(--accent-rgb),0.4)' };
   }
 }
 
@@ -564,15 +564,15 @@ export default function DSAPayout({ employee }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>DSA</p>
-          <h1 className="text-2xl font-bold text-white">DSA Payout</h1>
-          <p className="text-xs mt-1" style={{ color: '#6B6B6B' }}>Automated payout based on client price − DSA price × quantity</p>
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>DSA</p>
+          <h1 className="text-2xl font-bold text-text-primary">DSA Payout</h1>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Automated payout based on client price − DSA price × quantity</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {debitNotes.length > 0 && (
             <button onClick={downloadZip} disabled={zipping}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
-              style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
+              style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
               {zipping ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileArchive className="w-4 h-4" />}
               {zipping ? 'Preparing ZIP...' : 'Download ZIP'}
             </button>
@@ -580,14 +580,14 @@ export default function DSAPayout({ employee }: Props) {
           {hasLoaded && groups.length > 0 && (
             <button onClick={generateAllDebitNotes} disabled={generating}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
-              style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.4)' }}>
+              style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.4)' }}>
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
               {generating ? 'Generating...' : 'Generate Debit Note'}
             </button>
           )}
           <button onClick={calculate} disabled={loading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
             <Wallet className="w-4 h-4" />
             {loading ? 'Calculating...' : 'Calculate Payout'}
           </button>
@@ -595,37 +595,37 @@ export default function DSAPayout({ employee }: Props) {
       </div>
 
       {/* Period selector */}
-      <div className="rounded-2xl p-5" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-        <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#6B6B6B' }}>Select Period</p>
+      <div className="rounded-2xl p-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+        <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>Select Period</p>
         <div className="flex items-center gap-3 flex-wrap">
           {isAdmin && (
             <div className="relative">
               <select value={empFilter} onChange={e => setEmpFilter(e.target.value)}
-                className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-                style={{ background: '#050505', border: '1px solid rgba(212,175,55,0.4)' }}>
+                className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+                style={{ background: 'var(--bg-base)', border: '1px solid rgba(var(--accent-rgb),0.4)' }}>
                 <option value="all">All Employees</option>
                 {empList.map(e => <option key={e.id} value={e.id}>{e.full_name} ({e.employee_code})</option>)}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#D4AF37' }} />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--accent)' }} />
             </div>
           )}
           <div className="relative">
             <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))}
-              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-              style={{ background: '#050505', border: '1px solid #1E1E24' }}>
+              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+              style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
               {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#4A4A4A' }} />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--text-faint)' }} />
           </div>
           <div className="relative">
             <select value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))}
-              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-              style={{ background: '#050505', border: '1px solid #1E1E24' }}>
+              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+              style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#4A4A4A' }} />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--text-faint)' }} />
           </div>
-          <div className="px-3 py-2.5 rounded-xl text-sm" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', color: '#D4AF37' }}>
+          <div className="px-3 py-2.5 rounded-xl text-sm" style={{ background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.2)', color: 'var(--accent)' }}>
             {startDate} &rarr; {endDate}
           </div>
         </div>
@@ -635,14 +635,14 @@ export default function DSAPayout({ employee }: Props) {
       {hasLoaded && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Gross Payout', value: fmt(totalPayout), color: '#8A8A8A' },
-            { label: 'TDS @ 2%', value: `- ${fmt(totalTds)}`, color: '#F87171' },
-            { label: 'Net Payable', value: fmt(totalNet), color: '#10B981' },
-            { label: 'DSAs Involved', value: String(groups.length), color: '#D4AF37' },
-            { label: 'Total Entries', value: String(groups.reduce((s, g) => s + g.rows.length, 0)), color: '#8A8A8A' },
+            { label: 'Gross Payout', value: fmt(totalPayout), color: 'var(--text-secondary)' },
+            { label: 'TDS @ 2%', value: `- ${fmt(totalTds)}`, color: 'rgb(var(--danger-soft-rgb))' },
+            { label: 'Net Payable', value: fmt(totalNet), color: 'var(--success)' },
+            { label: 'DSAs Involved', value: String(groups.length), color: 'var(--accent)' },
+            { label: 'Total Entries', value: String(groups.reduce((s, g) => s + g.rows.length, 0)), color: 'var(--text-secondary)' },
           ].map(s => (
-            <div key={s.label} className="rounded-2xl p-5" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#4A4A4A' }}>{s.label}</p>
+            <div key={s.label} className="rounded-2xl p-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-faint)' }}>{s.label}</p>
               <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
             </div>
           ))}
@@ -653,9 +653,9 @@ export default function DSAPayout({ employee }: Props) {
       {(generating || genStatus) && (
         <div className="rounded-xl px-4 py-3 flex items-center gap-3 text-sm"
           style={{
-            background: genStatus.startsWith('Error') ? 'rgba(239,68,68,0.08)' : 'rgba(212,175,55,0.08)',
-            border: `1px solid ${genStatus.startsWith('Error') ? 'rgba(239,68,68,0.3)' : 'rgba(212,175,55,0.25)'}`,
-            color: genStatus.startsWith('Error') ? '#F87171' : '#D4AF37',
+            background: genStatus.startsWith('Error') ? 'rgba(239,68,68,0.08)' : 'rgba(var(--accent-rgb),0.08)',
+            border: `1px solid ${genStatus.startsWith('Error') ? 'rgba(239,68,68,0.3)' : 'rgba(var(--accent-rgb),0.25)'}`,
+            color: genStatus.startsWith('Error') ? 'rgb(var(--danger-soft-rgb))' : 'var(--accent)',
           }}>
           {generating && <Loader2 className="w-4 h-4 animate-spin" />}
           <span>{generating ? genStatus || 'Generating debit notes...' : genStatus}</span>
@@ -664,20 +664,20 @@ export default function DSAPayout({ employee }: Props) {
 
       {/* Previous Debit Notes for the selected month */}
       {debitNotes.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-          <div className="px-5 py-4 flex items-center justify-between" style={{ background: 'rgba(212,175,55,0.04)', borderBottom: '1px solid #1E1E24' }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+          <div className="px-5 py-4 flex items-center justify-between" style={{ background: 'rgba(var(--accent-rgb),0.04)', borderBottom: '1px solid var(--border)' }}>
             <div className="flex items-center gap-2">
-              <FileCheck2 className="w-4 h-4" style={{ color: '#D4AF37' }} />
-              <p className="text-sm font-bold text-white">Debit Notes — {MONTHS[selectedMonth]} {selectedYear}</p>
+              <FileCheck2 className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+              <p className="text-sm font-bold text-text-primary">Debit Notes — {MONTHS[selectedMonth]} {selectedYear}</p>
             </div>
-            <p className="text-xs" style={{ color: '#4A4A4A' }}>{debitNotes.length} generated</p>
+            <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{debitNotes.length} generated</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   {['Debit Note No.', 'DSA', 'Net Payable', 'Status', 'Timeline', 'Actions'].map(h => (
-                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                    <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -694,24 +694,24 @@ export default function DSAPayout({ employee }: Props) {
                   const net = note.net_payable_amount ?? (gross - tds);
                   // Completed-step timestamps for the Generated→…→Paid timeline.
                   const steps: { label: string; at: string | null; color: string }[] = [
-                    { label: 'Sent', at: fmtDateTime(note.sent_at), color: '#A78BFA' },
-                    { label: 'Viewed', at: fmtDateTime(note.viewed_at), color: '#60A5FA' },
-                    { label: 'Signed', at: fmtDateTime(note.signed_at), color: '#34D399' },
-                    { label: 'Paid', at: note.paid_at ? fmtDateTime(note.paid_at) : null, color: '#10B981' },
+                    { label: 'Sent', at: fmtDateTime(note.sent_at), color: 'rgb(var(--c-violet-rgb))' },
+                    { label: 'Viewed', at: fmtDateTime(note.viewed_at), color: 'rgb(var(--info-soft-rgb))' },
+                    { label: 'Signed', at: fmtDateTime(note.signed_at), color: 'rgb(var(--success-soft-rgb))' },
+                    { label: 'Paid', at: note.paid_at ? fmtDateTime(note.paid_at) : null, color: 'var(--success)' },
                   ].filter(s => s.at);
                   return (
-                  <tr key={note.id} style={{ borderBottom: '1px solid #111' }}>
-                    <td className="px-5 py-3 text-sm font-mono" style={{ color: '#D4AF37' }}>
+                  <tr key={note.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}>
+                    <td className="px-5 py-3 text-sm font-mono" style={{ color: 'var(--accent)' }}>
                       {note.debit_note_number}
-                      {signed && <Lock className="w-3 h-3 inline-block ml-1.5 -mt-0.5" style={{ color: '#34D399' }} />}
+                      {signed && <Lock className="w-3 h-3 inline-block ml-1.5 -mt-0.5" style={{ color: 'rgb(var(--success-soft-rgb))' }} />}
                     </td>
                     <td className="px-5 py-3">
-                      <p className="text-sm font-medium text-white">{note.dsa?.full_name || '—'}</p>
-                      <p className="text-xs font-mono" style={{ color: '#4A4A4A' }}>{note.dsa?.dsa_code || ''}</p>
+                      <p className="text-sm font-medium text-text-primary">{note.dsa?.full_name || '—'}</p>
+                      <p className="text-xs font-mono" style={{ color: 'var(--text-faint)' }}>{note.dsa?.dsa_code || ''}</p>
                     </td>
                     <td className="px-5 py-3">
-                      <p className="text-sm font-bold text-emerald-400">{fmt(net)}</p>
-                      <p className="text-xs" style={{ color: '#4A4A4A' }}>Gross {fmt(gross)} · TDS {fmt(tds)}</p>
+                      <p className="text-sm font-bold text-c-emerald">{fmt(net)}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Gross {fmt(gross)} · TDS {fmt(tds)}</p>
                     </td>
                     <td className="px-5 py-3">
                       <span className="inline-block px-2.5 py-1 rounded-full text-xs font-semibold"
@@ -719,14 +719,14 @@ export default function DSAPayout({ employee }: Props) {
                         {stage.label}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-xs" style={{ color: '#6B6B6B' }}>
+                    <td className="px-5 py-3 text-xs" style={{ color: 'var(--text-muted)' }}>
                       {note.status === 'cancelled' ? (
                         <div className="max-w-[240px]">
-                          <p style={{ color: '#F87171' }}>Cancelled {note.cancelled_at ? new Date(note.cancelled_at).toLocaleDateString('en-IN') : ''}</p>
-                          <p style={{ color: '#4A4A4A' }}>by {note.cancelled_by_employee?.full_name || '—'}</p>
+                          <p style={{ color: 'rgb(var(--danger-soft-rgb))' }}>Cancelled {note.cancelled_at ? new Date(note.cancelled_at).toLocaleDateString('en-IN') : ''}</p>
+                          <p style={{ color: 'var(--text-faint)' }}>by {note.cancelled_by_employee?.full_name || '—'}</p>
                           {note.cancel_reason && (
-                            <p className="mt-1" style={{ color: '#8A8A8A' }}>
-                              <span style={{ color: '#5A5A5A' }}>Reason: </span>{note.cancel_reason}
+                            <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
+                              <span style={{ color: 'var(--text-muted)' }}>Reason: </span>{note.cancel_reason}
                             </p>
                           )}
                         </div>
@@ -737,20 +737,20 @@ export default function DSAPayout({ employee }: Props) {
                           ))}
                         </div>
                       ) : (
-                        <span style={{ color: '#4A4A4A' }}>—</span>
+                        <span style={{ color: 'var(--text-faint)' }}>—</span>
                       )}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2 flex-wrap">
                         <button onClick={() => previewNote(note)} disabled={previewingId === note.id}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
-                          style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
+                          style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
                           {previewingId === note.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Eye className="w-3.5 h-3.5" />}
                           {signed ? 'Preview Signed' : 'Preview'}
                         </button>
                         <button onClick={() => downloadNote(note)} disabled={downloadingId === note.id}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
-                          style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
+                          style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
                           {downloadingId === note.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                           {signed ? 'Download Signed' : 'Download'}
                         </button>
@@ -759,7 +759,7 @@ export default function DSAPayout({ employee }: Props) {
                           <button onClick={() => sendForSignature(note)} disabled={sendingId === note.id}
                             title={note.signature_status === 'not_sent' ? 'Email the DSA a secure signing link' : 'Resend the secure signing link'}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
-                            style={{ background: 'rgba(168,139,250,0.1)', color: '#A78BFA', border: '1px solid rgba(168,139,250,0.3)' }}>
+                            style={{ background: 'rgba(168,139,250,0.1)', color: 'rgb(var(--c-violet-rgb))', border: '1px solid rgba(168,139,250,0.3)' }}>
                             {sendingId === note.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                             {note.signature_status === 'not_sent' ? 'Send for Signature' : 'Resend Link'}
                           </button>
@@ -771,14 +771,14 @@ export default function DSAPayout({ employee }: Props) {
                               disabled={regenDsaId === note.dsa_id || !groups.some(g => g.dsa_id === note.dsa_id)}
                               title={groups.some(g => g.dsa_id === note.dsa_id) ? 'Regenerate PDF' : 'Recalculate payout to regenerate'}
                               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40"
-                              style={{ background: 'rgba(212,175,55,0.08)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.25)' }}>
+                              style={{ background: 'rgba(var(--accent-rgb),0.08)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.25)' }}>
                               {regenDsaId === note.dsa_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                               Regenerate
                             </button>
                             {isAdmin && (
                               <button onClick={() => { setCancelTarget(note); setCancelReason(''); setCancelError(''); }} disabled={busy}
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
-                                style={{ background: 'rgba(239,68,68,0.08)', color: '#F87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                                style={{ background: 'rgba(239,68,68,0.08)', color: 'rgb(var(--danger-soft-rgb))', border: '1px solid rgba(239,68,68,0.3)' }}>
                                 <XCircle className="w-3.5 h-3.5" />
                                 Cancel
                               </button>
@@ -789,7 +789,7 @@ export default function DSAPayout({ employee }: Props) {
                         {isAdmin && note.status === 'generated' && (
                           <button onClick={() => markAsPaid(note)} disabled={busy}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
-                            style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                            style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.3)' }}>
                             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                             Mark as Paid
                           </button>
@@ -809,58 +809,58 @@ export default function DSAPayout({ employee }: Props) {
       {hasLoaded && (
         <div className="space-y-4">
           {groups.length === 0 ? (
-            <div className="rounded-2xl p-12 text-center" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-              <Wallet className="w-10 h-10 mx-auto mb-3" style={{ color: '#2A2A2A' }} />
-              <p className="text-sm font-semibold" style={{ color: '#4A4A4A' }}>No DSA payout entries for {MONTHS[selectedMonth]} {selectedYear}</p>
-              <p className="text-xs mt-1" style={{ color: '#2A2A2A' }}>DSA payouts are generated from holdings added in the selected period with DSA pricing</p>
+            <div className="rounded-2xl p-12 text-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              <Wallet className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--border-strong)' }} />
+              <p className="text-sm font-semibold" style={{ color: 'var(--text-faint)' }}>No DSA payout entries for {MONTHS[selectedMonth]} {selectedYear}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--border-strong)' }}>DSA payouts are generated from holdings added in the selected period with DSA pricing</p>
             </div>
           ) : groups.map(g => {
             const gTds = computePayoutTds(g.total).tds;
             const gNet = g.total - gTds;
             return (
-            <div key={g.dsa_id} className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-              <div className="px-5 py-4 flex items-center justify-between" style={{ background: 'rgba(212,175,55,0.04)', borderBottom: '1px solid #1E1E24' }}>
+            <div key={g.dsa_id} className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              <div className="px-5 py-4 flex items-center justify-between" style={{ background: 'rgba(var(--accent-rgb),0.04)', borderBottom: '1px solid var(--border)' }}>
                 <div>
-                  <p className="text-sm font-bold text-white">{g.dsa_name}</p>
-                  <p className="text-xs font-mono" style={{ color: '#4A4A4A' }}>{g.dsa_code}</p>
+                  <p className="text-sm font-bold text-text-primary">{g.dsa_name}</p>
+                  <p className="text-xs font-mono" style={{ color: 'var(--text-faint)' }}>{g.dsa_code}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs" style={{ color: '#4A4A4A' }}>Net Payable (after 2% TDS)</p>
+                  <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Net Payable (after 2% TDS)</p>
               
-                  <p className="text-lg font-bold text-emerald-400">{fmt(gNet)}</p>
-                  <p className="text-xs" style={{ color: '#4A4A4A' }}>Gross {fmt(g.total)} · TDS {fmt(gTds)}</p>
+                  <p className="text-lg font-bold text-c-emerald">{fmt(gNet)}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Gross {fmt(g.total)} · TDS {fmt(gTds)}</p>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+                    <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                       {['Client', 'Product', 'Qty', 'DSA Price', 'Client Price', 'Payout'].map(h => (
-                        <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                        <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {g.rows.map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #111' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#0D0D0D')}
+                      <tr key={i} style={{ borderBottom: '1px solid var(--bg-raised)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                         <td className="px-5 py-3">
-                          <p className="text-sm font-medium text-white">{r.client_name}</p>
-                          <p className="text-xs font-mono" style={{ color: '#4A4A4A' }}>{r.client_code}</p>
+                          <p className="text-sm font-medium text-text-primary">{r.client_name}</p>
+                          <p className="text-xs font-mono" style={{ color: 'var(--text-faint)' }}>{r.client_code}</p>
                         </td>
                         <td className="px-5 py-3">
-                          <p className="text-sm text-white">{r.product_name}</p>
-                          <p className="text-xs" style={{ color: '#6B6B6B' }}>{PRODUCT_LABELS[r.product_type]}</p>
+                          <p className="text-sm text-text-primary">{r.product_name}</p>
+                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{PRODUCT_LABELS[r.product_type]}</p>
                         </td>
-                        <td className="px-5 py-3 text-sm text-white">{r.quantity.toLocaleString('en-IN')}</td>
-                        <td className="px-5 py-3 text-sm text-white">{fmt(r.dsa_price)}</td>
-                        <td className="px-5 py-3 text-sm text-white">{fmt(r.client_price)}</td>
+                        <td className="px-5 py-3 text-sm text-text-primary">{r.quantity.toLocaleString('en-IN')}</td>
+                        <td className="px-5 py-3 text-sm text-text-primary">{fmt(r.dsa_price)}</td>
+                        <td className="px-5 py-3 text-sm text-text-primary">{fmt(r.client_price)}</td>
                         <td className="px-5 py-3">
-                          <p className={`text-sm font-bold ${r.payout >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          <p className={`text-sm font-bold ${r.payout >= 0 ? 'text-c-emerald' : 'text-c-red'}`}>
                             {r.payout >= 0 ? '' : '-'}{fmt(Math.abs(r.payout))}
                           </p>
-                          <p className="text-xs" style={{ color: '#4A4A4A' }}>
+                          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
                             Spread: {fmt(r.client_price - r.dsa_price)} × {r.quantity}
                           </p>
                         </td>
@@ -868,17 +868,17 @@ export default function DSAPayout({ employee }: Props) {
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr style={{ borderTop: '1px solid #1E1E24' }}>
-                      <td colSpan={5} className="px-5 py-2.5 text-xs font-bold" style={{ color: '#4A4A4A' }}>Gross Payout — {g.dsa_name}</td>
-                      <td className="px-5 py-2.5 text-sm font-semibold" style={{ color: '#8A8A8A' }}>{fmt(g.total)}</td>
+                    <tr style={{ borderTop: '1px solid var(--border)' }}>
+                      <td colSpan={5} className="px-5 py-2.5 text-xs font-bold" style={{ color: 'var(--text-faint)' }}>Gross Payout — {g.dsa_name}</td>
+                      <td className="px-5 py-2.5 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>{fmt(g.total)}</td>
                     </tr>
                     <tr>
-                      <td colSpan={5} className="px-5 py-2.5 text-xs font-bold" style={{ color: '#4A4A4A' }}>TDS @ 2%</td>
-                      <td className="px-5 py-2.5 text-sm font-semibold" style={{ color: '#F87171' }}>- {fmt(gTds)}</td>
+                      <td colSpan={5} className="px-5 py-2.5 text-xs font-bold" style={{ color: 'var(--text-faint)' }}>TDS @ 2%</td>
+                      <td className="px-5 py-2.5 text-sm font-semibold" style={{ color: 'rgb(var(--danger-soft-rgb))' }}>- {fmt(gTds)}</td>
                     </tr>
-                    <tr style={{ borderTop: '1px solid #1E1E24' }}>
-                      <td colSpan={5} className="px-5 py-3 text-xs font-bold" style={{ color: '#D4AF37' }}>Net Payable — {g.dsa_name}</td>
-                      <td className="px-5 py-3 text-sm font-bold text-emerald-400">{fmt(gNet)}</td>
+                    <tr style={{ borderTop: '1px solid var(--border)' }}>
+                      <td colSpan={5} className="px-5 py-3 text-xs font-bold" style={{ color: 'var(--accent)' }}>Net Payable — {g.dsa_name}</td>
+                      <td className="px-5 py-3 text-sm font-bold text-c-emerald">{fmt(gNet)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -890,20 +890,20 @@ export default function DSAPayout({ employee }: Props) {
           {groups.length > 1 && (
             <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
               <div>
-                <p className="text-sm font-bold text-white">Net Payable — All DSAs</p>
-                <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>Gross {fmt(totalPayout)} · TDS @ 2% {fmt(totalTds)}</p>
+                <p className="text-sm font-bold text-text-primary">Net Payable — All DSAs</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Gross {fmt(totalPayout)} · TDS @ 2% {fmt(totalTds)}</p>
               </div>
-              <p className="text-xl font-bold text-emerald-400">{fmt(totalNet)}</p>
+              <p className="text-xl font-bold text-c-emerald">{fmt(totalNet)}</p>
             </div>
           )}
         </div>
       )}
 
       {!hasLoaded && (
-        <div className="rounded-2xl p-12 text-center" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-          <Wallet className="w-10 h-10 mx-auto mb-3" style={{ color: '#2A2A2A' }} />
-          <p className="text-sm font-semibold" style={{ color: '#4A4A4A' }}>Select a period and click Calculate Payout</p>
-          <p className="text-xs mt-1" style={{ color: '#2A2A2A' }}>Payout = (Client Price − DSA Price) × Quantity for each DSA holding</p>
+        <div className="rounded-2xl p-12 text-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+          <Wallet className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--border-strong)' }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-faint)' }}>Select a period and click Calculate Payout</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--border-strong)' }}>Payout = (Client Price − DSA Price) × Quantity for each DSA holding</p>
         </div>
       )}
 
@@ -913,46 +913,46 @@ export default function DSAPayout({ employee }: Props) {
           style={{ background: 'rgba(0,0,0,0.7)' }}
           onClick={() => { if (statusBusyId !== cancelTarget.id) setCancelTarget(null); }}>
           <div className="w-full max-w-md rounded-2xl overflow-hidden"
-            style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
             onClick={e => e.stopPropagation()}>
-            <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid #1E1E24' }}>
-              <XCircle className="w-5 h-5" style={{ color: '#F87171' }} />
-              <p className="text-sm font-bold text-white">Cancel Debit Note</p>
+            <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
+              <XCircle className="w-5 h-5" style={{ color: 'rgb(var(--danger-soft-rgb))' }} />
+              <p className="text-sm font-bold text-text-primary">Cancel Debit Note</p>
             </div>
             <div className="p-5 space-y-4">
               <div className="rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                <p style={{ color: '#F87171' }} className="font-mono font-semibold">{cancelTarget.debit_note_number}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#8A8A8A' }}>
+                <p style={{ color: 'rgb(var(--danger-soft-rgb))' }} className="font-mono font-semibold">{cancelTarget.debit_note_number}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                   {cancelTarget.dsa?.full_name || 'DSA'} · {fmt(cancelTarget.net_payable_amount ?? cancelTarget.payout_amount)} net payable
                 </p>
               </div>
-              <p className="text-xs" style={{ color: '#6B6B6B' }}>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 Cancellation is permanent and recorded in the audit log. The reason cannot be edited afterwards.
               </p>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#8A8A8A' }}>
-                  Cancellation Reason <span style={{ color: '#F87171' }}>*</span>
+                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Cancellation Reason <span style={{ color: 'rgb(var(--danger-soft-rgb))' }}>*</span>
                 </label>
                 <textarea
                   value={cancelReason}
                   onChange={e => { setCancelReason(e.target.value); if (cancelError) setCancelError(''); }}
                   rows={3}
                   placeholder="Enter the reason for cancelling this debit note"
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none resize-none"
-                  style={{ background: '#050505', border: `1px solid ${cancelError ? '#F87171' : '#1E1E24'}` }}
+                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-text-primary outline-none resize-none"
+                  style={{ background: 'var(--bg-base)', border: `1px solid ${cancelError ? 'rgb(var(--danger-soft-rgb))' : 'var(--border)'}` }}
                 />
-                {cancelError && <p className="text-xs mt-1.5" style={{ color: '#F87171' }}>{cancelError}</p>}
+                {cancelError && <p className="text-xs mt-1.5" style={{ color: 'rgb(var(--danger-soft-rgb))' }}>{cancelError}</p>}
               </div>
             </div>
-            <div className="px-5 py-4 flex items-center justify-end gap-2" style={{ borderTop: '1px solid #1E1E24' }}>
+            <div className="px-5 py-4 flex items-center justify-end gap-2" style={{ borderTop: '1px solid var(--border)' }}>
               <button onClick={() => setCancelTarget(null)} disabled={statusBusyId === cancelTarget.id}
                 className="px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
-                style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
+                style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
                 Keep Debit Note
               </button>
               <button onClick={confirmCancel} disabled={statusBusyId === cancelTarget.id || !cancelReason.trim()}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
-                style={{ background: 'rgba(239,68,68,0.12)', color: '#F87171', border: '1px solid rgba(239,68,68,0.4)' }}>
+                style={{ background: 'rgba(239,68,68,0.12)', color: 'rgb(var(--danger-soft-rgb))', border: '1px solid rgba(239,68,68,0.4)' }}>
                 {statusBusyId === cancelTarget.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                 Confirm Cancellation
               </button>

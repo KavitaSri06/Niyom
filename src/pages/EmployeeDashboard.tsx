@@ -21,10 +21,10 @@ const PRODUCT_COLORS: Record<string, string> = {
   mutual_funds: 'bg-blue-100 text-blue-700',
   insurance: 'bg-emerald-100 text-emerald-700',
   fixed_deposits: 'bg-amber-100 text-amber-700',
-  bonds: 'bg-slate-100 text-slate-700',
+  bonds: 'bg-bg-raised text-text-secondary',
   unlisted_shares: 'bg-rose-100 text-rose-700',
   primary_bonds: 'bg-cyan-100 text-cyan-700',
-  other: 'bg-gray-100 text-gray-600',
+  other: 'bg-bg-raised text-text-secondary',
 };
 
 function formatCurrency(amount: number) {
@@ -43,7 +43,7 @@ function StatusBadge({ status }: { status: string }) {
     pending: { cls: 'bg-amber-50 text-amber-700 border border-amber-200', icon: <Clock className="w-3 h-3" /> },
     cancelled: { cls: 'bg-red-50 text-red-600 border border-red-200', icon: <XCircle className="w-3 h-3" /> },
   };
-  const s = map[status] || { cls: 'bg-gray-100 text-gray-600 border border-gray-200', icon: null };
+  const s = map[status] || { cls: 'bg-bg-raised text-text-secondary border border-border', icon: null };
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${s.cls}`}>
       {s.icon}{status.charAt(0).toUpperCase() + status.slice(1)}
@@ -101,11 +101,11 @@ function EditDealModal({ deal, onClose, onSaved }: { deal: Deal & { client_name?
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-900">Edit Deal</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-            <X className="w-4 h-4 text-gray-500" />
+      <div className="bg-bg-elevated rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle">
+          <h2 className="text-base font-bold text-text-primary">Edit Deal</h2>
+          <button onClick={onClose} className="p-2 hover:bg-bg-raised rounded-xl transition-colors">
+            <X className="w-4 h-4 text-text-muted" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -116,48 +116,48 @@ function EditDealModal({ deal, onClose, onSaved }: { deal: Deal & { client_name?
             </div>
           )}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Client Name</label>
+            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Client Name</label>
             <input type="text" value={form.client_name} onChange={e => setForm({ ...form, client_name: e.target.value })}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-gray-50"
+              className="w-full px-3.5 py-2.5 border border-border rounded-xl text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-bg-base"
               placeholder="Client name" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Product</label>
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Product</label>
               <select value={form.product_type} onChange={e => setForm({ ...form, product_type: e.target.value as any })}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-gray-50">
+                className="w-full px-3.5 py-2.5 border border-border rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-bg-base">
                 {Object.entries(PRODUCT_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Status</label>
               <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as any })}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-gray-50">
+                className="w-full px-3.5 py-2.5 border border-border rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-bg-base">
                 <option value="pending">Pending</option>
                 <option value="closed">Closed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Amount (₹)</label>
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Amount (₹)</label>
               <input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-gray-50" required />
+                className="w-full px-3.5 py-2.5 border border-border rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-bg-base" required />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Revenue (₹)</label>
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Revenue (₹)</label>
               <input type="number" value={form.revenue} onChange={e => setForm({ ...form, revenue: e.target.value })}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-gray-50" required />
+                className="w-full px-3.5 py-2.5 border border-border rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-bg-base" required />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Notes</label>
+            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Notes</label>
             <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
               rows={2}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-gray-50 resize-none"
+              className="w-full px-3.5 py-2.5 border border-border rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-bg-base resize-none"
               placeholder="Optional notes..." />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 text-sm font-medium">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-border text-text-secondary rounded-xl hover:bg-bg-base text-sm font-medium">Cancel</button>
             <button type="submit" disabled={loading}
               className="flex-1 px-4 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 text-sm font-semibold disabled:opacity-50">
               {loading ? 'Saving...' : 'Save'}
@@ -193,11 +193,11 @@ function AddClientModal({ employeeId, onClose, onSaved }: { employeeId: string; 
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-900">Add New Client</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-            <X className="w-4 h-4 text-gray-500" />
+      <div className="bg-bg-elevated rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle">
+          <h2 className="text-base font-bold text-text-primary">Add New Client</h2>
+          <button onClick={onClose} className="p-2 hover:bg-bg-raised rounded-xl transition-colors">
+            <X className="w-4 h-4 text-text-muted" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -208,34 +208,34 @@ function AddClientModal({ employeeId, onClose, onSaved }: { employeeId: string; 
             </div>
           )}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Full Name *</label>
+            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Full Name *</label>
             <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-gray-50"
+              className="w-full px-3.5 py-2.5 border border-border rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-bg-base"
               placeholder="Client full name" required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Phone</label>
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Phone</label>
               <input type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-gray-50"
+                className="w-full px-3.5 py-2.5 border border-border rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-bg-base"
                 placeholder="+91 ..." />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Email</label>
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Email</label>
               <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-gray-50"
+                className="w-full px-3.5 py-2.5 border border-border rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-bg-base"
                 placeholder="client@email.com" />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Notes</label>
+            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Notes</label>
             <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
               rows={2}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-gray-50 resize-none"
+              className="w-full px-3.5 py-2.5 border border-border rounded-xl text-sm focus:ring-2 focus:ring-gray-900 bg-bg-base resize-none"
               placeholder="Any relevant notes..." />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 text-sm font-medium">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-border text-text-secondary rounded-xl hover:bg-bg-base text-sm font-medium">Cancel</button>
             <button type="submit" disabled={loading}
               className="flex-1 px-4 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 text-sm font-semibold disabled:opacity-50">
               {loading ? 'Saving...' : 'Add Client'}
@@ -291,10 +291,10 @@ export default function EmployeeDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-bg-base flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm font-medium">Loading...</p>
+          <p className="text-text-muted text-sm font-medium">Loading...</p>
         </div>
       </div>
     );
@@ -306,9 +306,9 @@ export default function EmployeeDashboard() {
   const closedCount = deals.filter(d => d.status === 'closed').length;
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-bg-base/50">
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <nav className="bg-bg-elevated border-b border-border sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center h-14">
             <div className="flex items-center gap-3">
@@ -316,12 +316,12 @@ export default function EmployeeDashboard() {
                 <Briefcase className="w-4 h-4 text-white" />
               </div>
               <div>
-                <span className="text-sm font-bold text-gray-900">{employee?.full_name}</span>
-                <span className="ml-2 text-xs text-gray-400 font-medium hidden sm:inline">{employee?.level}</span>
+                <span className="text-sm font-bold text-text-primary">{employee?.full_name}</span>
+                <span className="ml-2 text-xs text-text-muted font-medium hidden sm:inline">{employee?.level}</span>
               </div>
             </div>
             <button onClick={() => { supabase.auth.signOut(); window.location.href = '/crm/login'; }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-text-muted hover:text-text-primary hover:bg-bg-raised rounded-lg transition-colors text-sm">
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:block">Sign out</span>
             </button>
@@ -333,43 +333,43 @@ export default function EmployeeDashboard() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* Revenue */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-bg-elevated rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div className="bg-emerald-500 w-9 h-9 rounded-xl flex items-center justify-center text-white">
                 <DollarSign className="w-4 h-4" />
               </div>
-              <ArrowUpRight className="w-4 h-4 text-gray-300" />
+              <ArrowUpRight className="w-4 h-4 text-text-faint" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 tracking-tight">{formatCurrency(metrics?.total_revenue || 0)}</p>
-            <p className="text-xs text-gray-400 mt-1">Total Revenue</p>
-            <p className="text-xs text-gray-500 font-medium mt-0.5">{closedCount} closed deals</p>
+            <p className="text-2xl font-bold text-text-primary tracking-tight">{formatCurrency(metrics?.total_revenue || 0)}</p>
+            <p className="text-xs text-text-muted mt-1">Total Revenue</p>
+            <p className="text-xs text-text-muted font-medium mt-0.5">{closedCount} closed deals</p>
           </div>
 
           {/* X Multiple */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-bg-elevated rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div className="bg-blue-500 w-9 h-9 rounded-xl flex items-center justify-center text-white">
                 <TrendingUp className="w-4 h-4" />
               </div>
-              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-lg ${xMultiple >= 2.1 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-lg ${xMultiple >= 2.1 ? 'bg-emerald-100 text-emerald-700' : 'bg-bg-raised text-text-muted'}`}>
                 {xMultiple >= 2.1 ? '✓' : '×'}
               </span>
             </div>
-            <p className="text-2xl font-bold text-gray-900 tracking-tight">{xMultiple.toFixed(2)}x</p>
-            <p className="text-xs text-gray-400 mt-1">X Multiple</p>
-            <p className="text-xs text-gray-500 font-medium mt-0.5">Revenue ÷ Salary</p>
+            <p className="text-2xl font-bold text-text-primary tracking-tight">{xMultiple.toFixed(2)}x</p>
+            <p className="text-xs text-text-muted mt-1">X Multiple</p>
+            <p className="text-xs text-text-muted font-medium mt-0.5">Revenue ÷ Salary</p>
           </div>
 
           {/* Incentive */}
-          <div className={`bg-white rounded-2xl border p-5 shadow-sm hover:shadow-md transition-shadow ${isEligible ? 'border-emerald-200 ring-1 ring-emerald-100' : 'border-gray-200'}`}>
+          <div className={`bg-bg-elevated rounded-2xl border p-5 shadow-sm hover:shadow-md transition-shadow ${isEligible ? 'border-emerald-200 ring-1 ring-emerald-100' : 'border-border'}`}>
             <div className="flex items-start justify-between mb-4">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white ${isEligible ? 'bg-amber-500' : 'bg-gray-300'}`}>
                 <Award className="w-4 h-4" />
               </div>
               {isEligible && <span className="text-xs font-bold px-1.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-700">Eligible</span>}
             </div>
-            <p className="text-2xl font-bold text-gray-900 tracking-tight">{formatCurrency(metrics?.incentive_amount || 0)}</p>
-            <p className="text-xs text-gray-400 mt-1">Incentive</p>
+            <p className="text-2xl font-bold text-text-primary tracking-tight">{formatCurrency(metrics?.incentive_amount || 0)}</p>
+            <p className="text-xs text-text-muted mt-1">Incentive</p>
             {!isEligible && (
               <p className="text-xs text-red-500 font-medium mt-0.5">
                 {productCategories < 3 ? `${3 - productCategories} more ${3 - productCategories === 1 ? 'category' : 'categories'} needed` : 'Need 2.1x minimum'}
@@ -379,26 +379,26 @@ export default function EmployeeDashboard() {
           </div>
 
           {/* Categories */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-bg-elevated rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white ${productCategories >= 3 ? 'bg-emerald-500' : 'bg-gray-300'}`}>
                 <BarChart3 className="w-4 h-4" />
               </div>
-              <Target className="w-4 h-4 text-gray-300" />
+              <Target className="w-4 h-4 text-text-faint" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 tracking-tight">{productCategories}<span className="text-sm font-normal text-gray-400 ml-1">/ 3</span></p>
-            <p className="text-xs text-gray-400 mt-1">Categories</p>
+            <p className="text-2xl font-bold text-text-primary tracking-tight">{productCategories}<span className="text-sm font-normal text-text-muted ml-1">/ 3</span></p>
+            <p className="text-xs text-text-muted mt-1">Categories</p>
             <div className="mt-2 flex gap-1">
               {[1, 2, 3].map(n => (
-                <div key={n} className={`flex-1 h-1.5 rounded-full transition-all ${productCategories >= n ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                <div key={n} className={`flex-1 h-1.5 rounded-full transition-all ${productCategories >= n ? 'bg-emerald-500' : 'bg-bg-raised'}`} />
               ))}
             </div>
           </div>
         </div>
 
         {/* Tabs Panel */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="border-b border-gray-100">
+        <div className="bg-bg-elevated rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="border-b border-border-subtle">
             <div className="flex">
               {[
                 { id: 'deals' as Tab, label: 'My Deals', icon: <Briefcase className="w-4 h-4" />, count: deals.length },
@@ -406,11 +406,11 @@ export default function EmployeeDashboard() {
               ].map(tab => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-6 py-3.5 text-sm font-medium border-b-2 transition-all ${
-                    activeTab === tab.id ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-700'
+                    activeTab === tab.id ? 'border-gray-900 text-text-primary' : 'border-transparent text-text-muted hover:text-text-secondary'
                   }`}>
                   {tab.icon}
                   {tab.label}
-                  <span className={`px-1.5 py-0.5 rounded-lg text-xs font-semibold ${activeTab === tab.id ? 'bg-gray-100 text-gray-700' : 'bg-gray-100 text-gray-400'}`}>
+                  <span className={`px-1.5 py-0.5 rounded-lg text-xs font-semibold ${activeTab === tab.id ? 'bg-bg-raised text-text-secondary' : 'bg-bg-raised text-text-muted'}`}>
                     {tab.count}
                   </span>
                 </button>
@@ -421,8 +421,8 @@ export default function EmployeeDashboard() {
           {/* Deals Tab */}
           {activeTab === 'deals' && (
             <div>
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
-                <p className="text-sm text-gray-400 font-medium">{deals.length} deal{deals.length !== 1 ? 's' : ''}</p>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+                <p className="text-sm text-text-muted font-medium">{deals.length} deal{deals.length !== 1 ? 's' : ''}</p>
                 <button onClick={() => window.location.href = '/crm/employee/deals/new'}
                   className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors text-sm font-semibold">
                   <Plus className="w-4 h-4" /> Add Deal
@@ -431,9 +431,9 @@ export default function EmployeeDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-50">
+                    <tr className="border-b border-border-subtle">
                       {['Client', 'Product', 'Amount', 'Revenue', 'Status', 'Date', ''].map((h, i) => (
-                        <th key={i} className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                        <th key={i} className="px-5 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -442,15 +442,15 @@ export default function EmployeeDashboard() {
                       <tr>
                         <td colSpan={7} className="px-5 py-14 text-center">
                           <div className="flex flex-col items-center gap-3">
-                            <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center">
-                              <Briefcase className="w-6 h-6 text-gray-400" />
+                            <div className="w-14 h-14 bg-bg-raised rounded-2xl flex items-center justify-center">
+                              <Briefcase className="w-6 h-6 text-text-muted" />
                             </div>
                             <div>
-                              <p className="text-sm font-semibold text-gray-700">No deals yet</p>
-                              <p className="text-xs text-gray-400 mt-0.5">Add your first deal to get started</p>
+                              <p className="text-sm font-semibold text-text-secondary">No deals yet</p>
+                              <p className="text-xs text-text-muted mt-0.5">Add your first deal to get started</p>
                             </div>
                             <button onClick={() => window.location.href = '/crm/employee/deals/new'}
-                              className="flex items-center gap-1.5 text-sm text-gray-900 font-semibold hover:underline">
+                              className="flex items-center gap-1.5 text-sm text-text-primary font-semibold hover:underline">
                               Add your first deal <ChevronRight className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -458,22 +458,22 @@ export default function EmployeeDashboard() {
                       </tr>
                     )}
                     {deals.map(deal => (
-                      <tr key={deal.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-5 py-4 text-sm text-gray-600">{deal.client_name || <span className="text-gray-300">—</span>}</td>
+                      <tr key={deal.id} className="hover:bg-bg-base/50 transition-colors">
+                        <td className="px-5 py-4 text-sm text-text-secondary">{deal.client_name || <span className="text-text-faint">—</span>}</td>
                         <td className="px-5 py-4">
-                          <span className={`text-xs font-medium px-2 py-1 rounded-lg ${PRODUCT_COLORS[deal.product_type] || 'bg-gray-100 text-gray-600'}`}>
+                          <span className={`text-xs font-medium px-2 py-1 rounded-lg ${PRODUCT_COLORS[deal.product_type] || 'bg-bg-raised text-text-secondary'}`}>
                             {PRODUCT_LABELS[deal.product_type] || deal.product_type}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-sm text-gray-600 whitespace-nowrap">{formatCurrencyFull(deal.amount)}</td>
-                        <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">{formatCurrency(deal.revenue)}</td>
+                        <td className="px-5 py-4 text-sm text-text-secondary whitespace-nowrap">{formatCurrencyFull(deal.amount)}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-text-primary whitespace-nowrap">{formatCurrency(deal.revenue)}</td>
                         <td className="px-5 py-4 whitespace-nowrap"><StatusBadge status={deal.status} /></td>
-                        <td className="px-5 py-4 text-xs text-gray-400 whitespace-nowrap">
+                        <td className="px-5 py-4 text-xs text-text-muted whitespace-nowrap">
                           {new Date(deal.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </td>
                         <td className="px-5 py-4">
                           <button onClick={() => setEditingDeal(deal)}
-                            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-300 hover:text-gray-700">
+                            className="p-1.5 hover:bg-bg-raised rounded-lg transition-colors text-text-faint hover:text-text-secondary">
                             <Edit2 className="w-4 h-4" />
                           </button>
                         </td>
@@ -488,8 +488,8 @@ export default function EmployeeDashboard() {
           {/* Clients Tab */}
           {activeTab === 'clients' && (
             <div>
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
-                <p className="text-sm text-gray-400 font-medium">{clients.length} client{clients.length !== 1 ? 's' : ''}</p>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+                <p className="text-sm text-text-muted font-medium">{clients.length} client{clients.length !== 1 ? 's' : ''}</p>
                 <button onClick={() => setShowAddClient(true)}
                   className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors text-sm font-semibold">
                   <UserPlus className="w-4 h-4" /> Add Client
@@ -497,39 +497,39 @@ export default function EmployeeDashboard() {
               </div>
               {clients.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-14">
-                  <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center">
-                    <Users className="w-6 h-6 text-gray-400" />
+                  <div className="w-14 h-14 bg-bg-raised rounded-2xl flex items-center justify-center">
+                    <Users className="w-6 h-6 text-text-muted" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-gray-700">No clients yet</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Add your first client to get started</p>
+                    <p className="text-sm font-semibold text-text-secondary">No clients yet</p>
+                    <p className="text-xs text-text-muted mt-0.5">Add your first client to get started</p>
                   </div>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-50">
                   {clients.map((c: any) => (
-                    <div key={c.id} className="px-6 py-4 hover:bg-gray-50/50 transition-colors">
+                    <div key={c.id} className="px-6 py-4 hover:bg-bg-base/50 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           <Avatar name={c.name} size="md" />
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">{c.name}</p>
+                            <p className="text-sm font-semibold text-text-primary">{c.name}</p>
                             <div className="flex items-center gap-3 mt-1">
                               {c.phone && (
-                                <span className="flex items-center gap-1 text-xs text-gray-400">
+                                <span className="flex items-center gap-1 text-xs text-text-muted">
                                   <Phone className="w-3 h-3" />{c.phone}
                                 </span>
                               )}
                               {c.email && (
-                                <span className="flex items-center gap-1 text-xs text-gray-400">
+                                <span className="flex items-center gap-1 text-xs text-text-muted">
                                   <Mail className="w-3 h-3" />{c.email}
                                 </span>
                               )}
                             </div>
-                            {c.notes && <p className="text-xs text-gray-400 mt-1">{c.notes}</p>}
+                            {c.notes && <p className="text-xs text-text-muted mt-1">{c.notes}</p>}
                           </div>
                         </div>
-                        <p className="text-xs text-gray-300 whitespace-nowrap">
+                        <p className="text-xs text-text-faint whitespace-nowrap">
                           {new Date(c.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </p>
                       </div>

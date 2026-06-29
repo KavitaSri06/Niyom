@@ -34,9 +34,9 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
           <span className="font-bold text-base" style={{ color: '#c9b896' }}>Niyom Wealth</span>
         </div>
         <button onClick={onBack} className="flex items-center gap-2 text-sm font-medium transition-colors"
-          style={{ color: '#8A8A8A' }}
+          style={{ color: 'var(--text-muted)' }}
           onMouseEnter={e => (e.currentTarget.style.color = '#c9b896')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#8A8A8A')}>
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
           <ArrowLeft className="w-4 h-4" /> Back to Home
         </button>
       </nav>
@@ -74,7 +74,7 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
             Client Portal<br />
             <span style={{ color: '#c9b896' }}>In the Works</span>
           </h1>
-          <p className="text-base leading-relaxed" style={{ color: '#8A8A8A' }}>
+          <p className="text-base leading-relaxed" style={{ color: 'var(--text-muted)' }}>
             We're building a powerful, secure portal exclusively for our clients — where you can track your investments, access documents, and stay informed in real time.
           </p>
         </div>
@@ -122,7 +122,7 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">{title}</p>
-                <p className="text-xs mt-1 leading-relaxed" style={{ color: '#6B6B6B' }}>{desc}</p>
+                <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--text-muted)' }}>{desc}</p>
               </div>
             </div>
           ))}

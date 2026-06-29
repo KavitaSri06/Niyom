@@ -46,12 +46,12 @@ export default function CRMLogin() {
       <div className="hidden lg:flex flex-col justify-between w-[45%] bg-gray-950 p-12 border-r border-white/5 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-20 left-20 w-64 h-64 bg-[#c9b896] rounded-full filter blur-3xl" />
-          <div className="absolute bottom-32 right-10 w-48 h-48 bg-white rounded-full filter blur-3xl" />
+          <div className="absolute bottom-32 right-10 w-48 h-48 bg-bg-elevated rounded-full filter blur-3xl" />
         </div>
 
         <div className="relative flex items-center gap-3">
           <div className="w-9 h-9 bg-[#c9b896] rounded-xl flex items-center justify-center">
-            <BarChart3 className="w-4 h-4 text-gray-950" />
+            <BarChart3 className="w-4 h-4 text-text-primary" />
           </div>
           <div>
             <p className="text-white font-bold tracking-widest text-sm" style={{ fontFamily: 'Georgia, serif' }}>NIYOM WEALTH</p>
@@ -77,7 +77,7 @@ export default function CRMLogin() {
             { icon: <Award className="w-4 h-4" />, label: 'Incentives', value: 'Real-time' },
             { icon: <BarChart3 className="w-4 h-4" />, label: 'Products', value: '7 Types' },
           ].map((stat, i) => (
-            <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/[0.08] transition-colors">
+            <div key={i} className="bg-bg-elevated/5 border border-white/10 rounded-2xl p-4 hover:bg-bg-elevated/[0.08] transition-colors">
               <div className="text-[#c9b896] mb-2">{stat.icon}</div>
               <p className="text-white text-sm font-bold">{stat.value}</p>
               <p className="text-white/30 text-xs mt-0.5">{stat.label}</p>
@@ -92,7 +92,7 @@ export default function CRMLogin() {
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
             <div className="w-8 h-8 bg-[#c9b896] rounded-xl flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-gray-950" />
+              <BarChart3 className="w-4 h-4 text-text-primary" />
             </div>
             <div>
               <p className="text-white font-bold tracking-widest text-sm" style={{ fontFamily: 'Georgia, serif' }}>NIYOM WEALTH</p>
@@ -118,7 +118,7 @@ export default function CRMLogin() {
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 text-white placeholder-white/15 pl-11 pr-4 py-3.5 rounded-2xl focus:ring-2 focus:ring-[#c9b896]/50 focus:border-[#c9b896]/30 transition-all text-sm outline-none"
+                  className="w-full bg-bg-elevated/5 border border-white/10 text-white placeholder-white/15 pl-11 pr-4 py-3.5 rounded-2xl focus:ring-2 focus:ring-[#c9b896]/50 focus:border-[#c9b896]/30 transition-all text-sm outline-none"
                   placeholder="you@niyomwealth.com" required />
               </div>
             </div>
@@ -128,13 +128,13 @@ export default function CRMLogin() {
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 text-white placeholder-white/15 pl-11 pr-4 py-3.5 rounded-2xl focus:ring-2 focus:ring-[#c9b896]/50 focus:border-[#c9b896]/30 transition-all text-sm outline-none"
+                  className="w-full bg-bg-elevated/5 border border-white/10 text-white placeholder-white/15 pl-11 pr-4 py-3.5 rounded-2xl focus:ring-2 focus:ring-[#c9b896]/50 focus:border-[#c9b896]/30 transition-all text-sm outline-none"
                   placeholder="••••••••" required />
               </div>
             </div>
 
             <button type="submit" disabled={loading}
-              className="w-full bg-[#c9b896] hover:bg-[#baa882] text-gray-950 py-3.5 rounded-2xl font-bold transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-lg shadow-[#c9b896]/20">
+              className="w-full bg-[#c9b896] hover:bg-[#baa882] text-text-primary py-3.5 rounded-2xl font-bold transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-lg shadow-[#c9b896]/20">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-gray-950/30 border-t-gray-950 rounded-full animate-spin" />

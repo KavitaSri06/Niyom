@@ -37,14 +37,17 @@ export const PRODUCT_LABELS: Record<ProductType, string> = {
 };
 
 export const PRODUCT_COLORS: Record<ProductType, string> = {
-  unlisted_share: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-  secondary_bond: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-  primary_bond: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-  mutual_fund: 'text-pink-400 bg-pink-400/10 border-pink-400/20',
-  fixed_deposit: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
-  insurance: 'text-orange-400 bg-orange-400/10 border-orange-400/20',
+  unlisted_share: 'text-c-amber bg-c-amber/10 border-c-amber/20',
+  secondary_bond: 'text-c-emerald bg-c-emerald/10 border-c-emerald/20',
+  primary_bond: 'text-c-blue bg-c-blue/10 border-c-blue/20',
+  mutual_fund: 'text-c-pink bg-c-pink/10 border-c-pink/20',
+  fixed_deposit: 'text-c-cyan bg-c-cyan/10 border-c-cyan/20',
+  insurance: 'text-c-orange bg-c-orange/10 border-c-orange/20',
 };
 
+// Category/chart colors are intentionally theme-CONSTANT (vivid, consistent in
+// both themes) and are also embedded in print/PDF export HTML where CSS
+// variables do not resolve — so these stay literal hex.
 export const PRODUCT_CHART_COLORS: Record<ProductType, string> = {
   unlisted_share: '#F59E0B',
   secondary_bond: '#10B981',
@@ -65,10 +68,10 @@ export const TXN_LABELS: Record<string, string> = {
 };
 
 export const TXN_COLORS: Record<string, string> = {
-  buy: 'text-emerald-400 bg-emerald-400/10',
-  sell: 'text-red-400 bg-red-400/10',
-  transfer_in: 'text-blue-400 bg-blue-400/10',
-  transfer_out: 'text-orange-400 bg-orange-400/10',
+  buy: 'text-c-emerald bg-c-emerald/10',
+  sell: 'text-c-red bg-c-red/10',
+  transfer_in: 'text-c-blue bg-c-blue/10',
+  transfer_out: 'text-c-orange bg-c-orange/10',
 };
 
 export const VERIFICATION_LABELS: Record<string, string> = {
@@ -79,8 +82,8 @@ export const VERIFICATION_LABELS: Record<string, string> = {
 };
 
 export const VERIFICATION_COLORS: Record<string, string> = {
-  pending: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-  partial: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-  verified: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-  rejected: 'text-red-400 bg-red-400/10 border-red-400/20',
+  pending: 'text-c-amber bg-c-amber/10 border-c-amber/20',
+  partial: 'text-c-blue bg-c-blue/10 border-c-blue/20',
+  verified: 'text-c-emerald bg-c-emerald/10 border-c-emerald/20',
+  rejected: 'text-c-red bg-c-red/10 border-c-red/20',
 };

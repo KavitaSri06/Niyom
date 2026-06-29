@@ -80,7 +80,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
   const goalResult = calculateGoal();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-bg-base">
       <nav className="bg-black shadow-lg border-b border-[#c9b896]/20 sticky top-0 z-50 relative">
         <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
           <button
@@ -130,11 +130,11 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
 
       <div className="max-w-7xl mx-auto p-8">
         <div className="mb-8">
-          <h2 className="text-4xl font-bold text-gray-900 flex items-center gap-3 mb-2">
+          <h2 className="text-4xl font-bold text-text-primary flex items-center gap-3 mb-2">
             <Calculator className="w-10 h-10 text-blue-600" />
             Financial Calculators
           </h2>
-          <p className="text-gray-600">Educational tools to understand investment projections</p>
+          <p className="text-text-secondary">Educational tools to understand investment projections</p>
           <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-sm text-yellow-900 font-semibold">
               Disclaimer: These calculators are for educational and illustrative purposes only. Results are projections based on assumed rates of return and do not guarantee actual performance. We are not SEBI Registered Investment Advisers. Please consult a qualified financial advisor for personalized financial planning.
@@ -148,7 +148,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
             className={`p-4 rounded-xl transition-all ${
               activeCalculator === 'sip'
                 ? 'bg-blue-600 text-white shadow-lg scale-105'
-                : 'bg-white text-gray-700 hover:bg-gray-50 shadow'
+                : 'bg-bg-elevated text-text-secondary hover:bg-bg-base shadow'
             }`}
           >
             <TrendingUp className="w-8 h-8 mx-auto mb-2" />
@@ -159,7 +159,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
             className={`p-4 rounded-xl transition-all ${
               activeCalculator === 'lumpsum'
                 ? 'bg-blue-600 text-white shadow-lg scale-105'
-                : 'bg-white text-gray-700 hover:bg-gray-50 shadow'
+                : 'bg-bg-elevated text-text-secondary hover:bg-bg-base shadow'
             }`}
           >
             <PiggyBank className="w-8 h-8 mx-auto mb-2" />
@@ -170,7 +170,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
             className={`p-4 rounded-xl transition-all ${
               activeCalculator === 'retirement'
                 ? 'bg-blue-600 text-white shadow-lg scale-105'
-                : 'bg-white text-gray-700 hover:bg-gray-50 shadow'
+                : 'bg-bg-elevated text-text-secondary hover:bg-bg-base shadow'
             }`}
           >
             <Home className="w-8 h-8 mx-auto mb-2" />
@@ -181,7 +181,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
             className={`p-4 rounded-xl transition-all ${
               activeCalculator === 'goal'
                 ? 'bg-blue-600 text-white shadow-lg scale-105'
-                : 'bg-white text-gray-700 hover:bg-gray-50 shadow'
+                : 'bg-bg-elevated text-text-secondary hover:bg-bg-base shadow'
             }`}
           >
             <Target className="w-8 h-8 mx-auto mb-2" />
@@ -190,14 +190,14 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="bg-bg-elevated rounded-2xl shadow-lg p-8">
             {activeCalculator === 'sip' && (
               <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">SIP Calculator</h3>
+                <h3 className="text-2xl font-bold text-text-primary mb-6">SIP Calculator</h3>
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Monthly Investment: {formatCurrency(sipAmount)}
                     </label>
                     <input
@@ -212,7 +212,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Expected Return Rate: {sipRate}% p.a.
                     </label>
                     <input
@@ -227,7 +227,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Time Period: {sipYears} Years
                     </label>
                     <input
@@ -246,11 +246,11 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
 
             {activeCalculator === 'lumpsum' && (
               <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">Lumpsum Calculator</h3>
+                <h3 className="text-2xl font-bold text-text-primary mb-6">Lumpsum Calculator</h3>
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       One-time Investment: {formatCurrency(lumpsum)}
                     </label>
                     <input
@@ -265,7 +265,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Expected Return Rate: {lumpsumRate}% p.a.
                     </label>
                     <input
@@ -280,7 +280,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Time Period: {lumpsumYears} Years
                     </label>
                     <input
@@ -299,11 +299,11 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
 
             {activeCalculator === 'retirement' && (
               <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">Retirement Planner</h3>
+                <h3 className="text-2xl font-bold text-text-primary mb-6">Retirement Planner</h3>
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Current Age: {currentAge} Years
                     </label>
                     <input
@@ -318,7 +318,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Retirement Age: {retirementAge} Years
                     </label>
                     <input
@@ -333,7 +333,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Monthly Expense Today: {formatCurrency(monthlyExpense)}
                     </label>
                     <input
@@ -348,7 +348,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Expected Return: {expectedReturn}% p.a.
                     </label>
                     <input
@@ -367,11 +367,11 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
 
             {activeCalculator === 'goal' && (
               <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">Goal Planner</h3>
+                <h3 className="text-2xl font-bold text-text-primary mb-6">Goal Planner</h3>
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Target Amount: {formatCurrency(goalAmount)}
                     </label>
                     <input
@@ -386,7 +386,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Time to Achieve: {goalYears} Years
                     </label>
                     <input
@@ -401,7 +401,7 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       Expected Return: {goalRate}% p.a.
                     </label>
                     <input
@@ -424,15 +424,15 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
 
             {activeCalculator === 'sip' && (
               <div className="space-y-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                <div className="bg-bg-elevated/10 backdrop-blur-sm rounded-xl p-6">
                   <p className="text-blue-200 text-sm mb-2">Total Investment</p>
                   <p className="text-4xl font-bold">{formatCurrency(sipResult.invested)}</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                <div className="bg-bg-elevated/10 backdrop-blur-sm rounded-xl p-6">
                   <p className="text-blue-200 text-sm mb-2">Estimated Returns</p>
                   <p className="text-4xl font-bold">{formatCurrency(sipResult.returns)}</p>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30">
+                <div className="bg-bg-elevated/20 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30">
                   <p className="text-blue-100 text-sm mb-2">Future Value</p>
                   <p className="text-5xl font-bold">{formatCurrency(sipResult.futureValue)}</p>
                 </div>
@@ -444,15 +444,15 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
 
             {activeCalculator === 'lumpsum' && (
               <div className="space-y-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                <div className="bg-bg-elevated/10 backdrop-blur-sm rounded-xl p-6">
                   <p className="text-blue-200 text-sm mb-2">Initial Investment</p>
                   <p className="text-4xl font-bold">{formatCurrency(lumpsumResult.invested)}</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                <div className="bg-bg-elevated/10 backdrop-blur-sm rounded-xl p-6">
                   <p className="text-blue-200 text-sm mb-2">Estimated Returns</p>
                   <p className="text-4xl font-bold">{formatCurrency(lumpsumResult.returns)}</p>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30">
+                <div className="bg-bg-elevated/20 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30">
                   <p className="text-blue-100 text-sm mb-2">Future Value</p>
                   <p className="text-5xl font-bold">{formatCurrency(lumpsumResult.futureValue)}</p>
                 </div>
@@ -464,15 +464,15 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
 
             {activeCalculator === 'retirement' && (
               <div className="space-y-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                <div className="bg-bg-elevated/10 backdrop-blur-sm rounded-xl p-6">
                   <p className="text-blue-200 text-sm mb-2">Years to Retirement</p>
                   <p className="text-4xl font-bold">{retirementResult.yearsToRetirement} Years</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                <div className="bg-bg-elevated/10 backdrop-blur-sm rounded-xl p-6">
                   <p className="text-blue-200 text-sm mb-2">Required Corpus</p>
                   <p className="text-4xl font-bold">{formatCurrency(retirementResult.requiredCorpus)}</p>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30">
+                <div className="bg-bg-elevated/20 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30">
                   <p className="text-blue-100 text-sm mb-2">Monthly SIP Needed</p>
                   <p className="text-5xl font-bold">{formatCurrency(retirementResult.monthlySIP)}</p>
                 </div>
@@ -484,19 +484,19 @@ export default function CalculatorPage({ onBack }: CalculatorProps) {
 
             {activeCalculator === 'goal' && (
               <div className="space-y-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                <div className="bg-bg-elevated/10 backdrop-blur-sm rounded-xl p-6">
                   <p className="text-blue-200 text-sm mb-2">Target Amount</p>
                   <p className="text-4xl font-bold">{formatCurrency(goalAmount)}</p>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30">
+                <div className="bg-bg-elevated/20 backdrop-blur-sm rounded-xl p-6 border-2 border-white/30">
                   <p className="text-blue-100 text-sm mb-2">Monthly SIP Required</p>
                   <p className="text-5xl font-bold">{formatCurrency(goalResult.monthlySIP)}</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                <div className="bg-bg-elevated/10 backdrop-blur-sm rounded-xl p-6">
                   <p className="text-blue-200 text-sm mb-2">Total Investment</p>
                   <p className="text-4xl font-bold">{formatCurrency(goalResult.totalInvested)}</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                <div className="bg-bg-elevated/10 backdrop-blur-sm rounded-xl p-6">
                   <p className="text-blue-200 text-sm mb-2">Estimated Returns</p>
                   <p className="text-4xl font-bold">{formatCurrency(goalResult.returns)}</p>
                 </div>

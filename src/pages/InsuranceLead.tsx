@@ -72,18 +72,18 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-gray-100 flex items-center justify-center p-6">
-        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl p-12 text-center">
+      <div className="min-h-screen bg-bg-base flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full bg-bg-elevated rounded-2xl shadow-2xl p-12 text-center">
           <div className="mb-6">
             <CheckCircle className="w-20 h-20 text-green-500 mx-auto" />
           </div>
-          <h2 className="text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+          <h2 className="text-4xl font-bold text-text-primary mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
             Thank You!
           </h2>
-          <p className="text-xl text-gray-600 mb-6">
+          <p className="text-xl text-text-secondary mb-6">
             We've received your interest in Insurance Products
           </p>
-          <p className="text-gray-600 mb-8">
+          <p className="text-text-secondary mb-8">
             Our insurance specialist will contact you within 24 hours to discuss the best coverage options for your needs.
           </p>
           <button
@@ -98,7 +98,7 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-100">
+    <div className="min-h-screen bg-bg-base">
       <nav className="bg-black text-white py-5 px-6 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <button
@@ -147,7 +147,7 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
         <div className="bg-gradient-to-r from-red-500 to-red-700 text-white p-8 rounded-2xl shadow-xl mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <div className="bg-white/20 p-4 rounded-full">
+            <div className="bg-bg-elevated/20 p-4 rounded-full">
               <Heart className="w-10 h-10" />
             </div>
             <div>
@@ -160,31 +160,31 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
             </div>
           </div>
           <div className="grid md:grid-cols-3 gap-4 mt-6">
-            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
+            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
               <p className="text-sm text-red-100 mb-1">Life Protection</p>
               <p className="font-bold text-lg">Family Security</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
+            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
               <p className="text-sm text-red-100 mb-1">Health Cover</p>
               <p className="font-bold text-lg">Medical Safety</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
+            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
               <p className="text-sm text-red-100 mb-1">Wealth Protection</p>
               <p className="font-bold text-lg">Asset Safety</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+        <div className="bg-bg-elevated rounded-2xl shadow-xl p-8">
+          <h3 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
             Share Your Details
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="flex items-center gap-2 text-gray-700 font-semibold mb-2">
-                  <User size={20} className="text-[#c9b896]" />
+                <label className="flex items-center gap-2 text-text-secondary font-semibold mb-2">
+                  <User size={20} className="text-accent" />
                   Full Name *
                 </label>
                 <input
@@ -193,14 +193,14 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
                   value={formData.fullName}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-border-strong rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   placeholder="Enter your full name"
                 />
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-gray-700 font-semibold mb-2">
-                  <Mail size={20} className="text-[#c9b896]" />
+                <label className="flex items-center gap-2 text-text-secondary font-semibold mb-2">
+                  <Mail size={20} className="text-accent" />
                   Email Address *
                 </label>
                 <input
@@ -209,14 +209,14 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-border-strong rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   placeholder="your.email@example.com"
                 />
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-gray-700 font-semibold mb-2">
-                  <Phone size={20} className="text-[#c9b896]" />
+                <label className="flex items-center gap-2 text-text-secondary font-semibold mb-2">
+                  <Phone size={20} className="text-accent" />
                   Phone Number *
                 </label>
                 <input
@@ -226,14 +226,14 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
                   onChange={handleChange}
                   required
                   pattern="[0-9]{10}"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-border-strong rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   placeholder="10-digit mobile number"
                 />
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-gray-700 font-semibold mb-2">
-                  <Target size={20} className="text-[#c9b896]" />
+                <label className="flex items-center gap-2 text-text-secondary font-semibold mb-2">
+                  <Target size={20} className="text-accent" />
                   Insurance Type *
                 </label>
                 <select
@@ -241,7 +241,7 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
                   value={formData.riskProfile}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-border-strong rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 >
                   <option value="">Select insurance type</option>
                   <option value="Life Insurance">Life Insurance (Term/Endowment/ULIP)</option>
@@ -253,8 +253,8 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-gray-700 font-semibold mb-2">
-                  <DollarSign size={20} className="text-[#c9b896]" />
+                <label className="flex items-center gap-2 text-text-secondary font-semibold mb-2">
+                  <DollarSign size={20} className="text-accent" />
                   Coverage Amount *
                 </label>
                 <select
@@ -262,7 +262,7 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
                   value={formData.investmentAmount}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-border-strong rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 >
                   <option value="">Select coverage range</option>
                   <option value="₹10-25 Lakhs">₹10-25 Lakhs</option>
@@ -274,8 +274,8 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-gray-700 font-semibold mb-2">
-                  <Clock size={20} className="text-[#c9b896]" />
+                <label className="flex items-center gap-2 text-text-secondary font-semibold mb-2">
+                  <Clock size={20} className="text-accent" />
                   Policy Term *
                 </label>
                 <select
@@ -283,7 +283,7 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
                   value={formData.investmentHorizon}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-border-strong rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 >
                   <option value="">Select policy duration</option>
                   <option value="1 year">1 year (Health/General)</option>
@@ -296,8 +296,8 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
             </div>
 
             <div>
-              <label className="flex items-center gap-2 text-gray-700 font-semibold mb-2">
-                <FileText size={20} className="text-[#c9b896]" />
+              <label className="flex items-center gap-2 text-text-secondary font-semibold mb-2">
+                <FileText size={20} className="text-accent" />
                 Additional Notes (Optional)
               </label>
               <textarea
@@ -305,7 +305,7 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
                 value={formData.additionalNotes}
                 onChange={handleChange}
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-border-strong rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 placeholder="Current coverage, family details, specific requirements, or questions..."
               />
             </div>

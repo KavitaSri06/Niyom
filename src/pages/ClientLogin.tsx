@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Lock, Eye, EyeOff, ArrowRight, ChevronLeft, AlertTriangle, CreditCard, Mail, Home, TrendingUp, X, CheckCircle2, FileText, CreditCard as IDCard, Landmark } from 'lucide-react';
+import { ThemeToggle } from '../theme/ThemeToggle';
 
 interface Props {
   onLogin: (clientId: string, passwordChanged: boolean) => void;
@@ -168,63 +169,63 @@ export default function ClientLogin({ onLogin, onInvestNow }: Props) {
     {/* Interest / Invest Now modal */}
     {showInterestModal && (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.88)' }}>
-        <div className="w-full max-w-md rounded-3xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid rgba(212,175,55,0.25)' }}>
-          <div className="h-1.5 w-full" style={{ background: 'linear-gradient(90deg, #D4AF37, #B8961E, #D4AF37)' }} />
+        <div className="w-full max-w-md rounded-3xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(var(--accent-rgb),0.25)' }}>
+          <div className="h-1.5 w-full" style={{ background: 'linear-gradient(90deg, var(--accent), var(--accent-strong), var(--accent))' }} />
           <div className="p-7 space-y-5">
             <div className="flex items-start justify-between">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}>
-                <TrendingUp className="w-6 h-6" style={{ color: '#D4AF37' }} />
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(var(--accent-rgb),0.1)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>
+                <TrendingUp className="w-6 h-6" style={{ color: 'var(--accent)' }} />
               </div>
-              <button onClick={() => setShowInterestModal(false)} className="p-1.5 rounded-lg transition-colors" style={{ color: '#4A4A4A' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#A8A8A8')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
+              <button onClick={() => setShowInterestModal(false)} className="p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-secondary)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-faint)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: '#D4AF37' }}>Thank You for Your Interest</p>
-              <h2 className="text-xl font-bold text-white">Welcome to Niyom Wealth Distribution</h2>
-              <p className="text-sm leading-relaxed" style={{ color: '#8A8A8A' }}>
+              <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: 'var(--accent)' }}>Thank You for Your Interest</p>
+              <h2 className="text-xl font-bold text-text-primary">Welcome to Niyom Wealth Distribution</h2>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                 We are delighted to have you explore wealth management opportunities with us. To initiate your onboarding and issuance of your unique Client Code, kindly ensure you have the following documents readily available for upload.
               </p>
             </div>
 
             <div className="space-y-2.5">
-              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#D4AF37' }}>Documents Required</p>
+              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Documents Required</p>
               {[
                 { icon: IDCard, label: 'PAN Card Copy', desc: 'Self-attested copy of your Permanent Account Number card.' },
                 { icon: FileText, label: 'Client Master List (CML)', desc: 'Obtained from your Depository Participant (DP) — confirms your demat account details.' },
                 { icon: Landmark, label: 'Cancelled Cheque / Bank Statement', desc: 'Recent bank statement or a cancelled cheque leaf for account verification.' },
               ].map(({ icon: Icon, label, desc }) => (
-                <div key={label} className="flex items-start gap-3 p-3.5 rounded-xl" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,175,55,0.1)' }}>
-                    <Icon className="w-4 h-4" style={{ color: '#D4AF37' }} />
+                <div key={label} className="flex items-start gap-3 p-3.5 rounded-xl" style={{ background: 'rgba(var(--accent-rgb),0.04)', border: '1px solid rgba(var(--accent-rgb),0.1)' }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(var(--accent-rgb),0.1)' }}>
+                    <Icon className="w-4 h-4" style={{ color: 'var(--accent)' }} />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-white">{label}</p>
-                    <p className="text-xs mt-0.5 leading-relaxed" style={{ color: '#5A5A5A' }}>{desc}</p>
+                    <p className="text-xs font-semibold text-text-primary">{label}</p>
+                    <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>{desc}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <p className="text-xs leading-relaxed" style={{ color: '#4A4A4A' }}>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               All submitted documents are processed in strict compliance with SEBI and KYC norms. Your information remains fully confidential and secure.
             </p>
 
             <div className="flex gap-3 pt-1">
               <button onClick={() => setShowInterestModal(false)}
                 className="flex-1 py-3 rounded-xl text-sm font-semibold transition-colors"
-                style={{ background: '#111', color: '#6B6B6B', border: '1px solid #1E1E24' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#A8A8A8')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#6B6B6B')}>
+                style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-faint)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
                 Cancel
               </button>
               <button
                 onClick={() => { setShowInterestModal(false); onInvestNow?.(); }}
-                className="flex-1 py-3 rounded-xl text-sm font-bold text-black flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-on-accent flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
                 Continue <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -233,22 +234,23 @@ export default function ClientLogin({ onLogin, onInvestNow }: Props) {
       </div>
     )}
 
-    <div className="min-h-screen flex" style={{ background: '#050505' }}>
+    <div className="min-h-screen flex relative" style={{ background: 'var(--bg-base)' }}>
+      <div className="absolute top-4 right-4 z-20"><ThemeToggle variant="icon" /></div>
       {/* Left panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[420px] flex-shrink-0 p-10" style={{ background: '#0B0B0F', borderRight: '1px solid #1A1A1A' }}>
+      <div className="hidden lg:flex flex-col justify-between w-[420px] flex-shrink-0 p-10" style={{ background: 'var(--bg-elevated)', borderRight: '1px solid var(--border-subtle)' }}>
         <div className="flex items-center gap-3">
           <img src="/niyomlogo.png" alt="Niyom Wealth" className="h-10 w-auto object-contain" />
           <div>
-            <p className="font-bold text-sm" style={{ color: '#c9b896' }}>Niyom Wealth</p>
-            <p className="text-xs" style={{ color: '#4A4A4A' }}>Client Portal</p>
+            <p className="font-bold text-sm" style={{ color: 'var(--accent-soft)' }}>Niyom Wealth</p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Client Portal</p>
           </div>
         </div>
 
         <div className="space-y-8">
           <div>
-            <p className="text-xs uppercase tracking-widest mb-3" style={{ color: '#D4AF37' }}>Your Wealth, At A Glance</p>
-            <h2 className="text-3xl font-bold leading-tight text-white">Manage your investments securely</h2>
-            <p className="mt-3 text-sm leading-relaxed" style={{ color: '#6B6B6B' }}>
+            <p className="text-xs uppercase tracking-widest mb-3" style={{ color: 'var(--accent)' }}>Your Wealth, At A Glance</p>
+            <h2 className="text-3xl font-bold leading-tight text-text-primary">Manage your investments securely</h2>
+            <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
               Access your portfolio, track your holdings, and stay updated on your financial journey with Niyom Wealth.
             </p>
           </div>
@@ -258,26 +260,26 @@ export default function ClientLogin({ onLogin, onInvestNow }: Props) {
             { label: 'Confidential', desc: 'All data is encrypted and accessible only by you' },
           ].map(f => (
             <div key={f.label} className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.15)' }}>
-                <div className="w-2 h-2 rounded-full" style={{ background: '#D4AF37' }} />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'rgba(var(--accent-rgb),0.1)', border: '1px solid rgba(var(--accent-rgb),0.15)' }}>
+                <div className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">{f.label}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#4A4A4A' }}>{f.desc}</p>
+                <p className="text-sm font-semibold text-text-primary">{f.label}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{f.desc}</p>
               </div>
             </div>
           ))}
         </div>
 
         <div className="space-y-3">
-          <div className="p-4 rounded-xl" style={{ background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.1)' }}>
-            <p className="text-xs" style={{ color: '#6B6B6B' }}>
-              <span style={{ color: '#D4AF37' }}>Login ID:</span> Your PAN number (e.g. ABCDE1234F). Your credentials were set up by your relationship manager.
+          <div className="p-4 rounded-xl" style={{ background: 'rgba(var(--accent-rgb),0.05)', border: '1px solid rgba(var(--accent-rgb),0.1)' }}>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <span style={{ color: 'var(--accent)' }}>Login ID:</span> Your PAN number (e.g. ABCDE1234F). Your credentials were set up by your relationship manager.
             </p>
           </div>
-          <a href="/" className="flex items-center gap-2 text-xs transition-colors" style={{ color: '#4A4A4A' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}>
+          <a href="/" className="flex items-center gap-2 text-xs transition-colors" style={{ color: 'var(--text-secondary)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>
             <Home className="w-3.5 h-3.5" />
             Back to Niyom Wealth home
           </a>
@@ -293,61 +295,61 @@ export default function ClientLogin({ onLogin, onInvestNow }: Props) {
               <div>
                 <div className="flex items-center gap-3 mb-6 lg:hidden">
                   <img src="/niyomlogo.png" alt="Niyom Wealth" className="h-8 w-auto object-contain" />
-                  <p className="font-bold text-sm" style={{ color: '#c9b896' }}>Niyom Wealth</p>
+                  <p className="font-bold text-sm" style={{ color: 'var(--accent-soft)' }}>Niyom Wealth</p>
                 </div>
-                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D4AF37' }}>Client Portal</p>
-                <h1 className="text-3xl font-bold text-white">Welcome Back</h1>
-                <p className="mt-2 text-sm" style={{ color: '#8A8A8A' }}>Sign in using your PAN number and password.</p>
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--accent)' }}>Client Portal</p>
+                <h1 className="text-3xl font-bold text-text-primary">Welcome Back</h1>
+                <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>Sign in using your PAN number and password.</p>
               </div>
 
               {lockoutMsg && (
                 <div className="p-4 rounded-xl flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                  <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
-                  <p className="text-sm text-red-400">{lockoutMsg}</p>
+                  <AlertTriangle className="w-4 h-4 text-c-red flex-shrink-0" />
+                  <p className="text-sm text-c-red">{lockoutMsg}</p>
                 </div>
               )}
               {error && !lockoutMsg && (
                 <div className="p-4 rounded-xl flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                  <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
-                  <p className="text-sm text-red-400">{error}</p>
+                  <AlertTriangle className="w-4 h-4 text-c-red flex-shrink-0" />
+                  <p className="text-sm text-c-red">{error}</p>
                 </div>
               )}
 
               <form onSubmit={handleLogin} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#8A8A8A' }}>PAN Number</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>PAN Number</label>
                   <div className="relative">
-                    <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+                    <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
                     <input
                       type="text"
                       value={pan}
                       onChange={e => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))}
                       placeholder="ABCDE1234F"
                       maxLength={10}
-                      className="w-full py-3 rounded-xl text-sm text-white outline-none transition-all font-mono tracking-widest"
-                      style={{ background: '#0D0D0D', border: '1px solid #1E1E24', paddingLeft: '2.75rem' }}
-                      onFocus={e => (e.target.style.borderColor = '#D4AF37')}
-                      onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                      className="w-full py-3 rounded-xl text-sm text-text-primary outline-none transition-all font-mono tracking-widest"
+                      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', paddingLeft: '2.75rem' }}
+                      onFocus={e => (e.target.style.borderColor = 'var(--accent)')}
+                      onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                       disabled={!!lockoutMsg}
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#8A8A8A' }}>Password</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
                     <input
                       type={showPw ? 'text' : 'password'}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       placeholder="Your password"
-                      className="w-full py-3 rounded-xl text-sm text-white outline-none transition-all"
-                      style={{ background: '#0D0D0D', border: '1px solid #1E1E24', paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
-                      onFocus={e => (e.target.style.borderColor = '#D4AF37')}
-                      onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                      className="w-full py-3 rounded-xl text-sm text-text-primary outline-none transition-all"
+                      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
+                      onFocus={e => (e.target.style.borderColor = 'var(--accent)')}
+                      onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                       disabled={!!lockoutMsg}
                     />
-                    <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: '#4A4A4A' }}>
+                    <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-secondary)' }}>
                       {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -355,30 +357,30 @@ export default function ClientLogin({ onLogin, onInvestNow }: Props) {
 
                 <div className="flex justify-end">
                   <button type="button" onClick={() => { setView('forgot'); setError(''); setResetPan(pan); }}
-                    className="text-xs font-medium transition-colors" style={{ color: '#D4AF37' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = '#c9b896')}
-                    onMouseLeave={e => (e.currentTarget.style.color = '#D4AF37')}>
+                    className="text-xs font-medium transition-colors" style={{ color: 'var(--accent)' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent-soft)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--accent)')}>
                     Forgot Password?
                   </button>
                 </div>
 
                 <button type="submit" disabled={loading || !!lockoutMsg}
-                  className="w-full py-3.5 rounded-xl font-bold text-sm text-black disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
-                  style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+                  className="w-full py-3.5 rounded-xl font-bold text-sm text-on-accent disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                  style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
                   {loading ? 'Signing in...' : <><span>Sign In</span><ArrowRight className="w-4 h-4" /></>}
                 </button>
               </form>
 
               {/* Invest Now */}
-              <div className="rounded-2xl p-5 space-y-3" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.12)' }}>
+              <div className="rounded-2xl p-5 space-y-3" style={{ background: 'rgba(var(--accent-rgb),0.04)', border: '1px solid rgba(var(--accent-rgb),0.12)' }}>
                 <div>
-                  <p className="text-sm font-bold text-white">New to Niyom Wealth?</p>
-                  <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>Start your investment journey today. Open your account in minutes.</p>
+                  <p className="text-sm font-bold text-text-primary">New to Niyom Wealth?</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Start your investment journey today. Open your account in minutes.</p>
                 </div>
                 <button
                   onClick={() => setShowInterestModal(true)}
                   className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
-                  style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)', color: '#000' }}
+                  style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', color: '#000' }}
                 >
                   <TrendingUp className="w-4 h-4" />
                   Invest Now
@@ -386,9 +388,9 @@ export default function ClientLogin({ onLogin, onInvestNow }: Props) {
               </div>
 
               <div className="text-center">
-                <a href="/" className="inline-flex items-center gap-1.5 text-xs transition-colors" style={{ color: '#3A3A3A' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')}
-                  onMouseLeave={e => (e.currentTarget.style.color = '#3A3A3A')}>
+                <a href="/" className="inline-flex items-center gap-1.5 text-xs transition-colors" style={{ color: 'var(--border-stronger)' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--border-stronger)')}>
                   <Home className="w-3.5 h-3.5" />
                   Back to main website
                 </a>
@@ -399,46 +401,46 @@ export default function ClientLogin({ onLogin, onInvestNow }: Props) {
           {view === 'forgot' && (
             <>
               <div>
-                <button onClick={() => { setView('login'); setError(''); }} className="flex items-center gap-1.5 text-xs mb-6 transition-colors" style={{ color: '#6B6B6B' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#A8A8A8')}
-                  onMouseLeave={e => (e.currentTarget.style.color = '#6B6B6B')}>
+                <button onClick={() => { setView('login'); setError(''); }} className="flex items-center gap-1.5 text-xs mb-6 transition-colors" style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-faint)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
                   <ChevronLeft className="w-3.5 h-3.5" /> Back to login
                 </button>
-                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D4AF37' }}>Password Reset</p>
-                <h1 className="text-2xl font-bold text-white">Reset Your Password</h1>
-                <p className="mt-2 text-sm" style={{ color: '#8A8A8A' }}>Enter your PAN number. A reset link will be sent to your registered email.</p>
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--accent)' }}>Password Reset</p>
+                <h1 className="text-2xl font-bold text-text-primary">Reset Your Password</h1>
+                <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>Enter your PAN number. A reset link will be sent to your registered email.</p>
               </div>
 
               {error && (
-                <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>{error}</div>
+                <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'rgb(var(--danger-soft-rgb))' }}>{error}</div>
               )}
 
               <form onSubmit={handleForgotPassword} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#8A8A8A' }}>PAN Number</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>PAN Number</label>
                   <div className="relative">
-                    <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+                    <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
                     <input
                       type="text"
                       value={resetPan}
                       onChange={e => setResetPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))}
                       placeholder="ABCDE1234F"
                       maxLength={10}
-                      className="w-full py-3 rounded-xl text-sm text-white outline-none transition-all font-mono tracking-widest"
-                      style={{ background: '#0D0D0D', border: '1px solid #1E1E24', paddingLeft: '2.75rem' }}
-                      onFocus={e => (e.target.style.borderColor = '#D4AF37')}
-                      onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                      className="w-full py-3 rounded-xl text-sm text-text-primary outline-none transition-all font-mono tracking-widest"
+                      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', paddingLeft: '2.75rem' }}
+                      onFocus={e => (e.target.style.borderColor = 'var(--accent)')}
+                      onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                     />
                   </div>
                 </div>
                 <button type="submit" disabled={loading || resetPan.length !== 10}
-                  className="w-full py-3.5 rounded-xl font-bold text-sm text-black disabled:opacity-50 flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+                  className="w-full py-3.5 rounded-xl font-bold text-sm text-on-accent disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
                   {loading ? 'Sending...' : <><Mail className="w-4 h-4" /><span>Send Reset Link</span></>}
                 </button>
               </form>
 
-              <div className="p-4 rounded-xl text-xs" style={{ background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.1)', color: '#6B6B6B' }}>
+              <div className="p-4 rounded-xl text-xs" style={{ background: 'rgba(var(--accent-rgb),0.05)', border: '1px solid rgba(var(--accent-rgb),0.1)', color: 'var(--text-muted)' }}>
                 For security reasons, we never confirm whether a PAN is registered. If your PAN is in our system, you will receive a reset email.
               </div>
             </>
@@ -447,17 +449,17 @@ export default function ClientLogin({ onLogin, onInvestNow }: Props) {
           {view === 'reset_sent' && (
             <div className="space-y-6 text-center">
               <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <Mail className="w-8 h-8" style={{ color: '#10B981' }} />
+                <Mail className="w-8 h-8" style={{ color: 'var(--success)' }} />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#10B981' }}>Check Your Email</p>
-                <h1 className="text-2xl font-bold text-white">Reset Link Sent</h1>
-                <p className="mt-2 text-sm" style={{ color: '#8A8A8A' }}>
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--success)' }}>Check Your Email</p>
+                <h1 className="text-2xl font-bold text-text-primary">Reset Link Sent</h1>
+                <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>
                   If your PAN is registered, reset instructions have been sent to your registered email address.
                 </p>
               </div>
               <button onClick={() => { setView('login'); setError(''); }}
-                className="w-full py-3 rounded-xl text-sm font-semibold" style={{ background: '#111', color: '#A8A8A8', border: '1px solid #1E1E24' }}>
+                className="w-full py-3 rounded-xl text-sm font-semibold" style={{ background: 'var(--bg-raised)', color: 'var(--text-faint)', border: '1px solid var(--border)' }}>
                 Back to Login
               </button>
             </div>

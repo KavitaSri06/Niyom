@@ -37,10 +37,10 @@ const PRODUCT_COLORS: Record<string, string> = {
   mutual_funds: 'bg-blue-100 text-blue-700',
   insurance: 'bg-emerald-100 text-emerald-700',
   fixed_deposits: 'bg-amber-100 text-amber-700',
-  bonds: 'bg-slate-100 text-slate-700',
+  bonds: 'bg-bg-raised text-text-secondary',
   unlisted_shares: 'bg-rose-100 text-rose-700',
   primary_bonds: 'bg-cyan-100 text-cyan-700',
-  other: 'bg-gray-100 text-gray-600',
+  other: 'bg-bg-raised text-text-secondary',
 };
 
 function formatCurrency(amount: number) {
@@ -59,7 +59,7 @@ function StatusBadge({ status }: { status: string }) {
     pending: { cls: 'bg-amber-50 text-amber-700 border border-amber-200', icon: <Clock className="w-3 h-3" /> },
     cancelled: { cls: 'bg-red-50 text-red-600 border border-red-200', icon: <XCircle className="w-3 h-3" /> },
   };
-  const s = map[status] || { cls: 'bg-slate-100 text-slate-600 border border-slate-200', icon: null };
+  const s = map[status] || { cls: 'bg-bg-raised text-text-secondary border border-border', icon: null };
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${s.cls}`}>
       {s.icon}
@@ -129,14 +129,14 @@ function EmployeeModal({ employee, onClose, onSaved }: { employee?: CRMUser | nu
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+      <div className="bg-bg-elevated rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle">
           <div>
-            <h2 className="text-base font-bold text-gray-900">{employee ? 'Edit Employee' : 'Add New Employee'}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{employee ? 'Update employee details' : 'Create a new CRM account'}</p>
+            <h2 className="text-base font-bold text-text-primary">{employee ? 'Edit Employee' : 'Add New Employee'}</h2>
+            <p className="text-xs text-text-muted mt-0.5">{employee ? 'Update employee details' : 'Create a new CRM account'}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-            <X className="w-4 h-4 text-gray-500" />
+          <button onClick={onClose} className="p-2 hover:bg-bg-raised rounded-xl transition-colors">
+            <X className="w-4 h-4 text-text-muted" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -147,49 +147,49 @@ function EmployeeModal({ employee, onClose, onSaved }: { employee?: CRMUser | nu
             </div>
           )}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Full Name *</label>
+            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Full Name *</label>
             <input type="text" value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-gray-50 focus:bg-white transition-colors"
+              className="w-full px-3.5 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-bg-base focus:bg-bg-elevated transition-colors"
               placeholder="John Doe" required />
           </div>
           {!employee && (
             <>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Email *</label>
+                <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Email *</label>
                 <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-gray-50 focus:bg-white transition-colors"
+                  className="w-full px-3.5 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-bg-base focus:bg-bg-elevated transition-colors"
                   placeholder="employee@niyomwealth.com" required />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Password *</label>
+                <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Password *</label>
                 <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-gray-50 focus:bg-white transition-colors"
+                  className="w-full px-3.5 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-bg-base focus:bg-bg-elevated transition-colors"
                   placeholder="Min. 6 characters" required />
               </div>
             </>
           )}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Designation</label>
+            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Designation</label>
             <select value={form.level} onChange={e => setForm({ ...form, level: e.target.value })}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-gray-50 focus:bg-white transition-colors">
+              className="w-full px-3.5 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-bg-base focus:bg-bg-elevated transition-colors">
               {['RELATIONSHIP MANAGER', 'SENIOR RELATIONSHIP MANAGER', 'TEAM LEADER-WEALTH', 'SALES MANAGER-WEALTH', 'HEAD OF SALES', 'DESIGNATED PARTNER'].map(d => (
                 <option key={d}>{d}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Role</label>
+            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Role</label>
             <div className="grid grid-cols-2 gap-2">
               {(['employee', 'admin'] as const).map(r => (
                 <button key={r} type="button" onClick={() => setForm({ ...form, role: r })}
-                  className={`py-2.5 text-sm rounded-xl border font-medium transition-all ${form.role === r ? 'bg-gray-900 border-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400 bg-gray-50'}`}>
+                  className={`py-2.5 text-sm rounded-xl border font-medium transition-all ${form.role === r ? 'bg-gray-900 border-gray-900 text-white' : 'border-border text-text-secondary hover:border-gray-400 bg-bg-base'}`}>
                   {r.charAt(0).toUpperCase() + r.slice(1)}
                 </button>
               ))}
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-border text-text-secondary rounded-xl hover:bg-bg-base transition-colors text-sm font-medium">Cancel</button>
             <button type="submit" disabled={loading}
               className="flex-1 px-4 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors text-sm font-semibold disabled:opacity-50">
               {loading ? 'Saving...' : employee ? 'Save Changes' : 'Create Employee'}
@@ -240,14 +240,14 @@ function DealModal({ deal, onClose, onSaved }: { deal: Deal & { employee_name?: 
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+      <div className="bg-bg-elevated rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle">
           <div>
-            <h2 className="text-base font-bold text-gray-900">Edit Deal</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{deal.employee_name}</p>
+            <h2 className="text-base font-bold text-text-primary">Edit Deal</h2>
+            <p className="text-xs text-text-muted mt-0.5">{deal.employee_name}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-            <X className="w-4 h-4 text-gray-500" />
+          <button onClick={onClose} className="p-2 hover:bg-bg-raised rounded-xl transition-colors">
+            <X className="w-4 h-4 text-text-muted" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -258,50 +258,50 @@ function DealModal({ deal, onClose, onSaved }: { deal: Deal & { employee_name?: 
             </div>
           )}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Client Name</label>
+            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Client Name</label>
             <input type="text" value={form.client_name} onChange={e => setForm({ ...form, client_name: e.target.value })}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-gray-50 focus:bg-white transition-colors"
+              className="w-full px-3.5 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-bg-base focus:bg-bg-elevated transition-colors"
               placeholder="Client name" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Product</label>
+              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Product</label>
               <select value={form.product_type} onChange={e => setForm({ ...form, product_type: e.target.value as any })}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-gray-50">
+                className="w-full px-3.5 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-bg-base">
                 {Object.entries(PRODUCT_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Status</label>
+              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Status</label>
               <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as any })}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-gray-50">
+                className="w-full px-3.5 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-bg-base">
                 <option value="pending">Pending</option>
                 <option value="closed">Closed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Amount (₹)</label>
+              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Amount (₹)</label>
               <input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-gray-50"
+                className="w-full px-3.5 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-bg-base"
                 required />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Revenue (₹)</label>
+              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Revenue (₹)</label>
               <input type="number" value={form.revenue} onChange={e => setForm({ ...form, revenue: e.target.value })}
-                className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-gray-50"
+                className="w-full px-3.5 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-bg-base"
                 required />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Notes</label>
+            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Notes</label>
             <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
               rows={2}
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-gray-50 resize-none"
+              className="w-full px-3.5 py-2.5 border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm bg-bg-base resize-none"
               placeholder="Optional notes..." />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 text-sm font-medium">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-border text-text-secondary rounded-xl hover:bg-bg-base text-sm font-medium">Cancel</button>
             <button type="submit" disabled={loading}
               className="flex-1 px-4 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 text-sm font-semibold disabled:opacity-50">
               {loading ? 'Saving...' : 'Save Changes'}
@@ -406,10 +406,10 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-bg-base flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm font-medium">Loading dashboard...</p>
+          <p className="text-text-muted text-sm font-medium">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -424,9 +424,9 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-bg-base/50">
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <nav className="bg-bg-elevated border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14">
             <div className="flex items-center gap-3">
@@ -434,17 +434,17 @@ export default function AdminDashboard() {
                 <BarChart3 className="w-4 h-4 text-white" />
               </div>
               <div>
-                <span className="text-sm font-bold text-gray-900">Niyom CRM</span>
-                <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">Admin</span>
+                <span className="text-sm font-bold text-text-primary">Niyom CRM</span>
+                <span className="ml-2 text-xs bg-bg-raised text-text-secondary px-2 py-0.5 rounded-full font-medium">Admin</span>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2">
                 <Avatar name={admin?.full_name || 'A'} size="sm" />
-                <span className="text-sm font-medium text-gray-700">{admin?.full_name}</span>
+                <span className="text-sm font-medium text-text-secondary">{admin?.full_name}</span>
               </div>
               <button onClick={() => { supabase.auth.signOut(); window.location.href = '/crm/login'; }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm">
+                className="flex items-center gap-1.5 px-3 py-1.5 text-text-muted hover:text-text-primary hover:bg-bg-raised rounded-lg transition-colors text-sm">
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:block">Sign out</span>
               </button>
@@ -474,32 +474,32 @@ export default function AdminDashboard() {
               icon: <CheckCircle2 className="w-4 h-4" />, iconBg: 'bg-gray-700', trend: null,
             },
           ].map((card, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div key={i} className="bg-bg-elevated rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className={`${card.iconBg} w-9 h-9 rounded-xl flex items-center justify-center text-white`}>
                   {card.icon}
                 </div>
-                <ArrowUpRight className="w-4 h-4 text-gray-300" />
+                <ArrowUpRight className="w-4 h-4 text-text-faint" />
               </div>
-              <p className="text-2xl font-bold text-gray-900 tracking-tight">{card.value}</p>
-              <p className="text-xs text-gray-400 mt-1">{card.label}</p>
-              <p className="text-xs text-gray-500 mt-0.5 font-medium">{card.sub}</p>
+              <p className="text-2xl font-bold text-text-primary tracking-tight">{card.value}</p>
+              <p className="text-xs text-text-muted mt-1">{card.label}</p>
+              <p className="text-xs text-text-muted mt-0.5 font-medium">{card.sub}</p>
             </div>
           ))}
         </div>
 
         {/* Main Panel */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-bg-elevated rounded-2xl border border-border shadow-sm overflow-hidden">
           {/* Tab Bar */}
-          <div className="border-b border-gray-100 px-2 overflow-x-auto">
+          <div className="border-b border-border-subtle px-2 overflow-x-auto">
             <div className="flex">
               {TABS.map(tab => (
                 <button key={tab.id}
                   onClick={() => { setActiveTab(tab.id); setSearchQuery(''); }}
                   className={`flex items-center gap-2 px-4 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                     activeTab === tab.id
-                      ? 'border-gray-900 text-gray-900'
-                      : 'border-transparent text-gray-400 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-gray-900 text-text-primary'
+                      : 'border-transparent text-text-muted hover:text-text-secondary hover:border-border-strong'
                   }`}>
                   {tab.icon}
                   {tab.label}
@@ -514,8 +514,8 @@ export default function AdminDashboard() {
               {/* Top Performers */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-900">Top Performers</h3>
-                  <button onClick={() => setActiveTab('employees')} className="text-xs text-gray-400 hover:text-gray-700 flex items-center gap-1 transition-colors">
+                  <h3 className="text-sm font-bold text-text-primary">Top Performers</h3>
+                  <button onClick={() => setActiveTab('employees')} className="text-xs text-text-muted hover:text-text-secondary flex items-center gap-1 transition-colors">
                     View all <ChevronRight className="w-3 h-3" />
                   </button>
                 </div>
@@ -524,30 +524,30 @@ export default function AdminDashboard() {
                     .sort((a, b) => (b.metrics?.total_revenue || 0) - (a.metrics?.total_revenue || 0))
                     .slice(0, 6)
                     .map((emp, idx) => (
-                      <div key={emp.id} className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                      <div key={emp.id} className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-bg-base transition-colors">
                         <div className="flex items-center gap-3">
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                             idx === 0 ? 'bg-amber-100 text-amber-700' :
-                            idx === 1 ? 'bg-gray-200 text-gray-600' :
+                            idx === 1 ? 'bg-bg-raised text-text-secondary' :
                             idx === 2 ? 'bg-orange-100 text-orange-700' :
-                            'bg-gray-100 text-gray-500'
+                            'bg-bg-raised text-text-muted'
                           }`}>{idx + 1}</div>
                           <Avatar name={emp.full_name} size="sm" />
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">{emp.full_name}</p>
-                            <p className="text-xs text-gray-400">{emp.level}</p>
+                            <p className="text-sm font-semibold text-text-primary">{emp.full_name}</p>
+                            <p className="text-xs text-text-muted">{emp.level}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-gray-900">{formatCurrency(emp.metrics?.total_revenue || 0)}</p>
-                          <p className="text-xs text-gray-400">{(emp.metrics?.x_multiple || 0).toFixed(2)}x</p>
+                          <p className="text-sm font-bold text-text-primary">{formatCurrency(emp.metrics?.total_revenue || 0)}</p>
+                          <p className="text-xs text-text-muted">{(emp.metrics?.x_multiple || 0).toFixed(2)}x</p>
                         </div>
                       </div>
                     ))}
                   {employees.length === 0 && (
                     <div className="text-center py-10">
-                      <Users className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                      <p className="text-sm text-gray-400">No employees yet</p>
+                      <Users className="w-8 h-8 text-text-faint mx-auto mb-2" />
+                      <p className="text-sm text-text-muted">No employees yet</p>
                     </div>
                   )}
                 </div>
@@ -555,33 +555,33 @@ export default function AdminDashboard() {
               {/* Recent Deals */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-900">Recent Deals</h3>
-                  <button onClick={() => setActiveTab('deals')} className="text-xs text-gray-400 hover:text-gray-700 flex items-center gap-1 transition-colors">
+                  <h3 className="text-sm font-bold text-text-primary">Recent Deals</h3>
+                  <button onClick={() => setActiveTab('deals')} className="text-xs text-text-muted hover:text-text-secondary flex items-center gap-1 transition-colors">
                     View all <ChevronRight className="w-3 h-3" />
                   </button>
                 </div>
                 <div className="space-y-1">
                   {deals.slice(0, 6).map(deal => (
-                    <div key={deal.id} className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                    <div key={deal.id} className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-bg-base transition-colors">
                       <div className="flex items-center gap-3">
-                        <div className={`px-2 py-1 rounded-lg text-xs font-medium ${PRODUCT_COLORS[deal.product_type] || 'bg-gray-100 text-gray-600'}`}>
+                        <div className={`px-2 py-1 rounded-lg text-xs font-medium ${PRODUCT_COLORS[deal.product_type] || 'bg-bg-raised text-text-secondary'}`}>
                           {PRODUCT_LABELS[deal.product_type]?.split(' ')[0]}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{deal.employee_name}</p>
-                          <p className="text-xs text-gray-400">{deal.client_name || 'No client'}</p>
+                          <p className="text-sm font-medium text-text-primary">{deal.employee_name}</p>
+                          <p className="text-xs text-text-muted">{deal.client_name || 'No client'}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-gray-900">{formatCurrency(deal.revenue)}</p>
+                        <p className="text-sm font-bold text-text-primary">{formatCurrency(deal.revenue)}</p>
                         <StatusBadge status={deal.status} />
                       </div>
                     </div>
                   ))}
                   {deals.length === 0 && (
                     <div className="text-center py-10">
-                      <Briefcase className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                      <p className="text-sm text-gray-400">No deals yet</p>
+                      <Briefcase className="w-8 h-8 text-text-faint mx-auto mb-2" />
+                      <p className="text-sm text-text-muted">No deals yet</p>
                     </div>
                   )}
                 </div>
@@ -592,11 +592,11 @@ export default function AdminDashboard() {
           {/* ── EMPLOYEES ── */}
           {activeTab === 'employees' && (
             <div>
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                   <input type="text" placeholder="Search employees..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent w-60 bg-gray-50" />
+                    className="pl-9 pr-4 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent w-60 bg-bg-base" />
                 </div>
                 <button onClick={() => { setEditingEmployee(null); setShowEmployeeModal(true); }}
                   className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors text-sm font-semibold">
@@ -606,33 +606,33 @@ export default function AdminDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-100">
+                    <tr className="border-b border-border-subtle">
                       {['Employee', 'Designation', 'Revenue', 'X Multiple', 'Incentive', 'Categories', 'Status', ''].map(h => (
-                        <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                        <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {filteredEmployees.length === 0 && (
-                      <tr><td colSpan={8} className="px-5 py-12 text-center text-gray-400 text-sm">No employees found</td></tr>
+                      <tr><td colSpan={8} className="px-5 py-12 text-center text-text-muted text-sm">No employees found</td></tr>
                     )}
                     {filteredEmployees.map(emp => (
-                      <tr key={emp.id} className="hover:bg-gray-50/50 transition-colors">
+                      <tr key={emp.id} className="hover:bg-bg-base/50 transition-colors">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             <Avatar name={emp.full_name} size="md" />
                             <div>
-                              <p className="text-sm font-semibold text-gray-900">{emp.full_name}</p>
-                              <p className="text-xs text-gray-400">{emp.email}</p>
+                              <p className="text-sm font-semibold text-text-primary">{emp.full_name}</p>
+                              <p className="text-xs text-text-muted">{emp.email}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-5 py-4">
-                          <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-lg">{emp.level}</span>
+                          <span className="text-xs font-medium text-text-secondary bg-bg-raised px-2 py-1 rounded-lg">{emp.level}</span>
                         </td>
-                        <td className="px-5 py-4 text-sm font-semibold text-gray-900">{formatCurrency(emp.metrics?.total_revenue || 0)}</td>
+                        <td className="px-5 py-4 text-sm font-semibold text-text-primary">{formatCurrency(emp.metrics?.total_revenue || 0)}</td>
                         <td className="px-5 py-4">
-                          <span className={`text-sm font-bold ${(emp.metrics?.x_multiple || 0) >= 2.1 ? 'text-emerald-600' : 'text-gray-500'}`}>
+                          <span className={`text-sm font-bold ${(emp.metrics?.x_multiple || 0) >= 2.1 ? 'text-emerald-600' : 'text-text-muted'}`}>
                             {(emp.metrics?.x_multiple || 0).toFixed(2)}x
                           </span>
                         </td>
@@ -646,7 +646,7 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-5 py-4">
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${
-                            emp.is_active !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                            emp.is_active !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-bg-raised text-text-muted'
                           }`}>
                             <div className={`w-1.5 h-1.5 rounded-full ${emp.is_active !== false ? 'bg-emerald-500' : 'bg-gray-400'}`} />
                             {emp.is_active !== false ? 'Active' : 'Inactive'}
@@ -655,16 +655,16 @@ export default function AdminDashboard() {
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-1">
                             <button onClick={() => { setEditingEmployee(emp); setShowEmployeeModal(true); }}
-                              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-700">
+                              className="p-1.5 hover:bg-bg-raised rounded-lg transition-colors text-text-muted hover:text-text-secondary">
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={() => handleToggleActive(emp)}
-                              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-700"
+                              className="p-1.5 hover:bg-bg-raised rounded-lg transition-colors text-text-muted hover:text-text-secondary"
                               title={emp.is_active !== false ? 'Deactivate' : 'Activate'}>
                               {emp.is_active !== false ? <UserX className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
                             </button>
                             <button onClick={() => setDeleteConfirm({ type: 'employee', id: emp.id })}
-                              className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-gray-300 hover:text-red-500">
+                              className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-text-faint hover:text-red-500">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -680,55 +680,55 @@ export default function AdminDashboard() {
           {/* ── DEALS ── */}
           {activeTab === 'deals' && (
             <div>
-              <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-4 px-6 py-4 border-b border-border-subtle">
                 <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                   <input type="text" placeholder="Search by employee, client, product..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent w-full bg-gray-50" />
+                    className="pl-9 pr-4 py-2 text-sm border border-border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent w-full bg-bg-base" />
                 </div>
-                <span className="text-sm text-gray-400 font-medium">{filteredDeals.length} deals</span>
+                <span className="text-sm text-text-muted font-medium">{filteredDeals.length} deals</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-100">
+                    <tr className="border-b border-border-subtle">
                       {['Employee', 'Client', 'Product', 'Amount', 'Revenue', 'Status', 'Date', ''].map(h => (
-                        <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                        <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {filteredDeals.length === 0 && (
-                      <tr><td colSpan={8} className="px-5 py-12 text-center text-gray-400 text-sm">No deals found</td></tr>
+                      <tr><td colSpan={8} className="px-5 py-12 text-center text-text-muted text-sm">No deals found</td></tr>
                     )}
                     {filteredDeals.map(deal => (
-                      <tr key={deal.id} className="hover:bg-gray-50/50 transition-colors">
+                      <tr key={deal.id} className="hover:bg-bg-base/50 transition-colors">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
                             <Avatar name={deal.employee_name || '?'} size="sm" />
-                            <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{deal.employee_name}</span>
+                            <span className="text-sm font-semibold text-text-primary whitespace-nowrap">{deal.employee_name}</span>
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-sm text-gray-600">{deal.client_name || <span className="text-gray-300">—</span>}</td>
+                        <td className="px-5 py-4 text-sm text-text-secondary">{deal.client_name || <span className="text-text-faint">—</span>}</td>
                         <td className="px-5 py-4">
-                          <span className={`text-xs font-medium px-2 py-1 rounded-lg ${PRODUCT_COLORS[deal.product_type] || 'bg-gray-100 text-gray-600'}`}>
+                          <span className={`text-xs font-medium px-2 py-1 rounded-lg ${PRODUCT_COLORS[deal.product_type] || 'bg-bg-raised text-text-secondary'}`}>
                             {PRODUCT_LABELS[deal.product_type] || deal.product_type}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-sm text-gray-600 whitespace-nowrap">{formatCurrencyFull(deal.amount)}</td>
-                        <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">{formatCurrency(deal.revenue)}</td>
+                        <td className="px-5 py-4 text-sm text-text-secondary whitespace-nowrap">{formatCurrencyFull(deal.amount)}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-text-primary whitespace-nowrap">{formatCurrency(deal.revenue)}</td>
                         <td className="px-5 py-4 whitespace-nowrap"><StatusBadge status={deal.status} /></td>
-                        <td className="px-5 py-4 text-xs text-gray-400 whitespace-nowrap">
+                        <td className="px-5 py-4 text-xs text-text-muted whitespace-nowrap">
                           {new Date(deal.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-1">
                             <button onClick={() => setEditingDeal(deal)}
-                              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-300 hover:text-gray-700">
+                              className="p-1.5 hover:bg-bg-raised rounded-lg transition-colors text-text-faint hover:text-text-secondary">
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={() => setDeleteConfirm({ type: 'deal', id: deal.id })}
-                              className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-gray-300 hover:text-red-500">
+                              className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-text-faint hover:text-red-500">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -746,31 +746,31 @@ export default function AdminDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-100">
+                  <tr className="border-b border-border-subtle">
                     {['Client', 'Phone', 'Email', 'Added By', 'Date', 'Notes'].map(h => (
-                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {clients.length === 0 && (
-                    <tr><td colSpan={6} className="px-5 py-12 text-center text-gray-400 text-sm">No clients yet</td></tr>
+                    <tr><td colSpan={6} className="px-5 py-12 text-center text-text-muted text-sm">No clients yet</td></tr>
                   )}
                   {clients.map((c: any) => (
-                    <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={c.id} className="hover:bg-bg-base/50 transition-colors">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
                           <Avatar name={c.name} size="sm" />
-                          <span className="text-sm font-semibold text-gray-900">{c.name}</span>
+                          <span className="text-sm font-semibold text-text-primary">{c.name}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-sm text-gray-600">{c.phone || <span className="text-gray-300">—</span>}</td>
-                      <td className="px-5 py-4 text-sm text-gray-600">{c.email || <span className="text-gray-300">—</span>}</td>
-                      <td className="px-5 py-4 text-sm text-gray-600">{c.crm_users?.full_name || '—'}</td>
-                      <td className="px-5 py-4 text-xs text-gray-400">
+                      <td className="px-5 py-4 text-sm text-text-secondary">{c.phone || <span className="text-text-faint">—</span>}</td>
+                      <td className="px-5 py-4 text-sm text-text-secondary">{c.email || <span className="text-text-faint">—</span>}</td>
+                      <td className="px-5 py-4 text-sm text-text-secondary">{c.crm_users?.full_name || '—'}</td>
+                      <td className="px-5 py-4 text-xs text-text-muted">
                         {new Date(c.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
-                      <td className="px-5 py-4 text-sm text-gray-400 max-w-[200px] truncate">{c.notes || '—'}</td>
+                      <td className="px-5 py-4 text-sm text-text-muted max-w-[200px] truncate">{c.notes || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -793,23 +793,23 @@ export default function AdminDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-100">
+                    <tr className="border-b border-border-subtle">
                       {['X Min', 'X Max', 'Level', 'Revenue Share'].map(h => (
-                        <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
+                        <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {slabRules.map(slab => (
-                      <tr key={slab.id} className="hover:bg-gray-50/50">
-                        <td className="px-5 py-3.5 text-sm font-bold text-gray-900">{slab.x_min}x</td>
-                        <td className="px-5 py-3.5 text-sm text-gray-600">{slab.x_max != null ? `${slab.x_max}x` : <span className="text-gray-400">No limit</span>}</td>
+                      <tr key={slab.id} className="hover:bg-bg-base/50">
+                        <td className="px-5 py-3.5 text-sm font-bold text-text-primary">{slab.x_min}x</td>
+                        <td className="px-5 py-3.5 text-sm text-text-secondary">{slab.x_max != null ? `${slab.x_max}x` : <span className="text-text-muted">No limit</span>}</td>
                         <td className="px-5 py-3.5">
                           <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${
                             slab.level === 'Level 4' ? 'bg-amber-100 text-amber-800' :
                             slab.level === 'Level 3' ? 'bg-blue-100 text-blue-800' :
                             slab.level === 'Level 2' ? 'bg-emerald-100 text-emerald-800' :
-                            'bg-gray-100 text-gray-700'
+                            'bg-bg-raised text-text-secondary'
                           }`}>{slab.level}</span>
                         </td>
                         <td className="px-5 py-3.5">
@@ -820,9 +820,9 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
-              <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <p className="text-xs font-bold text-gray-700 flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Eligibility Requirements</p>
-                <ul className="mt-2 space-y-1.5 text-xs text-gray-500">
+              <div className="mt-6 p-4 bg-bg-base border border-border rounded-xl">
+                <p className="text-xs font-bold text-text-secondary flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Eligibility Requirements</p>
+                <ul className="mt-2 space-y-1.5 text-xs text-text-muted">
                   {['Minimum X Multiple of 2.1x required to earn incentive', 'Minimum 3 distinct product categories required', 'At 20x+, payout is capped at 60% of total revenue', 'Only closed, non-clawback deals count toward metrics'].map((r, i) => (
                     <li key={i} className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-gray-400 flex-shrink-0" />{r}</li>
                   ))}
@@ -842,14 +842,14 @@ export default function AdminDashboard() {
       )}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+          <div className="bg-bg-elevated rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-6 h-6 text-red-600" />
             </div>
-            <h3 className="font-bold text-gray-900 text-center mb-1">Delete {deleteConfirm.type}?</h3>
-            <p className="text-sm text-gray-400 text-center mb-6">This action cannot be undone.</p>
+            <h3 className="font-bold text-text-primary text-center mb-1">Delete {deleteConfirm.type}?</h3>
+            <p className="text-sm text-text-muted text-center mb-6">This action cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteConfirm(null)} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 text-sm font-medium">Cancel</button>
+              <button onClick={() => setDeleteConfirm(null)} className="flex-1 px-4 py-2.5 border border-border text-text-secondary rounded-xl hover:bg-bg-base text-sm font-medium">Cancel</button>
               <button onClick={() => deleteConfirm.type === 'employee' ? handleDeleteEmployee(deleteConfirm.id) : handleDeleteDeal(deleteConfirm.id)}
                 className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 text-sm font-semibold">Delete</button>
             </div>

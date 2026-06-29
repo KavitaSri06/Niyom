@@ -291,25 +291,25 @@ export default function CRMLogin({ onLogin }: Props) {
     setLoading(false);
   };
 
-  const inputClass = "w-full px-4 py-3 rounded-xl text-sm text-white outline-none transition-all";
-  const inputStyle = { background: '#0D0D0D', border: '1px solid #1E1E24' };
+  const inputClass = "w-full px-4 py-3 rounded-xl text-sm text-text-primary outline-none transition-all";
+  const inputStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border)' };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#050505' }}>
+    <div className="min-h-screen flex" style={{ background: 'var(--bg-base)' }}>
       {/* Left Panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[45%] p-12" style={{ background: 'linear-gradient(160deg, #0A0A0D 0%, #0f0f13 60%, #111117 100%)', borderRight: '1px solid rgba(201,184,150,0.1)' }}>
+      <div className="hidden lg:flex flex-col justify-between w-[45%] p-12" style={{ background: 'var(--brand-panel-bg)', borderRight: '1px solid rgba(var(--accent-soft-rgb),0.1)' }}>
         <div className="flex items-center gap-3">
           <img src="/niyomlogo.png" alt="Niyom Wealth" className="h-10 w-auto object-contain" />
           <div>
-            <p className="font-bold text-lg leading-none" style={{ color: '#c9b896' }}>Niyom Wealth</p>
-            <p className="text-xs" style={{ color: '#6B6B6B' }}>CRM Platform</p>
+            <p className="font-bold text-lg leading-none" style={{ color: 'var(--accent-soft)' }}>Niyom Wealth</p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>CRM Platform</p>
           </div>
         </div>
         <div className="space-y-8">
           <div>
-            <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#c9b896', letterSpacing: '0.15em' }}>Staff Portal</p>
-            <h1 className="text-4xl font-bold text-white leading-tight">Manage wealth,<br />build trust.</h1>
-            <p className="mt-4 text-sm leading-relaxed" style={{ color: '#8A8A8A' }}>
+            <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--accent-soft)', letterSpacing: '0.15em' }}>Staff Portal</p>
+            <h1 className="text-4xl font-bold text-text-primary leading-tight">Manage wealth,<br />build trust.</h1>
+            <p className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               A unified platform for client management, portfolio tracking, and transaction processing — built for wealth professionals.
             </p>
           </div>
@@ -319,25 +319,25 @@ export default function CRMLogin({ onLogin }: Props) {
               { icon: BarChart3, label: 'Portfolio Analytics', desc: 'Real-time portfolio views with P&L analysis' },
               { icon: Shield, label: 'Secure & Role-Based', desc: 'Each login sees only their own clients and data' },
             ].map(({ icon: Icon, label, desc }) => (
-              <div key={label} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: 'rgba(201,184,150,0.04)', border: '1px solid rgba(201,184,150,0.1)' }}>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,184,150,0.1)' }}>
-                  <Icon className="w-4 h-4" style={{ color: '#c9b896' }} />
+              <div key={label} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: 'rgba(var(--accent-soft-rgb),0.04)', border: '1px solid rgba(var(--accent-soft-rgb),0.1)' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(var(--accent-soft-rgb),0.1)' }}>
+                  <Icon className="w-4 h-4" style={{ color: 'var(--accent-soft)' }} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">{label}</p>
-                  <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>{desc}</p>
+                  <p className="text-sm font-semibold text-text-primary">{label}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{desc}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="p-4 rounded-xl flex items-start gap-3" style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.12)' }}>
-            <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#f87171' }} />
-            <p className="text-xs leading-relaxed" style={{ color: '#9A7070' }}>
+          <div className="p-4 rounded-xl flex items-start gap-3" style={{ background: 'rgba(var(--danger-rgb),0.05)', border: '1px solid rgba(var(--danger-rgb),0.12)' }}>
+            <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'rgb(var(--danger-soft-rgb))' }} />
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
               Access is restricted to authorized personnel only. All accounts are created exclusively by the system administrator. Unauthorized access attempts are logged.
             </p>
           </div>
         </div>
-        <p className="text-xs" style={{ color: '#3A3A3A' }}>© 2026 Niyom Wealth. All rights reserved.</p>
+        <p className="text-xs" style={{ color: 'var(--border-stronger)' }}>© 2026 Niyom Wealth. All rights reserved.</p>
       </div>
 
       {/* Right Panel */}
@@ -346,7 +346,7 @@ export default function CRMLogin({ onLogin }: Props) {
           <div className="mb-6">
             <button onClick={() => { window.location.href = '/'; }}
               className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-80"
-              style={{ color: '#6B6B6B' }}>
+              style={{ color: 'var(--text-muted)' }}>
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Website
             </button>
           </div>
@@ -356,72 +356,72 @@ export default function CRMLogin({ onLogin }: Props) {
               <div>
                 <div className="lg:hidden flex items-center gap-3 mb-8">
                   <img src="/niyomlogo.png" alt="Niyom Wealth" className="h-9 w-auto object-contain" />
-                  <p className="font-bold text-lg" style={{ color: '#c9b896' }}>Niyom Wealth</p>
+                  <p className="font-bold text-lg" style={{ color: 'var(--accent-soft)' }}>Niyom Wealth</p>
                 </div>
-                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#c9b896', letterSpacing: '0.15em' }}>Welcome back</p>
-                <h2 className="text-3xl font-bold text-white">Sign in to CRM</h2>
-                <p className="mt-2 text-sm" style={{ color: '#8A8A8A' }}>Authorized personnel only</p>
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--accent-soft)', letterSpacing: '0.15em' }}>Welcome back</p>
+                <h2 className="text-3xl font-bold text-text-primary">Sign in to CRM</h2>
+                <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>Authorized personnel only</p>
               </div>
 
               {lockoutMsg && (
-                <div className="p-4 rounded-xl flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
+                <div className="p-4 rounded-xl flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: 'rgb(var(--danger-soft-rgb))' }}>
                   <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                   <span className="text-sm">{lockoutMsg}</span>
                 </div>
               )}
 
               {error && !lockoutMsg && (
-                <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+                <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'rgb(var(--danger-soft-rgb))' }}>
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleLogin} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#8A8A8A' }}>Email Address</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Email Address</label>
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
                     <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
                       placeholder="you@niyomwealth.com"
                       className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem' }}
-                      onFocus={e => (e.target.style.borderColor = '#c9b896')}
-                      onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                      onFocus={e => (e.target.style.borderColor = 'var(--accent-soft)')}
+                      onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                       autoComplete="email"
                       disabled={!!lockoutMsg}
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#8A8A8A' }}>Password</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
                     <input type={showPw ? 'text' : 'password'} required value={password} onChange={e => setPassword(e.target.value)}
                       placeholder="Enter your password"
                       className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
-                      onFocus={e => (e.target.style.borderColor = '#c9b896')}
-                      onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                      onFocus={e => (e.target.style.borderColor = 'var(--accent-soft)')}
+                      onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                       autoComplete="current-password"
                       disabled={!!lockoutMsg}
                     />
-                    <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: '#4A4A4A' }}>
+                    <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }}>
                       {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
                 <div className="flex justify-end">
                   <button type="button" onClick={() => { resetFpState(); setView('fp_email'); setError(''); }}
-                    className="text-xs" style={{ color: '#c9b896' }}>
+                    className="text-xs" style={{ color: 'var(--accent-soft)' }}>
                     Forgot password?
                   </button>
                 </div>
                 <button type="submit" disabled={loading || !!lockoutMsg}
-                  className="w-full py-3.5 rounded-xl font-bold text-sm text-black flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity"
-                  style={{ background: 'linear-gradient(135deg, #c9b896, #b5a57d)' }}>
+                  className="w-full py-3.5 rounded-xl font-bold text-sm text-on-accent flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity"
+                  style={{ background: 'linear-gradient(135deg, var(--accent-soft), var(--accent-soft-deep))' }}>
                   {loading ? 'Signing in...' : <><span>Sign In</span><ArrowRight className="w-4 h-4" /></>}
                 </button>
               </form>
 
-              <p className="text-xs text-center" style={{ color: '#3A3A3A' }}>
+              <p className="text-xs text-center" style={{ color: 'var(--border-stronger)' }}>
                 Access restricted to authorized staff only. Contact your administrator for account access.
               </p>
             </div>
@@ -431,13 +431,13 @@ export default function CRMLogin({ onLogin }: Props) {
           {(view === 'fp_email' || view === 'fp_otp' || view === 'fp_password') && (
             <>
               {fpError && (
-                <div className="mb-5 p-4 rounded-xl flex items-start gap-3 text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+                <div className="mb-5 p-4 rounded-xl flex items-start gap-3 text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'rgb(var(--danger-soft-rgb))' }}>
                   <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                   <span>{fpError}</span>
                 </div>
               )}
               {fpInfo && !fpError && (
-                <div className="mb-5 p-4 rounded-xl flex items-start gap-3 text-sm" style={{ background: 'rgba(201,184,150,0.06)', border: '1px solid rgba(201,184,150,0.18)', color: '#c9b896' }}>
+                <div className="mb-5 p-4 rounded-xl flex items-start gap-3 text-sm" style={{ background: 'rgba(var(--accent-soft-rgb),0.06)', border: '1px solid rgba(var(--accent-soft-rgb),0.18)', color: 'var(--accent-soft)' }}>
                   <Mail className="w-4 h-4 flex-shrink-0 mt-0.5" />
                   <span>{fpInfo}</span>
                 </div>
@@ -449,38 +449,38 @@ export default function CRMLogin({ onLogin }: Props) {
           {view === 'fp_email' && (
             <div className="space-y-8">
               <div>
-                <button onClick={() => { setView('login'); setError(''); }} className="flex items-center gap-1.5 text-xs mb-6" style={{ color: '#8A8A8A' }}>
+                <button onClick={() => { setView('login'); setError(''); }} className="flex items-center gap-1.5 text-xs mb-6" style={{ color: 'var(--text-secondary)' }}>
                   <ChevronLeft className="w-3.5 h-3.5" /> Back to sign in
                 </button>
-                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#c9b896' }}>Password Reset</p>
-                <h2 className="text-3xl font-bold text-white">Forgot Password</h2>
-                <p className="mt-2 text-sm" style={{ color: '#8A8A8A' }}>
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--accent-soft)' }}>Password Reset</p>
+                <h2 className="text-3xl font-bold text-text-primary">Forgot Password</h2>
+                <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
                   Enter your registered email and we'll send you a 6-digit verification code.
                 </p>
               </div>
               <form onSubmit={handleSendOtp} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#8A8A8A' }}>Email Address</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Email Address</label>
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
                     <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
                       placeholder="you@niyomwealth.com"
                       className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem' }}
-                      onFocus={e => (e.target.style.borderColor = '#c9b896')}
-                      onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                      onFocus={e => (e.target.style.borderColor = 'var(--accent-soft)')}
+                      onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                       autoComplete="email"
                     />
                   </div>
                 </div>
                 <button type="submit" disabled={loading}
-                  className="w-full py-3.5 rounded-xl font-bold text-sm text-black flex items-center justify-center gap-2 disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #c9b896, #b5a57d)' }}>
+                  className="w-full py-3.5 rounded-xl font-bold text-sm text-on-accent flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, var(--accent-soft), var(--accent-soft-deep))' }}>
                   {loading ? 'Sending...' : <><span>Send Verification Code</span><ArrowRight className="w-4 h-4" /></>}
                 </button>
               </form>
-              <div className="p-3 rounded-xl flex items-start gap-2.5" style={{ background: 'rgba(201,184,150,0.04)', border: '1px solid rgba(201,184,150,0.1)' }}>
-                <Shield className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: '#c9b896' }} />
-                <p className="text-xs leading-relaxed" style={{ color: '#6B6B6B' }}>
+              <div className="p-3 rounded-xl flex items-start gap-2.5" style={{ background: 'rgba(var(--accent-soft-rgb),0.04)', border: '1px solid rgba(var(--accent-soft-rgb),0.1)' }}>
+                <Shield className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: 'var(--accent-soft)' }} />
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                   For your security we never confirm whether an email is registered. If it is, a code will arrive shortly.
                 </p>
               </div>
@@ -491,42 +491,42 @@ export default function CRMLogin({ onLogin }: Props) {
           {view === 'fp_otp' && (
             <div className="space-y-8">
               <div>
-                <button onClick={() => { setView('fp_email'); setFpError(''); }} className="flex items-center gap-1.5 text-xs mb-6" style={{ color: '#8A8A8A' }}>
+                <button onClick={() => { setView('fp_email'); setFpError(''); }} className="flex items-center gap-1.5 text-xs mb-6" style={{ color: 'var(--text-secondary)' }}>
                   <ChevronLeft className="w-3.5 h-3.5" /> Change email
                 </button>
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(201,184,150,0.1)', border: '1px solid rgba(201,184,150,0.2)' }}>
-                  <KeyRound className="w-7 h-7" style={{ color: '#c9b896' }} />
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(var(--accent-soft-rgb),0.1)', border: '1px solid rgba(var(--accent-soft-rgb),0.2)' }}>
+                  <KeyRound className="w-7 h-7" style={{ color: 'var(--accent-soft)' }} />
                 </div>
-                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#c9b896' }}>Verification</p>
-                <h2 className="text-3xl font-bold text-white">Enter the Code</h2>
-                <p className="mt-2 text-sm" style={{ color: '#8A8A8A' }}>
-                  We sent a 6-digit code to <span className="text-white font-medium">{email}</span>. It expires in 5 minutes.
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--accent-soft)' }}>Verification</p>
+                <h2 className="text-3xl font-bold text-text-primary">Enter the Code</h2>
+                <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  We sent a 6-digit code to <span className="text-text-primary font-medium">{email}</span>. It expires in 5 minutes.
                 </p>
               </div>
               <form onSubmit={handleVerifyOtp} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#8A8A8A' }}>Verification Code</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Verification Code</label>
                   <input
                     type="text" inputMode="numeric" autoComplete="one-time-code" required
                     value={otp}
                     onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="------"
-                    className="w-full px-4 py-3.5 rounded-xl text-center text-2xl font-bold text-white outline-none transition-all tracking-[0.6em]"
+                    className="w-full px-4 py-3.5 rounded-xl text-center text-2xl font-bold text-text-primary outline-none transition-all tracking-[0.6em]"
                     style={{ ...inputStyle }}
-                    onFocus={e => (e.target.style.borderColor = '#c9b896')}
-                    onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                    onFocus={e => (e.target.style.borderColor = 'var(--accent-soft)')}
+                    onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                   />
                 </div>
                 <button type="submit" disabled={loading || otp.length !== 6}
-                  className="w-full py-3.5 rounded-xl font-bold text-sm text-black flex items-center justify-center gap-2 disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #c9b896, #b5a57d)' }}>
+                  className="w-full py-3.5 rounded-xl font-bold text-sm text-on-accent flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, var(--accent-soft), var(--accent-soft-deep))' }}>
                   {loading ? 'Verifying...' : <><span>Verify Code</span><ArrowRight className="w-4 h-4" /></>}
                 </button>
               </form>
               <div className="text-center">
                 <button type="button" onClick={handleResendOtp} disabled={resendIn > 0 || loading}
                   className="inline-flex items-center gap-1.5 text-xs font-medium disabled:opacity-50"
-                  style={{ color: '#c9b896' }}>
+                  style={{ color: 'var(--accent-soft)' }}>
                   <RotateCw className="w-3.5 h-3.5" />
                   {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
                 </button>
@@ -546,56 +546,56 @@ export default function CRMLogin({ onLogin }: Props) {
             return (
               <div className="space-y-8">
                 <div>
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(201,184,150,0.1)', border: '1px solid rgba(201,184,150,0.2)' }}>
-                    <Lock className="w-7 h-7" style={{ color: '#c9b896' }} />
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(var(--accent-soft-rgb),0.1)', border: '1px solid rgba(var(--accent-soft-rgb),0.2)' }}>
+                    <Lock className="w-7 h-7" style={{ color: 'var(--accent-soft)' }} />
                   </div>
-                  <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#c9b896' }}>Almost done</p>
-                  <h2 className="text-3xl font-bold text-white">Create New Password</h2>
-                  <p className="mt-2 text-sm" style={{ color: '#8A8A8A' }}>Choose a strong password for your account.</p>
+                  <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--accent-soft)' }}>Almost done</p>
+                  <h2 className="text-3xl font-bold text-text-primary">Create New Password</h2>
+                  <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>Choose a strong password for your account.</p>
                 </div>
                 <form onSubmit={handleResetPassword} className="space-y-5">
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#8A8A8A' }}>New Password</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>New Password</label>
                     <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
                       <input type={showNewPw ? 'text' : 'password'} required value={newPassword}
                         onChange={e => setNewPassword(e.target.value)} placeholder="Enter new password"
                         className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
-                        onFocus={e => (e.target.style.borderColor = '#c9b896')}
-                        onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                        onFocus={e => (e.target.style.borderColor = 'var(--accent-soft)')}
+                        onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                         autoComplete="new-password"
                       />
-                      <button type="button" onClick={() => setShowNewPw(s => !s)} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: '#4A4A4A' }}>
+                      <button type="button" onClick={() => setShowNewPw(s => !s)} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }}>
                         {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#8A8A8A' }}>Confirm Password</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Confirm Password</label>
                     <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
                       <input type={showNewPw ? 'text' : 'password'} required value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter new password"
                         className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem' }}
-                        onFocus={e => (e.target.style.borderColor = '#c9b896')}
-                        onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                        onFocus={e => (e.target.style.borderColor = 'var(--accent-soft)')}
+                        onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                         autoComplete="new-password"
                       />
                     </div>
                     {confirmPassword.length > 0 && confirmPassword !== newPassword && (
-                      <p className="mt-1.5 text-xs" style={{ color: '#f87171' }}>Passwords do not match.</p>
+                      <p className="mt-1.5 text-xs" style={{ color: 'rgb(var(--danger-soft-rgb))' }}>Passwords do not match.</p>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {reqs.map(r => (
-                      <p key={r.label} className="text-xs flex items-center gap-1.5" style={{ color: r.ok ? '#10B981' : '#6B6B6B' }}>
+                      <p key={r.label} className="text-xs flex items-center gap-1.5" style={{ color: r.ok ? 'var(--success)' : 'var(--text-muted)' }}>
                         <CheckCircle2 className="w-3.5 h-3.5" style={{ opacity: r.ok ? 1 : 0.3 }} /> {r.label}
                       </p>
                     ))}
                   </div>
                   <button type="submit" disabled={loading || !passwordValid(newPassword) || newPassword !== confirmPassword}
-                    className="w-full py-3.5 rounded-xl font-bold text-sm text-black flex items-center justify-center gap-2 disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #c9b896, #b5a57d)' }}>
+                    className="w-full py-3.5 rounded-xl font-bold text-sm text-on-accent flex items-center justify-center gap-2 disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, var(--accent-soft), var(--accent-soft-deep))' }}>
                     {loading ? 'Updating...' : 'Reset Password'}
                   </button>
                 </form>
@@ -607,18 +607,18 @@ export default function CRMLogin({ onLogin }: Props) {
           {view === 'fp_done' && (
             <div className="space-y-6 text-center">
               <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <CheckCircle2 className="w-8 h-8" style={{ color: '#10B981' }} />
+                <CheckCircle2 className="w-8 h-8" style={{ color: 'var(--success)' }} />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#10B981' }}>Success</p>
-                <h2 className="text-2xl font-bold text-white">Password Updated</h2>
-                <p className="mt-2 text-sm" style={{ color: '#8A8A8A' }}>
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--success)' }}>Success</p>
+                <h2 className="text-2xl font-bold text-text-primary">Password Updated</h2>
+                <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
                   Your password has been reset. You can now sign in with your new password.
                 </p>
               </div>
               <button onClick={() => { resetFpState(); setPassword(''); setView('login'); }}
-                className="w-full py-3.5 rounded-xl font-bold text-sm text-black flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg, #c9b896, #b5a57d)' }}>
+                className="w-full py-3.5 rounded-xl font-bold text-sm text-on-accent flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg, var(--accent-soft), var(--accent-soft-deep))' }}>
                 <span>Back to Sign In</span><ArrowRight className="w-4 h-4" />
               </button>
             </div>

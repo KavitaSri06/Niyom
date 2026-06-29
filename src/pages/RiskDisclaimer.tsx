@@ -126,7 +126,7 @@ export function RiskDisclaimer({ onClose }: RiskDisclaimerProps) {
             <><strong>Tax Implications:</strong> Investment returns are subject to taxation. Tax laws may change.</>,
             <><strong>Compliance Requirements:</strong> Failure to meet KYC or other regulatory requirements may affect your ability to invest.</>
           ]} />
-          <p className="mt-4 italic text-slate-600">
+          <p className="mt-4 italic text-text-secondary">
             You should consult with independent tax advisors regarding the tax implications of your investments.
           </p>
         </LegalSection>

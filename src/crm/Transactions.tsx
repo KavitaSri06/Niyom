@@ -87,10 +87,10 @@ function patternToNextISODate(pattern: string, freq: string): string | null {
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
-      <div className="w-full max-w-2xl rounded-2xl overflow-hidden max-h-[92vh] flex flex-col" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-        <div className="px-6 py-4 flex items-center justify-between flex-shrink-0" style={{ borderBottom: '1px solid #1E1E24' }}>
-          <h3 className="text-sm font-bold text-white">{title}</h3>
-          <button onClick={onClose} style={{ color: '#4A4A4A' }}><X className="w-5 h-5" /></button>
+      <div className="w-full max-w-2xl rounded-2xl overflow-hidden max-h-[92vh] flex flex-col" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+        <div className="px-6 py-4 flex items-center justify-between flex-shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+          <h3 className="text-sm font-bold text-text-primary">{title}</h3>
+          <button onClick={onClose} style={{ color: 'var(--text-faint)' }}><X className="w-5 h-5" /></button>
         </div>
         <div className="overflow-y-auto flex-1">{children}</div>
       </div>
@@ -98,13 +98,13 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-const iS = { background: '#050505', border: '1px solid #1E1E24' };
-const iC = "w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none transition-all";
+const iS = { background: 'var(--bg-base)', border: '1px solid var(--border)' };
+const iC = "w-full px-3 py-2.5 rounded-xl text-sm text-text-primary outline-none transition-all";
 
 function Field({ label, children, span2 }: { label: string; children: React.ReactNode; span2?: boolean }) {
   return (
     <div className={span2 ? 'col-span-2' : ''}>
-      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>{label}</label>
+      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>{label}</label>
       {children}
     </div>
   );
@@ -118,11 +118,11 @@ function S({ value, onChange, children }: { value: string; onChange: (v: string)
 function SecHead({ icon: Icon, label, color }: { icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; label: string; color: string }) {
   return (
     <div className="col-span-2 flex items-center gap-2 pt-1">
-      <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: `${color}20` }}>
+      <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: `color-mix(in srgb, ${color} 12%, transparent)` }}>
         <Icon className="w-3.5 h-3.5" style={{ color }} />
       </div>
       <p className="text-xs font-bold uppercase tracking-widest" style={{ color }}>{label}</p>
-      <div className="flex-1 h-px" style={{ background: `${color}25` }} />
+      <div className="flex-1 h-px" style={{ background: `color-mix(in srgb, ${color} 15%, transparent)` }} />
     </div>
   );
 }
@@ -449,7 +449,7 @@ export default function Transactions({ employee }: Props) {
 
   const txnFormJsx = (
     <div className="p-6 space-y-5">
-      {error && <div className="p-3 rounded-xl text-sm text-red-400" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
+      {error && <div className="p-3 rounded-xl text-sm text-c-red" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
       <div className="grid grid-cols-2 gap-4">
         <Field label="Client *"><S value={form.client_id} onChange={v => setF('client_id', v)}>
           <option value="">Select client...</option>
@@ -487,10 +487,10 @@ export default function Transactions({ employee }: Props) {
 
       {/* DSA Pricing — only for DSA clients on applicable product types */}
       {showDsaPrice && (
-        <div className="grid grid-cols-2 gap-4 rounded-xl p-4" style={{ background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.2)' }}>
+        <div className="grid grid-cols-2 gap-4 rounded-xl p-4" style={{ background: 'rgba(var(--accent-rgb),0.05)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>
           <div className="col-span-2">
-            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#D4AF37' }}>DSA Pricing</p>
-            <p className="text-xs mt-0.5" style={{ color: '#4A4A4A' }}>DSA price is internal only. Client price appears in portfolio print.</p>
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>DSA Pricing</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>DSA price is internal only. Client price appears in portfolio print.</p>
           </div>
           <Field label="DSA Price / Unit (₹)">
             <I type="number" value={form.dsa_price} onChange={e => setF('dsa_price', e.target.value)} placeholder="0.00" />
@@ -505,8 +505,8 @@ export default function Transactions({ employee }: Props) {
       {['unlisted_share', 'secondary_bond', 'primary_bond'].includes(form.product_type) && (
         <div className="grid grid-cols-2 gap-4 rounded-xl p-4" style={{ background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.15)' }}>
           <div className="col-span-2">
-            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#10B981' }}>MIS Revenue</p>
-            <p className="text-xs mt-0.5" style={{ color: '#4A4A4A' }}>Revenue = (Avg Cost − Landing Cost) × Quantity</p>
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--success)' }}>MIS Revenue</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>Revenue = (Avg Cost − Landing Cost) × Quantity</p>
           </div>
           <Field label="Landing Cost / Unit (₹)" span2>
             <I type="number" value={form.landing_cost} onChange={e => setF('landing_cost', e.target.value)} placeholder="Internal acquisition cost per unit" />
@@ -519,7 +519,7 @@ export default function Transactions({ employee }: Props) {
         const nextPayouts = form.interest_payout_date ? getNextPayouts(form.interest_payout_date, form.payout_frequency) : [];
         return (
           <div className="grid grid-cols-2 gap-4">
-            <SecHead icon={Percent} label="Fixed Coupon Details" color="#10B981" />
+            <SecHead icon={Percent} label="Fixed Coupon Details" color="var(--success)" />
             <Field label="Issuer Name"><I value={form.issuer_name} onChange={e => setF('issuer_name', e.target.value)} placeholder="e.g. HDFC Ltd" /></Field>
             <Field label="Face Value / Unit (₹)"><I type="number" value={form.face_value} onChange={e => setF('face_value', e.target.value)} placeholder="1000" /></Field>
             <Field label="Coupon / Interest Rate (% p.a.)"><I type="number" value={form.coupon_rate} onChange={e => setF('coupon_rate', e.target.value)} placeholder="8.50" /></Field>
@@ -528,22 +528,22 @@ export default function Transactions({ employee }: Props) {
             </S></Field>
             <Field label={pdInfo.label}>
               <I value={form.interest_payout_date} onChange={e => setF('interest_payout_date', e.target.value)} placeholder={pdInfo.placeholder} />
-              <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>{pdInfo.hint}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>{pdInfo.hint}</p>
             </Field>
             {interest && (
               <div className="col-span-2 rounded-xl p-4" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#10B981' }}>Auto-Calculated Interest</p>
+                <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--success)' }}>Auto-Calculated Interest</p>
                 <div className="grid grid-cols-3 gap-4">
-                  <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Annual Interest</p><p className="text-base font-bold text-white mt-0.5">{fmt(interest.annual)}</p></div>
-                  <div><p className="text-xs" style={{ color: '#6B6B6B' }}>{PAYOUT_FREQ[form.payout_frequency]} Payout</p><p className="text-base font-bold mt-0.5" style={{ color: '#10B981' }}>{fmt(interest.perPeriod)}</p></div>
-                  <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Yield</p><p className="text-base font-bold text-white mt-0.5">{form.coupon_rate}% p.a.</p></div>
+                  <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Annual Interest</p><p className="text-base font-bold text-text-primary mt-0.5">{fmt(interest.annual)}</p></div>
+                  <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>{PAYOUT_FREQ[form.payout_frequency]} Payout</p><p className="text-base font-bold mt-0.5" style={{ color: 'var(--success)' }}>{fmt(interest.perPeriod)}</p></div>
+                  <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Yield</p><p className="text-base font-bold text-text-primary mt-0.5">{form.coupon_rate}% p.a.</p></div>
                 </div>
                 {nextPayouts.length > 0 && (
                   <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(16,185,129,0.15)' }}>
-                    <p className="text-xs mb-2" style={{ color: '#4A4A4A' }}>Next Payout Dates</p>
+                    <p className="text-xs mb-2" style={{ color: 'var(--text-faint)' }}>Next Payout Dates</p>
                     <div className="flex flex-wrap gap-2">
                       {nextPayouts.map((d, i) => (
-                        <span key={i} className="text-xs px-2 py-1 rounded-lg font-semibold" style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981' }}>{d}</span>
+                        <span key={i} className="text-xs px-2 py-1 rounded-lg font-semibold" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)' }}>{d}</span>
                       ))}
                     </div>
                   </div>
@@ -556,14 +556,14 @@ export default function Transactions({ employee }: Props) {
 
       {isMF && (
         <div className="grid grid-cols-2 gap-4">
-          <SecHead icon={TrendingUp} label="Mutual Fund Details" color="#EC4899" />
+          <SecHead icon={TrendingUp} label="Mutual Fund Details" color="var(--chart-4)" />
           <Field label="Fund House / AMC"><I value={form.fund_house} onChange={e => setF('fund_house', e.target.value)} placeholder="e.g. HDFC Asset Management" /></Field>
           <Field label="Folio Number"><I value={form.folio_number} onChange={e => setF('folio_number', e.target.value)} placeholder="e.g. 1234567890" /></Field>
           <Field label="Scheme Type"><S value={form.scheme_type} onChange={v => setF('scheme_type', v)}>
             {Object.entries(SCHEME_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </S></Field>
           <Field label="NAV Date"><I type="date" value={form.nav_date} onChange={e => setF('nav_date', e.target.value)} /></Field>
-          <SecHead icon={TrendingUp} label="MIS Trail Commission" color="#10B981" />
+          <SecHead icon={TrendingUp} label="MIS Trail Commission" color="var(--success)" />
           <Field label="Trail Commission (% p.a.)">
             <I type="number" value={form.trail_percent} onChange={e => setF('trail_percent', e.target.value)} placeholder="e.g. 1.00" />
           </Field>
@@ -575,7 +575,7 @@ export default function Transactions({ employee }: Props) {
 
       {isIns && (
         <div className="grid grid-cols-2 gap-4">
-          <SecHead icon={Shield} label="Insurance Policy Details" color="#F97316" />
+          <SecHead icon={Shield} label="Insurance Policy Details" color="var(--chart-6)" />
           <Field label="Policy Number *"><I value={form.policy_number} onChange={e => setF('policy_number', e.target.value)} placeholder="e.g. LIC-2024-001234" /></Field>
           <Field label="Insurance Type"><S value={form.insurance_type} onChange={v => setF('insurance_type', v)}>
             {Object.entries(INS_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -586,7 +586,7 @@ export default function Transactions({ employee }: Props) {
           <Field label="Premium Frequency"><S value={form.premium_frequency} onChange={v => setF('premium_frequency', v)}>
             {Object.entries(PREM_FREQ).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </S></Field>
-          <SecHead icon={Shield} label="MIS Revenue" color="#10B981" />
+          <SecHead icon={Shield} label="MIS Revenue" color="var(--success)" />
           <Field label="Insurance Revenue (₹)" span2>
             <I type="number" value={form.insurance_revenue} onChange={e => setF('insurance_revenue', e.target.value)} placeholder="One-time revenue from this policy" />
           </Field>
@@ -596,12 +596,12 @@ export default function Transactions({ employee }: Props) {
       <div className="space-y-4">
         <Field label="Notes">
           <textarea value={form.notes} onChange={e => setF('notes', e.target.value)} rows={2} placeholder="Optional notes..."
-            className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none resize-none" style={iS} />
+            className="w-full px-3 py-2.5 rounded-xl text-sm text-text-primary outline-none resize-none" style={iS} />
         </Field>
         <Field label="Deal Confirmation Document">
           <label className="flex items-center gap-3 p-3 rounded-xl cursor-pointer" style={iS}>
-            <Upload className="w-4 h-4 flex-shrink-0" style={{ color: '#4A4A4A' }} />
-            <span className="text-sm" style={{ color: form.docFile ? '#D4AF37' : '#4A4A4A' }}>
+            <Upload className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-faint)' }} />
+            <span className="text-sm" style={{ color: form.docFile ? 'var(--accent)' : 'var(--text-faint)' }}>
               {form.docFile ? form.docFile.name : 'Upload deal confirmation (PDF/Image)'}
             </span>
             <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setF('docFile', e.target.files?.[0] || null)} />
@@ -609,8 +609,8 @@ export default function Transactions({ employee }: Props) {
         </Field>
       </div>
       <div className="flex justify-end gap-3 pt-1">
-        <button onClick={() => { setShowAdd(false); setEditTxn(null); }} className="px-4 py-2 rounded-xl text-sm" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>Cancel</button>
-        <button onClick={handleSave} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-black disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+        <button onClick={() => { setShowAdd(false); setEditTxn(null); }} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
+        <button onClick={handleSave} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
           {saving ? 'Saving...' : editTxn ? 'Save Changes' : 'Add New Business'}
         </button>
       </div>
@@ -621,119 +621,119 @@ export default function Transactions({ employee }: Props) {
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Finance</p>
-          <h1 className="text-2xl font-bold text-white">Transactions</h1>
-          <p className="text-xs mt-1" style={{ color: '#6B6B6B' }}>New business — current transactions added here appear in MIS</p>
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Finance</p>
+          <h1 className="text-2xl font-bold text-text-primary">Transactions</h1>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>New business — current transactions added here appear in MIS</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-black" style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+        <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-on-accent" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
           <Plus className="w-4 h-4" /> Add New Business
         </button>
       </div>
 
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search product or client..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white outline-none"
-            style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }} />
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }} />
         </div>
         {isAdmin && (
           <div className="relative">
             <select value={empFilter} onChange={e => setEmpFilter(e.target.value)}
-              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-              style={{ background: '#0B0B0F', border: '1px solid rgba(212,175,55,0.4)' }}>
+              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(var(--accent-rgb),0.4)' }}>
               <option value="all">All Employees</option>
               {empList.map(e => <option key={e.id} value={e.id}>{e.full_name} ({e.employee_code})</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#D4AF37' }} />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--accent)' }} />
           </div>
         )}
         <div className="flex gap-2 flex-wrap">
           {[['all', 'All Types'], ...TXN_TYPES.map(t => [t, TXN_LABELS[t]])].map(([val, label]) => (
             <button key={val} onClick={() => setTypeFilter(val)} className="px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={typeFilter === val ? { background: 'rgba(212,175,55,0.15)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.3)' } : { background: '#111', color: '#6B6B6B', border: '1px solid #1E1E24' }}>
+              style={typeFilter === val ? { background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.3)' } : { background: 'var(--bg-raised)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
               {label}
             </button>
           ))}
         </div>
         <div className="relative">
           <select value={productFilter} onChange={e => setProductFilter(e.target.value)}
-            className="pl-3 pr-8 py-2.5 rounded-xl text-xs font-semibold text-white outline-none appearance-none"
-            style={{ background: '#111', border: '1px solid #1E1E24' }}>
+            className="pl-3 pr-8 py-2.5 rounded-xl text-xs font-semibold text-text-primary outline-none appearance-none"
+            style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
             <option value="all">All Products</option>
             {PRODUCTS.map(p => <option key={p} value={p}>{PRODUCT_LABELS[p]}</option>)}
           </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#4A4A4A' }} />
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--text-faint)' }} />
         </div>
       </div>
 
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 {['Date', 'Client', 'Type', 'Product', 'Details', 'Amount', 'Actions'].map(h => (
-                  <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                  <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="text-center py-12"><div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin mx-auto" style={{ borderColor: '#D4AF37', borderTopColor: 'transparent' }} /></td></tr>
+                <tr><td colSpan={7} className="text-center py-12"><div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin mx-auto" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} /></td></tr>
               ) : txns.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12 text-sm" style={{ color: '#4A4A4A' }}>No transactions found</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-sm" style={{ color: 'var(--text-faint)' }}>No transactions found</td></tr>
               ) : txns.map(t => {
                 const isB = BOND_TYPES.includes(t.product_type);
                 const isMFt = t.product_type === 'mutual_fund';
                 const isIt = t.product_type === 'insurance';
                 const payout = isB && t.face_value && t.coupon_rate && t.quantity ? calcPayout(t.face_value, t.coupon_rate, t.quantity, t.payout_frequency || 'annual') : null;
                 return (
-                  <tr key={t.id} style={{ borderBottom: '1px solid #111' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#0D0D0D')}
+                  <tr key={t.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <td className="px-5 py-3.5 text-xs" style={{ color: '#6B6B6B' }}>{fmtDate(t.txn_date)}</td>
+                    <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-muted)' }}>{fmtDate(t.txn_date)}</td>
                     <td className="px-5 py-3.5">
-                      <p className="text-sm font-medium text-white">{(t.client as any)?.full_name || '—'}</p>
-                      <p className="text-xs font-mono" style={{ color: '#4A4A4A' }}>{(t.client as any)?.client_code}</p>
+                      <p className="text-sm font-medium text-text-primary">{(t.client as any)?.full_name || '—'}</p>
+                      <p className="text-xs font-mono" style={{ color: 'var(--text-faint)' }}>{(t.client as any)?.client_code}</p>
                     </td>
                     <td className="px-5 py-3.5"><span className={`text-xs font-bold px-2 py-1 rounded-lg ${TXN_COLORS[t.txn_type]}`}>{TXN_LABELS[t.txn_type]}</span></td>
                     <td className="px-5 py-3.5">
-                      <p className="text-sm text-white">{t.product_name}</p>
+                      <p className="text-sm text-text-primary">{t.product_name}</p>
                       <span className={`text-xs font-semibold px-1.5 py-0.5 rounded border ${PRODUCT_COLORS[t.product_type]}`}>{PRODUCT_LABELS[t.product_type]}</span>
                     </td>
                     <td className="px-5 py-3.5 min-w-[140px]">
                       {isB && <div className="space-y-0.5">
-                        {t.coupon_rate && <p className="text-xs font-bold" style={{ color: '#10B981' }}>{t.coupon_rate}% p.a.</p>}
-                        {t.payout_frequency && <p className="text-xs" style={{ color: '#6B6B6B' }}>{PAYOUT_FREQ[t.payout_frequency]}</p>}
-                        {payout !== null && <p className="text-xs" style={{ color: '#4A4A4A' }}>{fmt(payout)}/payout</p>}
-                        {t.issuer_name && <p className="text-xs" style={{ color: '#4A4A4A' }}>{t.issuer_name}</p>}
+                        {t.coupon_rate && <p className="text-xs font-bold" style={{ color: 'var(--success)' }}>{t.coupon_rate}% p.a.</p>}
+                        {t.payout_frequency && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{PAYOUT_FREQ[t.payout_frequency]}</p>}
+                        {payout !== null && <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{fmt(payout)}/payout</p>}
+                        {t.issuer_name && <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{t.issuer_name}</p>}
                       </div>}
                       {isMFt && <div className="space-y-0.5">
-                        {t.fund_house && <p className="text-xs text-white">{t.fund_house}</p>}
-                        {t.folio_number && <p className="text-xs font-mono" style={{ color: '#4A4A4A' }}>{t.folio_number}</p>}
-                        {t.scheme_type && <p className="text-xs" style={{ color: '#EC4899' }}>{SCHEME_TYPES[t.scheme_type] || t.scheme_type}</p>}
+                        {t.fund_house && <p className="text-xs text-text-primary">{t.fund_house}</p>}
+                        {t.folio_number && <p className="text-xs font-mono" style={{ color: 'var(--text-faint)' }}>{t.folio_number}</p>}
+                        {t.scheme_type && <p className="text-xs" style={{ color: 'var(--chart-4)' }}>{SCHEME_TYPES[t.scheme_type] || t.scheme_type}</p>}
                       </div>}
                       {isIt && <div className="space-y-0.5">
-                        {t.policy_number && <p className="text-xs font-mono" style={{ color: '#F97316' }}>{t.policy_number}</p>}
-                        {t.insurance_type && <p className="text-xs" style={{ color: '#6B6B6B' }}>{INS_TYPES[t.insurance_type] || t.insurance_type}</p>}
-                        {t.insurer_name && <p className="text-xs" style={{ color: '#4A4A4A' }}>{t.insurer_name}</p>}
+                        {t.policy_number && <p className="text-xs font-mono" style={{ color: 'var(--chart-6)' }}>{t.policy_number}</p>}
+                        {t.insurance_type && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{INS_TYPES[t.insurance_type] || t.insurance_type}</p>}
+                        {t.insurer_name && <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{t.insurer_name}</p>}
                       </div>}
-                      {!isB && !isMFt && !isIt && t.quantity && <p className="text-xs" style={{ color: '#4A4A4A' }}>Qty: {t.quantity}</p>}
+                      {!isB && !isMFt && !isIt && t.quantity && <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Qty: {t.quantity}</p>}
                     </td>
                     <td className="px-5 py-3.5">
-                      <p className="text-sm font-bold text-white">{fmt(t.consolidated_amount)}</p>
-                      {isIt && t.sum_assured && <p className="text-xs" style={{ color: '#4A4A4A' }}>Cover: {fmt(t.sum_assured)}</p>}
+                      <p className="text-sm font-bold text-text-primary">{fmt(t.consolidated_amount)}</p>
+                      {isIt && t.sum_assured && <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Cover: {fmt(t.sum_assured)}</p>}
                       {!isIt && t.documents && t.documents.length > 0 && (
-                        <a href={t.documents[0].file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs mt-0.5" style={{ color: '#D4AF37' }}>
+                        <a href={t.documents[0].file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs mt-0.5" style={{ color: 'var(--accent)' }}>
                           <FileText className="w-3 h-3" /> Doc <ExternalLink className="w-3 h-3" />
                         </a>
                       )}
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => setViewTxn(t)} className="p-1.5 rounded-lg" style={{ color: '#4A4A4A' }} onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')} onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}><ChevronRight className="w-4 h-4" /></button>
-                        <button onClick={() => openEdit(t)} className="p-1.5 rounded-lg" style={{ color: '#4A4A4A' }} onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')} onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => setDeleteTxn(t)} className="p-1.5 rounded-lg" style={{ color: '#4A4A4A' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => setViewTxn(t)} className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><ChevronRight className="w-4 h-4" /></button>
+                        <button onClick={() => openEdit(t)} className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'rgb(var(--info-soft-rgb))')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => setDeleteTxn(t)} className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -752,72 +752,72 @@ export default function Transactions({ employee }: Props) {
           <div className="p-6 space-y-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-lg font-bold text-white">{viewTxn.product_name}</p>
+                <p className="text-lg font-bold text-text-primary">{viewTxn.product_name}</p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${TXN_COLORS[viewTxn.txn_type]}`}>{TXN_LABELS[viewTxn.txn_type]}</span>
                   <span className={`text-xs font-semibold px-1.5 py-0.5 rounded border ${PRODUCT_COLORS[viewTxn.product_type]}`}>{PRODUCT_LABELS[viewTxn.product_type]}</span>
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-xl font-bold" style={{ color: '#D4AF37' }}>{fmt(viewTxn.consolidated_amount)}</p>
-                <p className="text-xs" style={{ color: '#6B6B6B' }}>{fmtDate(viewTxn.txn_date)}</p>
+                <p className="text-xl font-bold" style={{ color: 'var(--accent)' }}>{fmt(viewTxn.consolidated_amount)}</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{fmtDate(viewTxn.txn_date)}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 rounded-xl p-4" style={{ background: '#0D0D0D', border: '1px solid #1E1E24' }}>
-              <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Client</p><p className="text-sm font-medium text-white">{(viewTxn.client as any)?.full_name || '—'}</p></div>
-              <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Code</p><p className="text-sm font-mono text-white">{(viewTxn.client as any)?.client_code || '—'}</p></div>
-              {viewTxn.quantity != null && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Quantity</p><p className="text-sm font-medium text-white">{viewTxn.quantity.toLocaleString('en-IN')}</p></div>}
-              {viewTxn.per_unit_price != null && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Unit Price</p><p className="text-sm font-medium text-white">{fmt(viewTxn.per_unit_price)}</p></div>}
+            <div className="grid grid-cols-2 gap-3 rounded-xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+              <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Client</p><p className="text-sm font-medium text-text-primary">{(viewTxn.client as any)?.full_name || '—'}</p></div>
+              <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Code</p><p className="text-sm font-mono text-text-primary">{(viewTxn.client as any)?.client_code || '—'}</p></div>
+              {viewTxn.quantity != null && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Quantity</p><p className="text-sm font-medium text-text-primary">{viewTxn.quantity.toLocaleString('en-IN')}</p></div>}
+              {viewTxn.per_unit_price != null && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Unit Price</p><p className="text-sm font-medium text-text-primary">{fmt(viewTxn.per_unit_price)}</p></div>}
             </div>
             {BOND_TYPES.includes(viewTxn.product_type) && (viewTxn.coupon_rate || viewTxn.face_value) && (
               <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#10B981' }}>Fixed Coupon Details</p>
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--success)' }}>Fixed Coupon Details</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {viewTxn.issuer_name && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Issuer</p><p className="text-sm text-white">{viewTxn.issuer_name}</p></div>}
-                  {viewTxn.face_value != null && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Face Value</p><p className="text-sm text-white">{fmt(viewTxn.face_value)}</p></div>}
-                  {viewTxn.coupon_rate != null && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Coupon Rate</p><p className="text-sm font-bold text-white">{viewTxn.coupon_rate}% p.a.</p></div>}
-                  {viewTxn.payout_frequency && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Payout Type</p><p className="text-sm text-white">{PAYOUT_FREQ[viewTxn.payout_frequency] || viewTxn.payout_frequency}</p></div>}
-                  {viewTxn.interest_payout_date && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Payout Date</p><p className="text-sm text-white">{fmtDate(viewTxn.interest_payout_date)}</p></div>}
+                  {viewTxn.issuer_name && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Issuer</p><p className="text-sm text-text-primary">{viewTxn.issuer_name}</p></div>}
+                  {viewTxn.face_value != null && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Face Value</p><p className="text-sm text-text-primary">{fmt(viewTxn.face_value)}</p></div>}
+                  {viewTxn.coupon_rate != null && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Coupon Rate</p><p className="text-sm font-bold text-text-primary">{viewTxn.coupon_rate}% p.a.</p></div>}
+                  {viewTxn.payout_frequency && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Payout Type</p><p className="text-sm text-text-primary">{PAYOUT_FREQ[viewTxn.payout_frequency] || viewTxn.payout_frequency}</p></div>}
+                  {viewTxn.interest_payout_date && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Payout Date</p><p className="text-sm text-text-primary">{fmtDate(viewTxn.interest_payout_date)}</p></div>}
                   {viewTxn.face_value && viewTxn.coupon_rate && viewTxn.quantity && (
-                    <div><p className="text-xs" style={{ color: '#6B6B6B' }}>{PAYOUT_FREQ[viewTxn.payout_frequency || 'annual']} Interest</p>
-                    <p className="text-sm font-bold" style={{ color: '#10B981' }}>{fmt(calcPayout(viewTxn.face_value, viewTxn.coupon_rate, viewTxn.quantity, viewTxn.payout_frequency || 'annual'))}</p></div>
+                    <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>{PAYOUT_FREQ[viewTxn.payout_frequency || 'annual']} Interest</p>
+                    <p className="text-sm font-bold" style={{ color: 'var(--success)' }}>{fmt(calcPayout(viewTxn.face_value, viewTxn.coupon_rate, viewTxn.quantity, viewTxn.payout_frequency || 'annual'))}</p></div>
                   )}
                 </div>
               </div>
             )}
             {viewTxn.product_type === 'mutual_fund' && (viewTxn.fund_house || viewTxn.folio_number) && (
               <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(236,72,153,0.05)', border: '1px solid rgba(236,72,153,0.2)' }}>
-                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#EC4899' }}>Mutual Fund Details</p>
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--chart-4)' }}>Mutual Fund Details</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {viewTxn.fund_house && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Fund House</p><p className="text-sm text-white">{viewTxn.fund_house}</p></div>}
-                  {viewTxn.folio_number && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Folio No.</p><p className="text-sm font-mono text-white">{viewTxn.folio_number}</p></div>}
-                  {viewTxn.scheme_type && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Scheme</p><p className="text-sm text-white">{SCHEME_TYPES[viewTxn.scheme_type] || viewTxn.scheme_type}</p></div>}
-                  {viewTxn.purchase_nav != null && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Purchase NAV</p><p className="text-sm text-white">₹{viewTxn.purchase_nav}</p></div>}
+                  {viewTxn.fund_house && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Fund House</p><p className="text-sm text-text-primary">{viewTxn.fund_house}</p></div>}
+                  {viewTxn.folio_number && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Folio No.</p><p className="text-sm font-mono text-text-primary">{viewTxn.folio_number}</p></div>}
+                  {viewTxn.scheme_type && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Scheme</p><p className="text-sm text-text-primary">{SCHEME_TYPES[viewTxn.scheme_type] || viewTxn.scheme_type}</p></div>}
+                  {viewTxn.purchase_nav != null && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Purchase NAV</p><p className="text-sm text-text-primary">₹{viewTxn.purchase_nav}</p></div>}
                 </div>
               </div>
             )}
             {viewTxn.product_type === 'insurance' && viewTxn.policy_number && (
               <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(249,115,22,0.05)', border: '1px solid rgba(249,115,22,0.2)' }}>
-                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#F97316' }}>Insurance Details</p>
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--chart-6)' }}>Insurance Details</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Policy No.</p><p className="text-sm font-mono text-white">{viewTxn.policy_number}</p></div>
-                  {viewTxn.insurance_type && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Type</p><p className="text-sm text-white">{INS_TYPES[viewTxn.insurance_type] || viewTxn.insurance_type}</p></div>}
-                  {viewTxn.insurer_name && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Insurer</p><p className="text-sm text-white">{viewTxn.insurer_name}</p></div>}
-                  {viewTxn.sum_assured != null && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Sum Assured</p><p className="text-sm text-white">{fmt(viewTxn.sum_assured)}</p></div>}
-                  {viewTxn.premium_amount != null && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Premium</p><p className="text-sm text-white">{fmt(viewTxn.premium_amount)}</p></div>}
-                  {viewTxn.premium_frequency && <div><p className="text-xs" style={{ color: '#6B6B6B' }}>Frequency</p><p className="text-sm text-white">{PREM_FREQ[viewTxn.premium_frequency] || viewTxn.premium_frequency}</p></div>}
+                  <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Policy No.</p><p className="text-sm font-mono text-text-primary">{viewTxn.policy_number}</p></div>
+                  {viewTxn.insurance_type && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Type</p><p className="text-sm text-text-primary">{INS_TYPES[viewTxn.insurance_type] || viewTxn.insurance_type}</p></div>}
+                  {viewTxn.insurer_name && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Insurer</p><p className="text-sm text-text-primary">{viewTxn.insurer_name}</p></div>}
+                  {viewTxn.sum_assured != null && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Sum Assured</p><p className="text-sm text-text-primary">{fmt(viewTxn.sum_assured)}</p></div>}
+                  {viewTxn.premium_amount != null && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Premium</p><p className="text-sm text-text-primary">{fmt(viewTxn.premium_amount)}</p></div>}
+                  {viewTxn.premium_frequency && <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Frequency</p><p className="text-sm text-text-primary">{PREM_FREQ[viewTxn.premium_frequency] || viewTxn.premium_frequency}</p></div>}
                 </div>
               </div>
             )}
-            {viewTxn.notes && <div className="rounded-xl p-3" style={{ background: '#0D0D0D', border: '1px solid #1E1E24' }}><p className="text-xs mb-1" style={{ color: '#6B6B6B' }}>Notes</p><p className="text-sm text-white">{viewTxn.notes}</p></div>}
+            {viewTxn.notes && <div className="rounded-xl p-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}><p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Notes</p><p className="text-sm text-text-primary">{viewTxn.notes}</p></div>}
             {viewTxn.documents && viewTxn.documents.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B6B6B' }}>Documents</p>
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Documents</p>
                 {viewTxn.documents.map(d => (
-                  <a key={d.id} href={d.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#0D0D0D', border: '1px solid #1E1E24' }}>
-                    <FileText className="w-4 h-4" style={{ color: '#D4AF37' }} />
-                    <span className="text-sm text-white flex-1">{d.file_name}</span>
-                    <ExternalLink className="w-3.5 h-3.5" style={{ color: '#4A4A4A' }} />
+                  <a key={d.id} href={d.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-xl" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                    <FileText className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+                    <span className="text-sm text-text-primary flex-1">{d.file_name}</span>
+                    <ExternalLink className="w-3.5 h-3.5" style={{ color: 'var(--text-faint)' }} />
                   </a>
                 ))}
               </div>
@@ -829,10 +829,10 @@ export default function Transactions({ employee }: Props) {
       {deleteTxn && (
         <Modal title="Delete Transaction" onClose={() => setDeleteTxn(null)}>
           <div className="p-6 space-y-4">
-            <p className="text-sm" style={{ color: '#8A8A8A' }}>Delete transaction for <span className="text-white font-semibold">{deleteTxn.product_name}</span> ({fmt(deleteTxn.consolidated_amount)})? This cannot be undone.</p>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Delete transaction for <span className="text-text-primary font-semibold">{deleteTxn.product_name}</span> ({fmt(deleteTxn.consolidated_amount)})? This cannot be undone.</p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteTxn(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>Cancel</button>
-              <button onClick={handleDelete} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)' }}>
+              <button onClick={() => setDeleteTxn(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
+              <button onClick={handleDelete} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-text-primary disabled:opacity-50" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)' }}>
                 {saving ? 'Deleting...' : 'Delete'}
               </button>
             </div>

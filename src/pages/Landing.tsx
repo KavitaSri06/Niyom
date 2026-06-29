@@ -2,6 +2,7 @@ import { ArrowRight, Shield, Target, Zap, TrendingUp, Users, Award, Instagram, L
 import { useState, useEffect } from 'react';
 import { Logo } from '../components/Logo';
 import { RegulatoryInfo } from '../components/RegulatoryInfo';
+import { ThemeToggle } from '../theme/ThemeToggle';
 
 interface LandingProps {
   onGetStarted: () => void;
@@ -33,7 +34,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-bg-base">
       <nav className={`bg-black text-white shadow-lg sticky top-0 z-50 ${isLoaded ? 'animate-fadeIn' : 'opacity-0'}`}>
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center px-6 py-5">
@@ -49,6 +50,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
             </button>
 
             <div className="hidden md:flex items-center gap-3">
+              <ThemeToggle variant="icon" />
               <div className="relative">
                 <button
                   onMouseEnter={() => setIsEmployeeDropdownOpen(true)}
@@ -66,13 +68,13 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                   >
                     <button
                       onClick={() => window.open('https://www.zoho.com/people/login.html', '_blank')}
-                      className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-white/5 transition-colors duration-200 first:rounded-t-md"
+                      className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-bg-elevated/5 transition-colors duration-200 first:rounded-t-md"
                     >
                       HRM
                     </button>
                     <button
                       onClick={() => { window.location.href = '/crm'; }}
-                      className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-white/5 transition-colors duration-200 last:rounded-b-md"
+                      className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-bg-elevated/5 transition-colors duration-200 last:rounded-b-md"
                     >
                       CRM
                     </button>
@@ -149,25 +151,25 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                 >
                   <button
                     onClick={() => onNavigate('mutual-funds')}
-                    className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-white/5 transition-colors duration-200 first:rounded-t-md"
+                    className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-bg-elevated/5 transition-colors duration-200 first:rounded-t-md"
                   >
                     Mutual Funds
                   </button>
                   <button
                     onClick={() => onNavigate('primary-bonds')}
-                    className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-white/5 transition-colors duration-200"
+                    className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-bg-elevated/5 transition-colors duration-200"
                   >
                     Primary Bonds
                   </button>
                   <button
                     onClick={() => onNavigate('fixed-deposits')}
-                    className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-white/5 transition-colors duration-200"
+                    className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-bg-elevated/5 transition-colors duration-200"
                   >
                     Fixed Deposits
                   </button>
                   <button
                     onClick={() => onNavigate('insurance')}
-                    className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-white/5 transition-colors duration-200 last:rounded-b-md"
+                    className="w-full text-left px-4 py-3 text-white hover:text-[#c9b896] hover:bg-bg-elevated/5 transition-colors duration-200 last:rounded-b-md"
                   >
                     Insurance
                   </button>
@@ -191,7 +193,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                   scrollToSection('home');
                   setIsMobileMenuOpen(false);
                 }}
-                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-white/5 rounded transition-colors"
+                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-bg-elevated/5 rounded transition-colors"
               >
                 Home
               </button>
@@ -200,7 +202,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                   scrollToSection('services');
                   setIsMobileMenuOpen(false);
                 }}
-                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-white/5 rounded transition-colors"
+                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-bg-elevated/5 rounded transition-colors"
               >
                 Services
               </button>
@@ -209,7 +211,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                   onViewLearning();
                   setIsMobileMenuOpen(false);
                 }}
-                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-white/5 rounded transition-colors"
+                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-bg-elevated/5 rounded transition-colors"
               >
                 Learning
               </button>
@@ -218,7 +220,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                   onViewNews();
                   setIsMobileMenuOpen(false);
                 }}
-                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-white/5 rounded transition-colors"
+                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-bg-elevated/5 rounded transition-colors"
               >
                 News
               </button>
@@ -227,7 +229,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                   onViewMFResearch();
                   setIsMobileMenuOpen(false);
                 }}
-                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-white/5 rounded transition-colors"
+                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-bg-elevated/5 rounded transition-colors"
               >
                 MF Research
               </button>
@@ -236,7 +238,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                   onViewCalculator();
                   setIsMobileMenuOpen(false);
                 }}
-                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-white/5 rounded transition-colors"
+                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-bg-elevated/5 rounded transition-colors"
               >
                 Calculator
               </button>
@@ -271,7 +273,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                     onNavigate('mutual-funds');
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full text-white hover:text-[#c9b896] font-medium py-3 px-6 text-left hover:bg-white/5 rounded transition-colors"
+                  className="w-full text-white hover:text-[#c9b896] font-medium py-3 px-6 text-left hover:bg-bg-elevated/5 rounded transition-colors"
                 >
                   Mutual Funds
                 </button>
@@ -280,7 +282,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                     onNavigate('primary-bonds');
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full text-white hover:text-[#c9b896] font-medium py-3 px-6 text-left hover:bg-white/5 rounded transition-colors"
+                  className="w-full text-white hover:text-[#c9b896] font-medium py-3 px-6 text-left hover:bg-bg-elevated/5 rounded transition-colors"
                 >
                   Primary Bonds
                 </button>
@@ -289,7 +291,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                     onNavigate('fixed-deposits');
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full text-white hover:text-[#c9b896] font-medium py-3 px-6 text-left hover:bg-white/5 rounded transition-colors"
+                  className="w-full text-white hover:text-[#c9b896] font-medium py-3 px-6 text-left hover:bg-bg-elevated/5 rounded transition-colors"
                 >
                   Fixed Deposits
                 </button>
@@ -298,7 +300,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                     onNavigate('insurance');
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full text-white hover:text-[#c9b896] font-medium py-3 px-6 text-left hover:bg-white/5 rounded transition-colors"
+                  className="w-full text-white hover:text-[#c9b896] font-medium py-3 px-6 text-left hover:bg-bg-elevated/5 rounded transition-colors"
                 >
                   Insurance
                 </button>
@@ -308,7 +310,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                   scrollToSection('contact');
                   setIsMobileMenuOpen(false);
                 }}
-                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-white/5 rounded transition-colors"
+                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-bg-elevated/5 rounded transition-colors"
               >
                 Contact
               </button>
@@ -351,9 +353,9 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
         </div>
       </section>
 
-      <section id="services" className="py-20 px-6 bg-gradient-to-b from-white to-gray-50">
+      <section id="services" className="py-20 px-6 bg-gradient-to-b from-bg-base to-bg-raised">
         <div className="max-w-7xl mx-auto">
-          <h3 className={`text-4xl font-bold text-center text-black mb-4 ${isLoaded ? 'animate-fadeInUp' : 'opacity-0'}`} style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+          <h3 className={`text-4xl font-bold text-center text-text-primary mb-4 ${isLoaded ? 'animate-fadeInUp' : 'opacity-0'}`} style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
             Our Services
           </h3>
           <div className={`w-24 h-1 bg-[#c9b896] mx-auto mb-16 ${isLoaded ? 'animate-scaleIn animate-delay-200' : 'opacity-0'}`}></div>
@@ -366,17 +368,17 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
               { icon: Award, title: 'Tax Information', desc: 'General information on tax-efficient investment structures', img: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=400' },
               { icon: Zap, title: 'Alternative Products', desc: 'Distribution of secondary bonds, unlisted shares, and pre-IPO opportunities', img: 'https://images.pexels.com/photos/7567565/pexels-photo-7567565.jpeg?auto=compress&cs=tinysrgb&w=400' },
             ].map((service, i) => (
-              <div key={i} className={`group bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 ${isLoaded ? `animate-fadeInUp animate-delay-${(i + 3) * 100}` : 'opacity-0'}`}>
+              <div key={i} className={`group bg-bg-elevated rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-border-subtle ${isLoaded ? `animate-fadeInUp animate-delay-${(i + 3) * 100}` : 'opacity-0'}`}>
                 <div className="h-48 overflow-hidden">
                   <img src={service.img} alt={service.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                 </div>
                 <div className="p-6">
-                  <service.icon className="w-12 h-12 text-[#c9b896] mb-4" />
-                  <h4 className="text-xl font-bold text-black mb-3" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>{service.title}</h4>
-                  <p className="text-gray-600 leading-relaxed mb-4">{service.desc}</p>
+                  <service.icon className="w-12 h-12 text-accent-soft mb-4" />
+                  <h4 className="text-xl font-bold text-text-primary mb-3" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>{service.title}</h4>
+                  <p className="text-text-secondary leading-relaxed mb-4">{service.desc}</p>
                   <button
                     onClick={onViewServices}
-                    className="w-full bg-black hover:bg-[#c9b896] text-white hover:text-black font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group"
+                    className="w-full bg-text-primary text-bg-elevated hover:bg-accent hover:text-on-accent font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group"
                   >
                     View Details <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                   </button>
@@ -433,9 +435,9 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
         </div>
       </section>
 
-      <section id="contact" className="py-20 px-6 bg-white">
+      <section id="contact" className="py-20 px-6 bg-bg-base">
         <div className="max-w-4xl mx-auto">
-          <h3 className="text-4xl font-bold text-center text-black mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+          <h3 className="text-4xl font-bold text-center text-text-primary mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
             Get in Touch
           </h3>
           <div className="w-24 h-1 bg-[#c9b896] mx-auto mb-16"></div>
@@ -496,7 +498,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
           </div>
 
           <div className="mt-12 text-center">
-            <p className="text-gray-600 text-lg leading-relaxed max-w-2xl mx-auto">
+            <p className="text-text-secondary text-lg leading-relaxed max-w-2xl mx-auto">
               We're here to answer your questions and help you achieve your financial goals. Reach out to us via phone, email, or WhatsApp, and our team will get back to you promptly.
             </p>
           </div>
@@ -510,7 +512,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
               <Logo size="sm" />
               <div>
                 <h2 className="text-xl font-bold" style={{ fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.1em' }}>NIYOM WEALTH</h2>
-                <p className="text-gray-400 text-sm mt-1">Distribution LLP</p>
+                <p className="text-text-muted text-sm mt-1">Distribution LLP</p>
               </div>
             </div>
 
@@ -519,25 +521,25 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
               <div className="flex flex-col space-y-2">
                 <button
                   onClick={() => onNavigate('privacy')}
-                  className="text-gray-400 hover:text-[#c9b896] transition-colors text-left"
+                  className="text-text-muted hover:text-[#c9b896] transition-colors text-left"
                 >
                   Privacy Policy
                 </button>
                 <button
                   onClick={() => onNavigate('terms')}
-                  className="text-gray-400 hover:text-[#c9b896] transition-colors text-left"
+                  className="text-text-muted hover:text-[#c9b896] transition-colors text-left"
                 >
                   Terms of Use
                 </button>
                 <button
                   onClick={() => onNavigate('risk')}
-                  className="text-gray-400 hover:text-[#c9b896] transition-colors text-left"
+                  className="text-text-muted hover:text-[#c9b896] transition-colors text-left"
                 >
                   Risk Disclosure
                 </button>
                 <button
                   onClick={() => onNavigate('disclaimer')}
-                  className="text-gray-400 hover:text-[#c9b896] transition-colors text-left"
+                  className="text-text-muted hover:text-[#c9b896] transition-colors text-left"
                 >
                   Disclaimer
                 </button>
@@ -551,7 +553,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                   href="https://www.linkedin.com/company/niyom-wealth/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-gray-400 hover:text-[#c9b896] transition-colors justify-center md:justify-start group"
+                  className="flex items-center gap-2 text-text-muted hover:text-[#c9b896] transition-colors justify-center md:justify-start group"
                 >
                   <Linkedin size={20} className="group-hover:scale-110 transition-transform duration-300" />
                   <span>LinkedIn</span>
@@ -560,7 +562,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
                   href="https://www.instagram.com/niyom_wealth?igsh=MXRvaXB2ejJ0Z2h1cA=="
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-gray-400 hover:text-[#c9b896] transition-colors justify-center md:justify-start group"
+                  className="flex items-center gap-2 text-text-muted hover:text-[#c9b896] transition-colors justify-center md:justify-start group"
                 >
                   <Instagram size={20} className="group-hover:scale-110 transition-transform duration-300" />
                   <span>Instagram</span>
@@ -571,12 +573,12 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
 
           <RegulatoryInfo />
 
-          <div className="text-center text-gray-400 pt-8 border-t border-gray-800">
+          <div className="text-center text-text-muted pt-8 border-t border-gray-800">
             <p className="text-sm">&copy; 2025 Niyom Wealth Distribution LLP. All rights reserved.</p>
             <p className="text-xs mt-3 text-yellow-400 font-semibold">
               SEBI Disclaimer: We are not SEBI Registered Investment Advisers.
             </p>
-            <p className="text-xs mt-2 text-gray-500">
+            <p className="text-xs mt-2 text-text-muted">
               Investments in securities market are subject to market risks. Read all scheme related documents carefully before investing. We do not provide personalized investment advice. All information provided is for educational and informational purposes only. Please consult a qualified financial advisor before making investment decisions.
             </p>
           </div>

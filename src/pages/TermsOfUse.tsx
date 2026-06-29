@@ -16,7 +16,7 @@ export function TermsOfUse({ onClose }: TermsOfUseProps) {
     <LegalDocumentLayout
       title="Terms of Use"
       subtitle="Niyom Wealth Distribution LLP"
-      icon={<Scale className="w-16 h-16 text-slate-700" strokeWidth={1.5} />}
+      icon={<Scale className="w-16 h-16 text-text-secondary" strokeWidth={1.5} />}
       onClose={onClose}
     >
       <LegalSection number="1" title="Acceptance of Terms">
@@ -48,7 +48,7 @@ export function TermsOfUse({ onClose }: TermsOfUseProps) {
           'Financial planning and portfolio management',
           'Educational resources and market research'
         ]} />
-        <p className="mt-4 italic text-slate-600">
+        <p className="mt-4 italic text-text-secondary">
           These services are subject to regulatory approvals and compliance requirements.
         </p>
       </LegalSection>

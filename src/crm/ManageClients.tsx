@@ -11,10 +11,10 @@ const PAGE_SIZE = 10;
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)' }}>
-      <div className="w-full max-w-2xl rounded-2xl overflow-hidden max-h-[90vh] flex flex-col" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-        <div className="px-6 py-4 flex items-center justify-between flex-shrink-0" style={{ borderBottom: '1px solid #1E1E24' }}>
-          <h3 className="text-sm font-bold text-white">{title}</h3>
-          <button onClick={onClose} style={{ color: '#4A4A4A' }}><X className="w-5 h-5" /></button>
+      <div className="w-full max-w-2xl rounded-2xl overflow-hidden max-h-[90vh] flex flex-col" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+        <div className="px-6 py-4 flex items-center justify-between flex-shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+          <h3 className="text-sm font-bold text-text-primary">{title}</h3>
+          <button onClick={onClose} style={{ color: 'var(--text-faint)' }}><X className="w-5 h-5" /></button>
         </div>
         <div className="overflow-y-auto flex-1">{children}</div>
       </div>
@@ -195,17 +195,17 @@ export default function ManageClients({ employee }: Props) {
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  const inputStyle = { background: '#0D0D0D', border: '1px solid #1E1E24', color: '#fff' };
+  const inputStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-primary)' };
   const InlineField = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div>
-      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>{label}</label>
+      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>{label}</label>
       {children}
     </div>
   );
   const EditDupWarn = ({ msg }: { msg: string | null }) => !msg ? null : (
     <div className="mt-1.5 flex items-start gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.25)' }}>
-      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: '#FBBF24' }} />
-      <p className="text-xs" style={{ color: '#FBBF24' }}>{msg}</p>
+      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: 'rgb(var(--warning-soft-rgb))' }} />
+      <p className="text-xs" style={{ color: 'rgb(var(--warning-soft-rgb))' }}>{msg}</p>
     </div>
   );
 
@@ -213,38 +213,38 @@ export default function ManageClients({ employee }: Props) {
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Clients</p>
-          <h1 className="text-2xl font-bold text-white">Manage Clients</h1>
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Clients</p>
+          <h1 className="text-2xl font-bold text-text-primary">Manage Clients</h1>
         </div>
-        <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
+        <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
           <Download className="w-4 h-4" /> Export CSV
         </button>
       </div>
 
       {toast && (
         <div className="p-3 rounded-xl flex items-center gap-2" style={{ background: toast.ok ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${toast.ok ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
-          {toast.ok ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-red-400" />}
-          <p className={`text-sm ${toast.ok ? 'text-emerald-400' : 'text-red-400'}`}>{toast.msg}</p>
+          {toast.ok ? <CheckCircle2 className="w-4 h-4 text-c-emerald" /> : <AlertCircle className="w-4 h-4 text-c-red" />}
+          <p className={`text-sm ${toast.ok ? 'text-c-emerald' : 'text-c-red'}`}>{toast.msg}</p>
         </div>
       )}
 
       {/* Search + Employee Filter */}
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, code, email, phone, PAN..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-white outline-none"
-            style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
           />
         </div>
         {isAdmin && (
           <div className="relative flex-shrink-0">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: '#4A4A4A' }} />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: 'var(--text-faint)' }} />
             <select
               value={employeeFilter}
               onChange={e => setEmployeeFilter(e.target.value)}
-              className="pl-8 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-              style={{ background: '#0B0B0F', border: '1px solid #1E1E24', minWidth: '180px' }}
+              className="pl-8 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', minWidth: '180px' }}
             >
               <option value="all">All Employees</option>
               {employees.map(e => (
@@ -257,48 +257,48 @@ export default function ManageClients({ employee }: Props) {
       </div>
 
       {/* Table */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 {['Client', 'Code', ...(isAdmin ? ['Employee'] : []), 'Portfolio', 'Status', 'Date', 'Actions'].map(h => (
-                  <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                  <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={isAdmin ? 7 : 6} className="text-center py-12"><div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin mx-auto" style={{ borderColor: '#D4AF37', borderTopColor: 'transparent' }} /></td></tr>
+                <tr><td colSpan={isAdmin ? 7 : 6} className="text-center py-12"><div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin mx-auto" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} /></td></tr>
               ) : clients.length === 0 ? (
-                <tr><td colSpan={isAdmin ? 7 : 6} className="text-center py-12 text-sm" style={{ color: '#4A4A4A' }}>No clients found</td></tr>
+                <tr><td colSpan={isAdmin ? 7 : 6} className="text-center py-12 text-sm" style={{ color: 'var(--text-faint)' }}>No clients found</td></tr>
               ) : clients.map(c => (
-                <tr key={c.id} className="transition-colors" style={{ borderBottom: '1px solid #111' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#0D0D0D')}
+                <tr key={c.id} className="transition-colors" style={{ borderBottom: '1px solid var(--bg-raised)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <td className="px-5 py-3.5">
-                    <p className="text-sm font-medium text-white">{c.full_name}</p>
-                    <p className="text-xs" style={{ color: '#4A4A4A' }}>{c.phone || c.email || '—'}</p>
+                    <p className="text-sm font-medium text-text-primary">{c.full_name}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{c.phone || c.email || '—'}</p>
                   </td>
-                  <td className="px-5 py-3.5"><span className="text-xs font-mono px-2 py-1 rounded" style={{ background: '#111', color: '#D4AF37' }}>{c.client_code}</span></td>
-                  {isAdmin && <td className="px-5 py-3.5 text-xs" style={{ color: '#8A8A8A' }}>{(c.employee as any)?.full_name || 'Admin'}</td>}
-                  <td className="px-5 py-3.5 text-sm font-semibold text-white">{fmt(c.portfolio_value || 0)}</td>
+                  <td className="px-5 py-3.5"><span className="text-xs font-mono px-2 py-1 rounded" style={{ background: 'var(--bg-raised)', color: 'var(--accent)' }}>{c.client_code}</span></td>
+                  {isAdmin && <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-secondary)' }}>{(c.employee as any)?.full_name || 'Admin'}</td>}
+                  <td className="px-5 py-3.5 text-sm font-semibold text-text-primary">{fmt(c.portfolio_value || 0)}</td>
                   <td className="px-5 py-3.5">
                     <span className={`text-xs font-semibold px-2 py-1 rounded-lg border ${VERIFICATION_COLORS[c.verification_status]}`}>
                       {VERIFICATION_LABELS[c.verification_status]}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5 text-xs" style={{ color: '#6B6B6B' }}>{fmtDate(c.created_at)}</td>
+                  <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-muted)' }}>{fmtDate(c.created_at)}</td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => setViewClient(c)} className="p-1.5 rounded-lg transition-colors" title="View Details" style={{ color: '#4A4A4A' }} onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')} onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}><Eye className="w-4 h-4" /></button>
-                      <button onClick={() => onNavigate('documents', { clientId: c.id })} className="p-1.5 rounded-lg transition-colors" title="View Documents" style={{ color: '#4A4A4A' }} onMouseEnter={e => (e.currentTarget.style.color = '#10B981')} onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}><FolderOpen className="w-4 h-4" /></button>
-                      <button onClick={() => handleEdit(c)} className="p-1.5 rounded-lg transition-colors" title="Edit" style={{ color: '#4A4A4A' }} onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')} onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => setViewClient(c)} className="p-1.5 rounded-lg transition-colors" title="View Details" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Eye className="w-4 h-4" /></button>
+                      <button onClick={() => onNavigate('documents', { clientId: c.id })} className="p-1.5 rounded-lg transition-colors" title="View Documents" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--success)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><FolderOpen className="w-4 h-4" /></button>
+                      <button onClick={() => handleEdit(c)} className="p-1.5 rounded-lg transition-colors" title="Edit" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'rgb(var(--info-soft-rgb))')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Pencil className="w-4 h-4" /></button>
                       {c.client_login_enabled
-                        ? <button onClick={() => handleResetClientPassword(c)} className="p-1.5 rounded-lg transition-colors" title="Send Password Reset Email" style={{ color: '#4A4A4A' }} onMouseEnter={e => (e.currentTarget.style.color = '#10B981')} onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}><ShieldCheck className="w-4 h-4" /></button>
-                        : <button onClick={() => { setLoginClient(c); setLoginPassword(''); setShowLoginPw(false); }} className="p-1.5 rounded-lg transition-colors" title="Enable Client Login" style={{ color: '#4A4A4A' }} onMouseEnter={e => (e.currentTarget.style.color = '#f59e0b')} onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}><KeyRound className="w-4 h-4" /></button>
+                        ? <button onClick={() => handleResetClientPassword(c)} className="p-1.5 rounded-lg transition-colors" title="Send Password Reset Email" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--success)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><ShieldCheck className="w-4 h-4" /></button>
+                        : <button onClick={() => { setLoginClient(c); setLoginPassword(''); setShowLoginPw(false); }} className="p-1.5 rounded-lg transition-colors" title="Enable Client Login" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--warning)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><KeyRound className="w-4 h-4" /></button>
                       }
-                      {isAdmin && <button onClick={() => setDeleteClient(c)} className="p-1.5 rounded-lg transition-colors" title="Delete" style={{ color: '#4A4A4A' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}><Trash2 className="w-4 h-4" /></button>}
+                      {isAdmin && <button onClick={() => setDeleteClient(c)} className="p-1.5 rounded-lg transition-colors" title="Delete" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Trash2 className="w-4 h-4" /></button>}
                     </div>
                   </td>
                 </tr>
@@ -308,12 +308,12 @@ export default function ManageClients({ employee }: Props) {
         </div>
 
         {/* Pagination */}
-        <div className="px-5 py-3.5 flex items-center justify-between" style={{ borderTop: '1px solid #1A1A1A' }}>
-          <p className="text-xs" style={{ color: '#4A4A4A' }}>Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}</p>
+        <div className="px-5 py-3.5 flex items-center justify-between" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}</p>
           <div className="flex items-center gap-2">
-            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="p-1.5 rounded-lg disabled:opacity-30" style={{ color: '#6B6B6B', border: '1px solid #1E1E24' }}><ChevronLeft className="w-4 h-4" /></button>
-            <span className="text-xs text-white">{page + 1} / {totalPages || 1}</span>
-            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="p-1.5 rounded-lg disabled:opacity-30" style={{ color: '#6B6B6B', border: '1px solid #1E1E24' }}><ChevronRight className="w-4 h-4" /></button>
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="p-1.5 rounded-lg disabled:opacity-30" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}><ChevronLeft className="w-4 h-4" /></button>
+            <span className="text-xs text-text-primary">{page + 1} / {totalPages || 1}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="p-1.5 rounded-lg disabled:opacity-30" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}><ChevronRight className="w-4 h-4" /></button>
           </div>
         </div>
       </div>
@@ -329,12 +329,12 @@ export default function ManageClients({ employee }: Props) {
               { title: 'Account', rows: [['Client Code', viewClient.client_code], ['Portfolio', fmt(viewClient.portfolio_value || 0)], ['Status', VERIFICATION_LABELS[viewClient.verification_status]], ['Created', fmtDate(viewClient.created_at)]] },
             ].map(s => (
               <div key={s.title}>
-                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#D4AF37' }}>{s.title}</p>
-                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1A1A1A' }}>
+                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>{s.title}</p>
+                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-subtle)' }}>
                   {s.rows.map(([k, v]) => (
-                    <div key={k} className="flex gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid #0D0D0D' }}>
-                      <p className="text-xs w-28 flex-shrink-0" style={{ color: '#4A4A4A' }}>{k}</p>
-                      <p className="text-xs text-white">{v || '—'}</p>
+                    <div key={k} className="flex gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid var(--bg-surface)' }}>
+                      <p className="text-xs w-28 flex-shrink-0" style={{ color: 'var(--text-faint)' }}>{k}</p>
+                      <p className="text-xs text-text-primary">{v || '—'}</p>
                     </div>
                   ))}
                 </div>
@@ -342,14 +342,14 @@ export default function ManageClients({ employee }: Props) {
             ))}
             {viewClient.notes && (
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#D4AF37' }}>Notes</p>
-                <p className="text-sm" style={{ color: '#8A8A8A' }}>{viewClient.notes}</p>
+                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>Notes</p>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{viewClient.notes}</p>
               </div>
             )}
-            <div className="pt-2" style={{ borderTop: '1px solid #1A1A1A' }}>
+            <div className="pt-2" style={{ borderTop: '1px solid var(--border-subtle)' }}>
               <button onClick={() => { setViewClient(null); onNavigate('documents', { clientId: viewClient.id }); }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                style={{ background: 'rgba(16,185,129,0.08)', color: '#10B981', border: '1px solid rgba(16,185,129,0.2)' }}>
+                style={{ background: 'rgba(16,185,129,0.08)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.2)' }}>
                 <FolderOpen className="w-4 h-4" /> View Documents
               </button>
             </div>
@@ -369,29 +369,29 @@ export default function ManageClients({ employee }: Props) {
               ].map(([label, key, type]) => (
                 <InlineField key={key} label={label}>
                   <input type={type} value={(editForm as any)[key] || ''} onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none"
+                    className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none"
                     style={inputStyle}
                   />
                 </InlineField>
               ))}
               <InlineField label="Email">
                 <input type="email" value={editForm.email || ''} onChange={e => onEditFieldChange('email', e.target.value, editClient!.id)}
-                  className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={inputStyle} />
+                  className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none" style={inputStyle} />
                 <EditDupWarn msg={editDupWarnings.email} />
               </InlineField>
               <InlineField label="Phone">
                 <input type="tel" value={editForm.phone || ''} onChange={e => onEditFieldChange('phone', e.target.value.replace(/\D/g, '').slice(0, 10), editClient!.id)}
-                  className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={inputStyle} />
+                  className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none" style={inputStyle} />
                 <EditDupWarn msg={editDupWarnings.phone} />
               </InlineField>
               <InlineField label="PAN">
                 <input type="text" value={editForm.pan || ''} onChange={e => onEditFieldChange('pan', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10), editClient!.id)}
-                  className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={inputStyle} />
+                  className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none" style={inputStyle} />
                 <EditDupWarn msg={editDupWarnings.pan} />
               </InlineField>
               <InlineField label="Verification Status">
                 <select value={editForm.verification_status || 'pending'} onChange={e => setEditForm(f => ({ ...f, verification_status: e.target.value as any }))}
-                  className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none"
+                  className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none"
                   style={inputStyle}>
                   <option value="pending">Pending</option>
                   <option value="partial">Partial</option>
@@ -402,13 +402,13 @@ export default function ManageClients({ employee }: Props) {
             </div>
             <InlineField label="Notes">
               <textarea value={editForm.notes || ''} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} rows={3}
-                className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none resize-none"
+                className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none resize-none"
                 style={inputStyle}
               />
             </InlineField>
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setEditClient(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>Cancel</button>
-              <button onClick={handleSaveEdit} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-black disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+              <button onClick={() => setEditClient(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
+              <button onClick={handleSaveEdit} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
@@ -420,31 +420,31 @@ export default function ManageClients({ employee }: Props) {
       {loginClient && (
         <Modal title={`Enable Portal Login — ${loginClient.full_name}`} onClose={() => setLoginClient(null)}>
           <div className="p-6 space-y-5">
-            <div className="p-4 rounded-xl" style={{ background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.15)' }}>
+            <div className="p-4 rounded-xl" style={{ background: 'rgba(var(--accent-rgb),0.05)', border: '1px solid rgba(var(--accent-rgb),0.15)' }}>
               <div className="flex items-start gap-3">
-                <KeyRound className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#D4AF37' }} />
-                <div className="text-xs space-y-1" style={{ color: '#8A8A8A' }}>
-                  <p><span className="text-white font-semibold">Login ID:</span> {loginClient.pan}</p>
-                  <p><span className="text-white font-semibold">Email:</span> {loginClient.email}</p>
-                  <p className="mt-1.5" style={{ color: '#4A4A4A' }}>The client will use their PAN number to log in and will be prompted to change this password on first login.</p>
+                <KeyRound className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--accent)' }} />
+                <div className="text-xs space-y-1" style={{ color: 'var(--text-secondary)' }}>
+                  <p><span className="text-text-primary font-semibold">Login ID:</span> {loginClient.pan}</p>
+                  <p><span className="text-text-primary font-semibold">Email:</span> {loginClient.email}</p>
+                  <p className="mt-1.5" style={{ color: 'var(--text-faint)' }}>The client will use their PAN number to log in and will be prompted to change this password on first login.</p>
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>First-Time Password <span style={{ color: '#D4AF37' }}>*</span></label>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>First-Time Password <span style={{ color: 'var(--accent)' }}>*</span></label>
               <div className="relative">
                 <input
                   type={showLoginPw ? 'text' : 'password'}
                   value={loginPassword}
                   onChange={e => setLoginPassword(e.target.value)}
                   placeholder="Min 8 characters"
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none"
-                  style={{ background: '#0D0D0D', border: '1px solid #1E1E24', paddingRight: '2.75rem' }}
-                  onFocus={e => (e.target.style.borderColor = '#D4AF37')}
-                  onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+                  style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', paddingRight: '2.75rem' }}
+                  onFocus={e => (e.target.style.borderColor = 'var(--accent)')}
+                  onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                 />
-                <button type="button" onClick={() => setShowLoginPw(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: '#4A4A4A' }}>
+                <button type="button" onClick={() => setShowLoginPw(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }}>
                   {showLoginPw ? <ShieldOff className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
                 </button>
               </div>
@@ -452,8 +452,8 @@ export default function ManageClients({ employee }: Props) {
                 {[
                   { text: 'At least 8 characters', met: loginPassword.length >= 8 },
                 ].map(r => (
-                  <p key={r.text} className="text-xs flex items-center gap-1.5" style={{ color: r.met ? '#10B981' : '#4A4A4A' }}>
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: r.met ? '#10B981' : '#4A4A4A' }} />
+                  <p key={r.text} className="text-xs flex items-center gap-1.5" style={{ color: r.met ? 'var(--success)' : 'var(--text-faint)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: r.met ? 'var(--success)' : 'var(--text-faint)' }} />
                     {r.text}
                   </p>
                 ))}
@@ -461,10 +461,10 @@ export default function ManageClients({ employee }: Props) {
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setLoginClient(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>Cancel</button>
+              <button onClick={() => setLoginClient(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
               <button onClick={handleEnableLogin} disabled={loginSaving || loginPassword.length < 8}
-                className="px-5 py-2.5 rounded-xl text-sm font-bold text-black disabled:opacity-50 flex items-center gap-2"
-                style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+                className="px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50 flex items-center gap-2"
+                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
                 {loginSaving ? 'Enabling...' : <><KeyRound className="w-3.5 h-3.5" /> Enable Login</>}
               </button>
             </div>
@@ -476,12 +476,12 @@ export default function ManageClients({ employee }: Props) {
       {deleteClient && (
         <Modal title="Delete Client" onClose={() => setDeleteClient(null)}>
           <div className="p-6 space-y-4">
-            <p className="text-sm" style={{ color: '#8A8A8A' }}>
-              Are you sure you want to delete <span className="text-white font-semibold">{deleteClient.full_name}</span>? This will also delete all their holdings, transactions, and documents. This action cannot be undone.
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              Are you sure you want to delete <span className="text-text-primary font-semibold">{deleteClient.full_name}</span>? This will also delete all their holdings, transactions, and documents. This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteClient(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>Cancel</button>
-              <button onClick={handleDelete} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)' }}>
+              <button onClick={() => setDeleteClient(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
+              <button onClick={handleDelete} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-text-primary disabled:opacity-50" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)' }}>
                 {saving ? 'Deleting...' : 'Delete Client'}
               </button>
             </div>

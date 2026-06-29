@@ -119,7 +119,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-100">
+    <div className="min-h-screen bg-bg-base">
       <nav className="bg-black text-white py-5 px-6 shadow-lg sticky top-0 z-50 relative">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <button
@@ -170,20 +170,20 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
           <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
             Alternative Investment Products
           </h2>
-          <p className="text-gray-300">
+          <p className="text-text-faint">
             View and access unlisted shares and secondary market bonds. All investments carry high risk.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted" size={20} />
             <input
               type="text"
               placeholder={`Search ${activeTab === 'shares' ? 'companies, symbols, sectors' : 'bonds, issuers, ISIN'}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#c9b896] focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 border border-border-strong rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
             />
           </div>
           <div className="flex gap-2">
@@ -191,8 +191,8 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
               onClick={() => setActiveTab('shares')}
               className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
                 activeTab === 'shares'
-                  ? 'bg-[#c9b896] text-black shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  ? 'bg-accent text-on-accent shadow-lg'
+                  : 'bg-bg-elevated text-text-secondary hover:bg-bg-raised'
               }`}
             >
               Unlisted Shares
@@ -201,8 +201,8 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
               onClick={() => setActiveTab('bonds')}
               className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
                 activeTab === 'bonds'
-                  ? 'bg-[#c9b896] text-black shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  ? 'bg-accent text-on-accent shadow-lg'
+                  : 'bg-bg-elevated text-text-secondary hover:bg-bg-raised'
               }`}
             >
               Secondary Bonds
@@ -219,7 +219,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
             {filteredShares.map((share) => (
               <div
                 key={share.id}
-                className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-200 cursor-pointer"
+                className="bg-bg-elevated rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-border cursor-pointer"
                 onClick={() => setSelectedItem(share)}
               >
                 <div className="flex justify-between items-start mb-4">
@@ -230,7 +230,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                           <img
                             src={share.logo_url}
                             alt={`${share.company_name} logo`}
-                            className="w-10 h-10 rounded-lg object-contain border border-gray-200 bg-white"
+                            className="w-10 h-10 rounded-lg object-contain border border-border bg-bg-elevated"
                             crossOrigin="anonymous"
                             referrerPolicy="no-referrer"
                             onError={(e) => {
@@ -251,21 +251,21 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-sm font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                        <span className="text-sm font-bold text-text-muted bg-bg-raised px-2 py-1 rounded">
                           {share.symbol}
                         </span>
-                        <span className="text-xs text-gray-500">{share.sector}</span>
+                        <span className="text-xs text-text-muted">{share.sector}</span>
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900 truncate">{share.company_name}</h3>
+                      <h3 className="text-lg font-bold text-text-primary truncate">{share.company_name}</h3>
                     </div>
                   </div>
-                  <ChevronRight className="text-gray-400 flex-shrink-0 ml-2" size={20} />
+                  <ChevronRight className="text-text-muted flex-shrink-0 ml-2" size={20} />
                 </div>
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">₹{share.current_price.toFixed(2)}</p>
-                    <p className="text-xs text-gray-500">Lot Size: {share.lot_size}</p>
+                    <p className="text-2xl font-bold text-text-primary">₹{share.current_price.toFixed(2)}</p>
+                    <p className="text-xs text-text-muted">Lot Size: {share.lot_size}</p>
                   </div>
                   <div className={`flex items-center gap-1 ${
                     share.price_change_percent >= 0 ? 'text-green-600' : 'text-red-600'
@@ -282,7 +282,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
             {filteredBonds.map((bond) => (
               <div
                 key={bond.id}
-                className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-200 cursor-pointer"
+                className="bg-bg-elevated rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-border cursor-pointer"
                 onClick={() => setSelectedItem(bond)}
               >
                 <div className="flex justify-between items-start mb-4">
@@ -293,7 +293,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                           <img
                             src={bond.logo_url}
                             alt={`${bond.issuer} logo`}
-                            className="w-10 h-10 rounded-lg object-contain border border-gray-200 bg-white"
+                            className="w-10 h-10 rounded-lg object-contain border border-border bg-bg-elevated"
                             crossOrigin="anonymous"
                             referrerPolicy="no-referrer"
                             onError={(e) => {
@@ -317,24 +317,24 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                         <span className="text-sm font-bold text-white bg-black px-2 py-1 rounded">
                           {bond.rating}
                         </span>
-                        <span className="text-xs text-gray-500 truncate">{bond.isin}</span>
+                        <span className="text-xs text-text-muted truncate">{bond.isin}</span>
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900 truncate">{bond.bond_name}</h3>
-                      <p className="text-sm text-gray-600 truncate">{bond.issuer}</p>
+                      <h3 className="text-lg font-bold text-text-primary truncate">{bond.bond_name}</h3>
+                      <p className="text-sm text-text-secondary truncate">{bond.issuer}</p>
                     </div>
                   </div>
-                  <ChevronRight className="text-gray-400 flex-shrink-0 ml-2" size={20} />
+                  <ChevronRight className="text-text-muted flex-shrink-0 ml-2" size={20} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500">Current Yield</p>
-                    <p className="text-xl font-bold text-gray-900">{bond.current_yield.toFixed(2)}%</p>
+                    <p className="text-xs text-text-muted">Current Yield</p>
+                    <p className="text-xl font-bold text-text-primary">{bond.current_yield.toFixed(2)}%</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Price</p>
+                    <p className="text-xs text-text-muted">Price</p>
                     <div className="flex items-center gap-2">
-                      <p className="text-xl font-bold text-gray-900">₹{bond.current_price.toFixed(2)}</p>
+                      <p className="text-xl font-bold text-text-primary">₹{bond.current_price.toFixed(2)}</p>
                       <span className={`text-sm ${
                         bond.price_change_percent >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
@@ -372,7 +372,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
 
           <div className="bg-gradient-to-r from-[#c9b896] to-[#b5a57d] rounded-xl p-8 text-center shadow-lg">
             <h3 className="text-2xl font-bold text-black mb-3">Ready to Proceed?</h3>
-            <p className="text-gray-900 mb-6">Complete KYC to access product information and place orders</p>
+            <p className="text-text-primary mb-6">Complete KYC to access product information and place orders</p>
             <div className="flex flex-wrap justify-center gap-4">
               <button
                 onClick={onNavigateToSignUp}
@@ -382,7 +382,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
               </button>
               <button
                 onClick={onNavigateToKYC}
-                className="bg-white text-black px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-all duration-300 shadow-md"
+                className="bg-bg-elevated text-text-primary px-8 py-3 rounded-lg font-semibold hover:bg-bg-raised transition-all duration-300 shadow-md"
               >
                 Complete KYC
               </button>
@@ -393,7 +393,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
 
       {selectedItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedItem(null)}>
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-bg-elevated rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-gradient-to-r from-black to-gray-900 text-white p-6 rounded-t-xl">
               <div className="flex justify-between items-start gap-4">
                 <div className="flex items-start gap-4 flex-1">
@@ -403,7 +403,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                         <img
                           src={selectedItem.logo_url}
                           alt={`${isShare(selectedItem) ? selectedItem.company_name : selectedItem.issuer} logo`}
-                          className="w-16 h-16 rounded-lg object-contain border-2 border-[#c9b896] bg-white"
+                          className="w-16 h-16 rounded-lg object-contain border-2 border-[#c9b896] bg-bg-elevated"
                           crossOrigin="anonymous"
                           referrerPolicy="no-referrer"
                           onError={(e) => {
@@ -439,14 +439,14 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                         <span className="bg-[#c9b896] text-black px-3 py-1 rounded-full text-sm font-semibold">
                           {selectedItem.symbol}
                         </span>
-                        <span className="text-sm text-gray-300">{selectedItem.sector}</span>
+                        <span className="text-sm text-text-faint">{selectedItem.sector}</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="bg-[#c9b896] text-black px-3 py-1 rounded-full text-sm font-semibold">
                           {selectedItem.rating}
                         </span>
-                        <span className="text-sm text-gray-300">{selectedItem.issuer}</span>
+                        <span className="text-sm text-text-faint">{selectedItem.issuer}</span>
                       </div>
                     )}
                   </div>
@@ -464,10 +464,10 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
               {isShare(selectedItem) ? (
                 <>
                   <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="bg-bg-base p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <IndianRupee size={20} className="text-[#c9b896]" />
-                        <p className="text-sm text-gray-600">Current Price</p>
+                        <IndianRupee size={20} className="text-accent" />
+                        <p className="text-sm text-text-secondary">Current Price</p>
                       </div>
                       <p className="text-2xl font-bold">₹{selectedItem.current_price.toFixed(2)}</p>
                       <p className={`text-sm ${
@@ -476,22 +476,22 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                         {selectedItem.price_change_percent >= 0 ? '+' : ''}{selectedItem.price_change_percent.toFixed(2)}%
                       </p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="bg-bg-base p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <Info size={20} className="text-[#c9b896]" />
-                        <p className="text-sm text-gray-600">Lot Size</p>
+                        <Info size={20} className="text-accent" />
+                        <p className="text-sm text-text-secondary">Lot Size</p>
                       </div>
                       <p className="text-2xl font-bold">{selectedItem.lot_size}</p>
-                      <p className="text-sm text-gray-600">Min. Investment: ₹{(selectedItem.current_price * selectedItem.lot_size).toFixed(2)}</p>
+                      <p className="text-sm text-text-secondary">Min. Investment: ₹{(selectedItem.current_price * selectedItem.lot_size).toFixed(2)}</p>
                     </div>
                   </div>
 
                   <div className="mb-6">
                     <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-                      <Info size={20} className="text-[#c9b896]" />
+                      <Info size={20} className="text-accent" />
                       About the Company
                     </h3>
-                    <p className="text-gray-700">{selectedItem.description}</p>
+                    <p className="text-text-secondary">{selectedItem.description}</p>
                   </div>
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -503,45 +503,45 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="bg-bg-base p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp size={20} className="text-[#c9b896]" />
-                        <p className="text-sm text-gray-600">Current Yield</p>
+                        <TrendingUp size={20} className="text-accent" />
+                        <p className="text-sm text-text-secondary">Current Yield</p>
                       </div>
                       <p className="text-2xl font-bold">{selectedItem.current_yield.toFixed(2)}%</p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="bg-bg-base p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <IndianRupee size={20} className="text-[#c9b896]" />
-                        <p className="text-sm text-gray-600">Current Price</p>
+                        <IndianRupee size={20} className="text-accent" />
+                        <p className="text-sm text-text-secondary">Current Price</p>
                       </div>
                       <p className="text-2xl font-bold">₹{selectedItem.current_price.toFixed(2)}</p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600 mb-1">Coupon Rate</p>
+                    <div className="bg-bg-base p-4 rounded-lg">
+                      <p className="text-sm text-text-secondary mb-1">Coupon Rate</p>
                       <p className="text-xl font-bold">{selectedItem.coupon_rate.toFixed(2)}%</p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600 mb-1">Face Value</p>
+                    <div className="bg-bg-base p-4 rounded-lg">
+                      <p className="text-sm text-text-secondary mb-1">Face Value</p>
                       <p className="text-xl font-bold">₹{selectedItem.face_value}</p>
                     </div>
                   </div>
 
                   <div className="mb-6">
                     <div className="flex items-center gap-2 mb-2">
-                      <Calendar size={20} className="text-[#c9b896]" />
+                      <Calendar size={20} className="text-accent" />
                       <h3 className="text-lg font-bold">Maturity Date</h3>
                     </div>
-                    <p className="text-gray-700">{formatDate(selectedItem.maturity_date)}</p>
+                    <p className="text-text-secondary">{formatDate(selectedItem.maturity_date)}</p>
                   </div>
 
                   <div className="mb-6">
                     <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-                      <Info size={20} className="text-[#c9b896]" />
+                      <Info size={20} className="text-accent" />
                       Bond Details
                     </h3>
-                    <p className="text-gray-700 mb-2">{selectedItem.description}</p>
-                    <p className="text-sm text-gray-600">ISIN: {selectedItem.isin}</p>
+                    <p className="text-text-secondary mb-2">{selectedItem.description}</p>
+                    <p className="text-sm text-text-secondary">ISIN: {selectedItem.isin}</p>
                   </div>
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -568,7 +568,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
               </div>
 
               {!user && (
-                <p className="text-center text-sm text-gray-500 mt-4">
+                <p className="text-center text-sm text-text-muted mt-4">
                   Sign up to start trading
                 </p>
               )}

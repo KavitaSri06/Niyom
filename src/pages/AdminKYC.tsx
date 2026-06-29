@@ -106,23 +106,23 @@ export function AdminKYC({ onClose }: AdminKYCProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-bg-base py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Logo size="lg" />
-            <h1 className="text-4xl font-bold text-black" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>KYC Management</h1>
+            <h1 className="text-4xl font-bold text-text-primary" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>KYC Management</h1>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-text-muted hover:text-text-secondary transition-colors"
             title="Close and return to landing page"
           >
             <X size={32} />
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-t-4 border-[#c9b896]">
+        <div className="bg-bg-elevated rounded-2xl shadow-xl overflow-hidden border-t-4 border-accent">
           <table className="w-full">
             <thead className="bg-black">
               <tr>
@@ -134,22 +134,22 @@ export function AdminKYC({ onClose }: AdminKYCProps) {
                 <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-border">
               {submissions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-600 font-medium">
+                  <td colSpan={6} className="px-6 py-8 text-center text-text-secondary font-medium">
                     No KYC submissions yet
                   </td>
                 </tr>
               ) : (
                 submissions.map(submission => (
-                  <tr key={submission.id} className="hover:bg-[#c9b896]/5 transition-colors">
+                  <tr key={submission.id} className="hover:bg-accent/5 transition-colors">
                     <td className="px-6 py-4">
-                      <p className="font-bold text-black">
+                      <p className="font-bold text-text-primary">
                         {(submission as any).user_profiles?.full_name || 'N/A'}
                       </p>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700 font-medium">
+                    <td className="px-6 py-4 text-sm text-text-secondary font-medium">
                       {(submission as any).user_profiles?.email}
                     </td>
                     <td className="px-6 py-4">
@@ -160,23 +160,23 @@ export function AdminKYC({ onClose }: AdminKYCProps) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700 font-semibold">
+                    <td className="px-6 py-4 text-sm text-text-secondary font-semibold">
                       {submission.pan || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700 font-medium">
+                    <td className="px-6 py-4 text-sm text-text-secondary font-medium">
                       {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="px-6 py-4">
                       {submission.status === 'pending' ? (
                         <button
                           onClick={() => setSelectedId(submission.id)}
-                          className="text-[#c9b896] hover:text-[#b5a57d] font-bold flex items-center gap-1 transition-colors"
+                          className="text-accent hover:text-accent-strong font-bold flex items-center gap-1 transition-colors"
                         >
                           <FileText size={16} />
                           Review
                         </button>
                       ) : (
-                        <span className="text-gray-400 text-sm">—</span>
+                        <span className="text-text-muted text-sm">—</span>
                       )}
                     </td>
                   </tr>
@@ -188,14 +188,14 @@ export function AdminKYC({ onClose }: AdminKYCProps) {
 
         {selectedId && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl max-w-md w-full p-8 border-t-4 border-[#c9b896] shadow-2xl">
-              <h3 className="text-2xl font-bold text-black mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Review KYC Submission</h3>
+            <div className="bg-bg-elevated rounded-2xl max-w-md w-full p-8 border-t-4 border-accent shadow-2xl">
+              <h3 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Review KYC Submission</h3>
               <div className="space-y-4 mb-6">
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Add notes for approval/rejection..."
-                  className="w-full border-2 border-gray-200 rounded-lg p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#c9b896] focus:border-transparent transition-all"
+                  className="w-full border-2 border-border rounded-lg p-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
                   rows={4}
                 />
               </div>
@@ -205,7 +205,7 @@ export function AdminKYC({ onClose }: AdminKYCProps) {
                     setSelectedId(null);
                     setNotes('');
                   }}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-black font-bold py-3 rounded-lg transition-all duration-300"
+                  className="flex-1 bg-bg-raised hover:bg-bg-surface text-text-primary border border-border font-bold py-3 rounded-lg transition-all duration-300"
                 >
                   Cancel
                 </button>
@@ -219,7 +219,7 @@ export function AdminKYC({ onClose }: AdminKYCProps) {
                 <button
                   onClick={() => handleApprove(selectedId)}
                   disabled={submitting}
-                  className="flex-1 bg-[#c9b896] hover:bg-[#b5a57d] text-black font-bold py-3 rounded-lg transition-all duration-300 disabled:opacity-50 shadow-md hover:shadow-lg"
+                  className="flex-1 bg-accent hover:bg-accent-strong text-on-accent font-bold py-3 rounded-lg transition-all duration-300 disabled:opacity-50 shadow-md hover:shadow-lg"
                 >
                   Approve
                 </button>

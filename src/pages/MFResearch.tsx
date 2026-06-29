@@ -116,7 +116,7 @@ export default function MFResearch({ onBack }: MFResearchProps) {
       'Moderate': 'bg-yellow-100 text-yellow-800',
       'High': 'bg-red-100 text-red-800',
     };
-    return colors[risk] || 'bg-gray-100 text-gray-800';
+    return colors[risk] || 'bg-bg-raised text-text-primary';
   };
 
   const formatCurrency = (amount: number) => {
@@ -129,7 +129,7 @@ export default function MFResearch({ onBack }: MFResearchProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-8">
+      <div className="min-h-screen bg-bg-base p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
@@ -140,7 +140,7 @@ export default function MFResearch({ onBack }: MFResearchProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-bg-base">
       <nav className="bg-black shadow-lg border-b border-[#c9b896]/20 sticky top-0 z-50 relative">
         <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
           <button
@@ -192,11 +192,11 @@ export default function MFResearch({ onBack }: MFResearchProps) {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-4xl font-bold text-gray-900 flex items-center gap-3">
+              <h2 className="text-4xl font-bold text-text-primary flex items-center gap-3">
                 <BarChart3 className="w-10 h-10 text-blue-600" />
                 Mutual Fund Information
               </h2>
-              <p className="text-gray-600 mt-2">View and compare mutual fund performance data for your reference</p>
+              <p className="text-text-secondary mt-2">View and compare mutual fund performance data for your reference</p>
             </div>
             <button
               onClick={refreshFunds}
@@ -208,25 +208,25 @@ export default function MFResearch({ onBack }: MFResearchProps) {
             </button>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+          <div className="bg-bg-elevated rounded-2xl shadow-sm p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search by fund name or manager..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-border-strong rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted w-5 h-5" />
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                  className="w-full pl-10 pr-4 py-3 border border-border-strong rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-bg-elevated"
                 >
                   {categories.map((category) => (
                     <option key={category} value={category}>
@@ -237,11 +237,11 @@ export default function MFResearch({ onBack }: MFResearchProps) {
               </div>
 
               <div className="relative">
-                <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted w-5 h-5" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                  className="w-full pl-10 pr-4 py-3 border border-border-strong rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-bg-elevated"
                 >
                   <option value="return_1y">Sort by 1Y Returns</option>
                   <option value="return_3y">Sort by 3Y Returns</option>
@@ -254,22 +254,22 @@ export default function MFResearch({ onBack }: MFResearchProps) {
         </div>
 
         {filteredFunds.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-            <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No funds found</h3>
-            <p className="text-gray-600">Try adjusting your filters or search terms</p>
+          <div className="bg-bg-elevated rounded-2xl shadow-sm p-12 text-center">
+            <BarChart3 className="w-16 h-16 text-text-muted mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-text-primary mb-2">No funds found</h3>
+            <p className="text-text-secondary">Try adjusting your filters or search terms</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {filteredFunds.map((fund) => (
               <div
                 key={fund.id}
-                className="bg-white rounded-2xl shadow-sm p-6 hover:shadow-lg transition-shadow"
+                className="bg-bg-elevated rounded-2xl shadow-sm p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold text-gray-900">{fund.fund_name}</h3>
+                      <h3 className="text-xl font-bold text-text-primary">{fund.fund_name}</h3>
                       <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                         {fund.category}
                       </span>
@@ -277,7 +277,7 @@ export default function MFResearch({ onBack }: MFResearchProps) {
                         {fund.risk_level} Risk
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-4 text-sm text-text-secondary">
                       <span className="flex items-center gap-1">
                         <IndianRupee className="w-4 h-4" />
                         Min: {formatCurrency(fund.min_investment)}
@@ -292,33 +292,33 @@ export default function MFResearch({ onBack }: MFResearchProps) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-1">1 Year Return</p>
-                    <p className={`text-2xl font-bold ${fund.return_1y >= 15 ? 'text-green-600' : 'text-gray-900'}`}>
+                    <p className="text-sm text-text-secondary mb-1">1 Year Return</p>
+                    <p className={`text-2xl font-bold ${fund.return_1y >= 15 ? 'text-green-600' : 'text-text-primary'}`}>
                       {fund.return_1y}%
                     </p>
                   </div>
-                  <div className="text-center border-x border-gray-200">
-                    <p className="text-sm text-gray-600 mb-1">3 Year Return</p>
-                    <p className={`text-2xl font-bold ${fund.return_3y >= 18 ? 'text-green-600' : 'text-gray-900'}`}>
+                  <div className="text-center border-x border-border">
+                    <p className="text-sm text-text-secondary mb-1">3 Year Return</p>
+                    <p className={`text-2xl font-bold ${fund.return_3y >= 18 ? 'text-green-600' : 'text-text-primary'}`}>
                       {fund.return_3y}%
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-1">5 Year Return</p>
-                    <p className={`text-2xl font-bold ${fund.return_5y >= 15 ? 'text-green-600' : 'text-gray-900'}`}>
+                    <p className="text-sm text-text-secondary mb-1">5 Year Return</p>
+                    <p className={`text-2xl font-bold ${fund.return_5y >= 15 ? 'text-green-600' : 'text-text-primary'}`}>
                       {fund.return_5y}%
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="mt-4 pt-4 border-t border-border">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-text-secondary">
                       <span className="font-medium">Sub-Category:</span> {fund.sub_category}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-text-secondary">
                       <span className="font-medium">Launch Date:</span> {new Date(fund.launch_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </div>
                   </div>

@@ -81,9 +81,9 @@ export default function SignaturePad({ onChange }: { onChange: (dataUrl: string 
         onPointerMove={move}
         onPointerUp={end}
         onPointerLeave={end}
-        style={{ width: '100%', maxWidth: 520, height: 160, border: '1px solid #d4d4d8', borderRadius: 10, touchAction: 'none', background: '#fff', cursor: 'crosshair' }}
+        style={{ width: '100%', maxWidth: 520, height: 160, border: '1px solid var(--border-strong)', borderRadius: 10, touchAction: 'none', background: '#fff', cursor: 'crosshair' }}
       />
-      <button onClick={clear} type="button" style={{ marginTop: 8, fontSize: 13, color: '#6b7280', textDecoration: 'underline' }}>
+      <button onClick={clear} type="button" style={{ marginTop: 8, fontSize: 13, color: 'var(--text-muted)', textDecoration: 'underline' }}>
         Clear signature
       </button>
     </div>

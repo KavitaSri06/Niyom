@@ -11,7 +11,7 @@ interface LegalDocumentLayoutProps {
 
 export function LegalDocumentLayout({ title, subtitle, icon, onClose, children }: LegalDocumentLayoutProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100">
+    <div className="min-h-screen bg-bg-base">
       <div className="sticky top-0 z-50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl border-b border-slate-700">
         <div className="max-w-6xl mx-auto px-8 py-5 flex justify-between items-center">
           <button
@@ -31,25 +31,25 @@ export function LegalDocumentLayout({ title, subtitle, icon, onClose, children }
       </div>
 
       <div className="max-w-5xl mx-auto px-6 sm:px-8 py-12 sm:py-16">
-        <div className="bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-slate-50 to-white p-8 sm:p-12 border-b-2 border-slate-200">
+        <div className="bg-bg-elevated rounded-xl shadow-2xl border border-border overflow-hidden">
+          <div className="bg-gradient-to-r from-bg-raised to-bg-elevated p-8 sm:p-12 border-b-2 border-border">
             <div className="flex items-start gap-6 mb-6">
               {icon && <div className="flex-shrink-0">{icon}</div>}
               <div className="flex-1">
                 <h1
-                  className="text-4xl sm:text-5xl font-bold text-slate-900 mb-3 leading-tight"
+                  className="text-4xl sm:text-5xl font-bold text-text-primary mb-3 leading-tight"
                   style={{ fontFamily: 'Georgia, "Times New Roman", serif', letterSpacing: '-0.025em' }}
                 >
                   {title}
                 </h1>
                 {subtitle && (
-                  <p className="text-lg text-slate-600 font-light tracking-wide">{subtitle}</p>
+                  <p className="text-lg text-text-secondary font-light tracking-wide">{subtitle}</p>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <span className="font-semibold text-slate-700 uppercase tracking-wider">Effective Date:</span>
-              <span className="text-slate-600">February 13, 2026</span>
+              <span className="font-semibold text-text-secondary uppercase tracking-wider">Effective Date:</span>
+              <span className="text-text-secondary">February 13, 2026</span>
             </div>
           </div>
 
@@ -58,7 +58,7 @@ export function LegalDocumentLayout({ title, subtitle, icon, onClose, children }
           </div>
         </div>
 
-        <div className="text-center mt-8 text-sm text-slate-500">
+        <div className="text-center mt-8 text-sm text-text-muted">
           <p>&copy; 2025 Niyom Wealth Distribution LLP. All rights reserved.</p>
         </div>
       </div>
@@ -76,9 +76,9 @@ interface SectionProps {
 export function LegalSection({ number, title, children, variant = 'default' }: SectionProps) {
   const bgColors = {
     default: '',
-    warning: 'bg-amber-50 border-l-4 border-amber-500',
-    danger: 'bg-red-50 border-l-4 border-red-600',
-    info: 'bg-blue-50 border-l-4 border-blue-500'
+    warning: 'bg-warning/10 border-l-4 border-warning',
+    danger: 'bg-danger/10 border-l-4 border-danger',
+    info: 'bg-info/10 border-l-4 border-info'
   };
 
   const containerClass = variant === 'default'
@@ -88,13 +88,13 @@ export function LegalSection({ number, title, children, variant = 'default' }: S
   return (
     <section className={containerClass}>
       <h2
-        className="text-xl sm:text-2xl font-bold text-slate-900 mb-4 flex items-baseline gap-3"
+        className="text-xl sm:text-2xl font-bold text-text-primary mb-4 flex items-baseline gap-3"
         style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
       >
-        <span className="text-[#c9b896]">{number}.</span>
+        <span className="text-accent">{number}.</span>
         <span>{title}</span>
       </h2>
-      <div className="space-y-3 text-slate-700" style={{ fontSize: '14px', lineHeight: '1.6' }}>
+      <div className="space-y-3 text-text-secondary" style={{ fontSize: '14px', lineHeight: '1.6' }}>
         {children}
       </div>
     </section>
@@ -110,8 +110,8 @@ interface SubsectionProps {
 export function LegalSubsection({ number, title, children }: SubsectionProps) {
   return (
     <div className="mt-5 mb-5">
-      <h3 className="text-lg font-semibold text-slate-800 mb-3 flex items-baseline gap-2">
-        <span className="text-[#c9b896]">{number}</span>
+      <h3 className="text-lg font-semibold text-text-primary mb-3 flex items-baseline gap-2">
+        <span className="text-accent">{number}</span>
         <span>{title}</span>
       </h3>
       <div className="space-y-3" style={{ fontSize: '14px', lineHeight: '1.6' }}>
@@ -131,7 +131,7 @@ export function LegalList({ items, ordered = false }: LegalListProps) {
   const listClass = ordered ? 'list-decimal' : 'list-disc';
 
   return (
-    <ListTag className={`${listClass} pl-6 space-y-2 text-slate-700`} style={{ fontSize: '14px', lineHeight: '1.6' }}>
+    <ListTag className={`${listClass} pl-6 space-y-2 text-text-secondary`} style={{ fontSize: '14px', lineHeight: '1.6' }}>
       {items.map((item, index) => (
         <li key={index}>{item}</li>
       ))}
@@ -146,10 +146,10 @@ interface AlertBoxProps {
 
 export function AlertBox({ type, children }: AlertBoxProps) {
   const styles = {
-    warning: 'bg-amber-50 border-amber-300 text-amber-900',
-    danger: 'bg-red-50 border-red-300 text-red-900',
-    info: 'bg-blue-50 border-blue-300 text-blue-900',
-    success: 'bg-green-50 border-green-300 text-green-900'
+    warning: 'bg-warning/10 border-warning/40 text-text-primary',
+    danger: 'bg-danger/10 border-danger/40 text-text-primary',
+    info: 'bg-info/10 border-info/40 text-text-primary',
+    success: 'bg-success/10 border-success/40 text-text-primary'
   };
 
   return (
@@ -167,9 +167,9 @@ interface ContactBoxProps {
 
 export function ContactBox({ company, email, phone }: ContactBoxProps) {
   return (
-    <div className="bg-slate-50 border-2 border-slate-200 p-6 rounded-lg" style={{ fontSize: '14px', lineHeight: '1.6' }}>
-      <p className="font-bold text-slate-900 mb-3" style={{ fontSize: '16px' }}>{company}</p>
-      <div className="space-y-1.5 text-slate-700">
+    <div className="bg-bg-base border-2 border-border p-6 rounded-lg" style={{ fontSize: '14px', lineHeight: '1.6' }}>
+      <p className="font-bold text-text-primary mb-3" style={{ fontSize: '16px' }}>{company}</p>
+      <div className="space-y-1.5 text-text-secondary">
         <p><span className="font-semibold">Email:</span> {email}</p>
         <p><span className="font-semibold">Phone:</span> {phone}</p>
       </div>

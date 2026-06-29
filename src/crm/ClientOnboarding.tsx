@@ -22,11 +22,11 @@ const DSA_DOC_TYPES = [
 function Field({ label, required, children, hint }: { label: string; required?: boolean; children: React.ReactNode; hint?: string }) {
   return (
     <div>
-      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#8A8A8A' }}>
-        {label}{required && <span className="ml-0.5" style={{ color: '#D4AF37' }}>*</span>}
+      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+        {label}{required && <span className="ml-0.5" style={{ color: 'var(--accent)' }}>*</span>}
       </label>
       {children}
-      {hint && <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>{hint}</p>}
+      {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>{hint}</p>}
     </div>
   );
 }
@@ -37,8 +37,8 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...rest}
-      className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none transition-all"
-      style={{ background: '#050505', border: `1px solid ${focused ? '#D4AF37' : '#1E1E24'}` }}
+      className="w-full px-3.5 py-2.5 rounded-xl text-sm text-text-primary outline-none transition-all"
+      style={{ background: 'var(--bg-base)', border: `1px solid ${focused ? 'var(--accent)' : 'var(--border)'}` }}
       onFocus={e => { setFocused(true); onFocus?.(e); }}
       onBlur={e => { setFocused(false); onBlur?.(e); }}
     />
@@ -52,8 +52,8 @@ function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     <textarea
       {...rest}
       rows={3}
-      className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none transition-all resize-none"
-      style={{ background: '#050505', border: `1px solid ${focused ? '#D4AF37' : '#1E1E24'}` }}
+      className="w-full px-3.5 py-2.5 rounded-xl text-sm text-text-primary outline-none transition-all resize-none"
+      style={{ background: 'var(--bg-base)', border: `1px solid ${focused ? 'var(--accent)' : 'var(--border)'}` }}
       onFocus={e => { setFocused(true); onFocus?.(e); }}
       onBlur={e => { setFocused(false); onBlur?.(e); }}
     />
@@ -64,8 +64,8 @@ function DupWarn({ msg }: { msg: string | null }) {
   if (!msg) return null;
   return (
     <div className="mt-1.5 flex items-start gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.25)' }}>
-      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: '#FBBF24' }} />
-      <p className="text-xs" style={{ color: '#FBBF24' }}>{msg}</p>
+      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: 'rgb(var(--warning-soft-rgb))' }} />
+      <p className="text-xs" style={{ color: 'rgb(var(--warning-soft-rgb))' }}>{msg}</p>
     </div>
   );
 }
@@ -374,9 +374,9 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>New Client</p>
-        <h1 className="text-2xl font-bold text-white">Client Onboarding</h1>
-        <p className="text-sm mt-0.5" style={{ color: '#8A8A8A' }}>Complete the form to onboard a new client</p>
+        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>New Client</p>
+        <h1 className="text-2xl font-bold text-text-primary">Client Onboarding</h1>
+        <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>Complete the form to onboard a new client</p>
       </div>
 
       {/* Stepper */}
@@ -385,40 +385,40 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
           <React.Fragment key={s}>
             <button onClick={() => i < step && setStep(i)}
               className="flex items-center gap-2 text-sm font-medium transition-all flex-shrink-0"
-              style={{ color: i === step ? '#D4AF37' : i < step ? '#10B981' : '#4A4A4A' }}>
+              style={{ color: i === step ? 'var(--accent)' : i < step ? 'var(--success)' : 'var(--text-faint)' }}>
               <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                style={{ background: i === step ? 'rgba(212,175,55,0.15)' : i < step ? 'rgba(16,185,129,0.15)' : '#111', border: `1px solid ${i === step ? '#D4AF37' : i < step ? '#10B981' : '#1E1E24'}` }}>
+                style={{ background: i === step ? 'rgba(var(--accent-rgb),0.15)' : i < step ? 'rgba(16,185,129,0.15)' : 'var(--bg-raised)', border: `1px solid ${i === step ? 'var(--accent)' : i < step ? 'var(--success)' : 'var(--border)'}` }}>
                 {i < step ? '✓' : i + 1}
               </span>
               <span className="hidden sm:inline">{s}</span>
             </button>
-            {i < STEPS.length - 1 && <div className="flex-1 h-px min-w-4" style={{ background: i < step ? '#10B981' : '#1E1E24' }} />}
+            {i < STEPS.length - 1 && <div className="flex-1 h-px min-w-4" style={{ background: i < step ? 'var(--success)' : 'var(--border)' }} />}
           </React.Fragment>
         ))}
       </div>
 
       {error && (
         <div className="p-4 rounded-2xl flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-          <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-          <p className="text-sm text-red-400">{error}</p>
+          <AlertCircle className="w-4 h-4 text-c-red flex-shrink-0" />
+          <p className="text-sm text-c-red">{error}</p>
         </div>
       )}
       {success && (
         <div className="p-4 rounded-2xl flex items-center gap-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-          <p className="text-sm text-emerald-400">{success}</p>
+          <CheckCircle2 className="w-4 h-4 text-c-emerald flex-shrink-0" />
+          <p className="text-sm text-c-emerald">{success}</p>
         </div>
       )}
 
-      <div className="rounded-2xl p-6" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+      <div className="rounded-2xl p-6" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
 
         {/* Step: Source Selection */}
         {stepName === 'Source' && (
           <div className="space-y-5">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Users className="w-4 h-4" style={{ color: '#D4AF37' }} /> Client Source
+            <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <Users className="w-4 h-4" style={{ color: 'var(--accent)' }} /> Client Source
             </h3>
-            <p className="text-sm" style={{ color: '#6B6B6B' }}>How is this client being onboarded?</p>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>How is this client being onboarded?</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 {
@@ -426,35 +426,35 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
                   icon: User,
                   title: 'Direct',
                   desc: 'Client sourced directly by the employee. Standard onboarding process.',
-                  color: '#10B981',
+                  color: 'var(--success)',
                 },
                 {
                   value: 'dsa' as const,
                   icon: Handshake,
                   title: 'DSA',
                   desc: 'Client sourced through a Direct Selling Agent. DSA details required.',
-                  color: '#D4AF37',
+                  color: 'var(--accent)',
                 },
               ].map(opt => (
                 <button key={opt.value} onClick={() => setSourcedVia(opt.value)}
                   className="text-left p-5 rounded-2xl transition-all space-y-3"
                   style={{
-                    background: sourcedVia === opt.value ? `${opt.color}10` : '#050505',
-                    border: `2px solid ${sourcedVia === opt.value ? opt.color : '#1E1E24'}`,
+                    background: sourcedVia === opt.value ? `color-mix(in srgb, ${opt.color} 6%, transparent)` : 'var(--bg-base)',
+                    border: `2px solid ${sourcedVia === opt.value ? opt.color : 'var(--border)'}`,
                   }}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{ background: `${opt.color}15` }}>
+                      style={{ background: `color-mix(in srgb, ${opt.color} 8%, transparent)` }}>
                       <opt.icon className="w-5 h-5" style={{ color: opt.color }} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold" style={{ color: sourcedVia === opt.value ? opt.color : '#fff' }}>{opt.title}</p>
+                      <p className="text-sm font-bold" style={{ color: sourcedVia === opt.value ? opt.color : 'var(--text-primary)' }}>{opt.title}</p>
                       {sourcedVia === opt.value && (
-                        <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: `${opt.color}20`, color: opt.color }}>Selected</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: `color-mix(in srgb, ${opt.color} 12%, transparent)`, color: opt.color }}>Selected</span>
                       )}
                     </div>
                   </div>
-                  <p className="text-xs leading-relaxed" style={{ color: '#6B6B6B' }}>{opt.desc}</p>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{opt.desc}</p>
                 </button>
               ))}
             </div>
@@ -464,13 +464,13 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
         {/* Step: DSA Details (only for DSA sourced) */}
         {stepName === 'DSA Details' && (
           <div className="space-y-5">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Handshake className="w-4 h-4" style={{ color: '#D4AF37' }} /> DSA Details
+            <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <Handshake className="w-4 h-4" style={{ color: 'var(--accent)' }} /> DSA Details
             </h3>
 
             {/* New vs Existing DSA toggle */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#6B6B6B' }}>DSA Registration</p>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>DSA Registration</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { value: 'new' as const, icon: UserPlus, title: 'New DSA', desc: 'Register a new DSA with full details and documents.' },
@@ -479,14 +479,14 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
                   <button key={opt.value} onClick={() => { setDsaMode(opt.value); setSelectedExistingDSA(null); setError(''); }}
                     className="text-left p-4 rounded-xl transition-all space-y-2"
                     style={{
-                      background: dsaMode === opt.value ? 'rgba(212,175,55,0.08)' : '#050505',
-                      border: `2px solid ${dsaMode === opt.value ? '#D4AF37' : '#1E1E24'}`,
+                      background: dsaMode === opt.value ? 'rgba(var(--accent-rgb),0.08)' : 'var(--bg-base)',
+                      border: `2px solid ${dsaMode === opt.value ? 'var(--accent)' : 'var(--border)'}`,
                     }}>
                     <div className="flex items-center gap-2">
-                      <opt.icon className="w-4 h-4" style={{ color: dsaMode === opt.value ? '#D4AF37' : '#6B6B6B' }} />
-                      <p className="text-sm font-bold" style={{ color: dsaMode === opt.value ? '#D4AF37' : '#A8A8A8' }}>{opt.title}</p>
+                      <opt.icon className="w-4 h-4" style={{ color: dsaMode === opt.value ? 'var(--accent)' : 'var(--text-muted)' }} />
+                      <p className="text-sm font-bold" style={{ color: dsaMode === opt.value ? 'var(--accent)' : 'var(--text-bright)' }}>{opt.title}</p>
                     </div>
-                    <p className="text-xs" style={{ color: '#4A4A4A' }}>{opt.desc}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{opt.desc}</p>
                   </button>
                 ))}
               </div>
@@ -495,9 +495,9 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
             {/* Existing DSA selector */}
             {dsaMode === 'existing' && (
               <div className="space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#6B6B6B' }}>Select DSA</p>
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Select DSA</p>
                 {existingDSAs.length === 0 ? (
-                  <div className="p-4 rounded-xl text-sm text-center" style={{ background: '#050505', border: '1px solid #1E1E24', color: '#4A4A4A' }}>
+                  <div className="p-4 rounded-xl text-sm text-center" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-faint)' }}>
                     No active DSAs found. Please register a New DSA.
                   </div>
                 ) : (
@@ -506,21 +506,21 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
                       <button key={dsa.id} onClick={() => setSelectedExistingDSA(dsa)}
                         className="w-full text-left p-3.5 rounded-xl transition-all flex items-center gap-3"
                         style={{
-                          background: selectedExistingDSA?.id === dsa.id ? 'rgba(212,175,55,0.08)' : '#050505',
-                          border: `1px solid ${selectedExistingDSA?.id === dsa.id ? '#D4AF37' : '#1E1E24'}`,
+                          background: selectedExistingDSA?.id === dsa.id ? 'rgba(var(--accent-rgb),0.08)' : 'var(--bg-base)',
+                          border: `1px solid ${selectedExistingDSA?.id === dsa.id ? 'var(--accent)' : 'var(--border)'}`,
                         }}>
                         <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-                          style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37' }}>
+                          style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)' }}>
                           {dsa.full_name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">{dsa.full_name}</p>
-                          <p className="text-xs font-mono mt-0.5" style={{ color: '#D4AF37' }}>{dsa.dsa_code}</p>
+                          <p className="text-sm font-semibold text-text-primary truncate">{dsa.full_name}</p>
+                          <p className="text-xs font-mono mt-0.5" style={{ color: 'var(--accent)' }}>{dsa.dsa_code}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-xs" style={{ color: '#6B6B6B' }}>{dsa.mobile}</p>
+                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{dsa.mobile}</p>
                           {selectedExistingDSA?.id === dsa.id && (
-                            <CheckCircle2 className="w-4 h-4 ml-auto mt-1" style={{ color: '#10B981' }} />
+                            <CheckCircle2 className="w-4 h-4 ml-auto mt-1" style={{ color: 'var(--success)' }} />
                           )}
                         </div>
                       </button>
@@ -533,7 +533,7 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
             {/* New DSA form — only shown when dsaMode === 'new' */}
             {dsaMode === 'new' && (
             <>
-            <p className="text-xs" style={{ color: '#6B6B6B' }}>All fields and documents are mandatory for DSA registration.</p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>All fields and documents are mandatory for DSA registration.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="DSA Full Name" required>
                 <Input value={dsaForm.full_name} onChange={e => setDsa('full_name', e.target.value)} placeholder="Full name as per PAN" />
@@ -553,8 +553,8 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
             </Field>
 
             {/* DSA Bank Details */}
-            <div className="pt-2" style={{ borderTop: '1px solid #1A1A1A' }}>
-              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: '#D4AF37' }}>Bank Details</p>
+            <div className="pt-2" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--accent)' }}>Bank Details</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Bank Name" required>
                   <Input value={dsaForm.bank_name} onChange={e => setDsa('bank_name', e.target.value)} placeholder="HDFC Bank" />
@@ -569,8 +569,8 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
             </div>
 
             {/* DSA Documents */}
-            <div className="pt-2" style={{ borderTop: '1px solid #1A1A1A' }}>
-              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: '#D4AF37' }}>DSA Documents</p>
+            <div className="pt-2" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--accent)' }}>DSA Documents</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { label: 'PAN Card',  key: 'pan' as const },
@@ -579,13 +579,13 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
                   const file = dsaDocs[key];
                   return (
                     <label key={key} className="flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all text-center"
-                      style={{ background: file ? 'rgba(16,185,129,0.05)' : '#050505', border: `1px solid ${file ? 'rgba(16,185,129,0.25)' : 'rgba(212,175,55,0.2)'}` }}>
+                      style={{ background: file ? 'rgba(16,185,129,0.05)' : 'var(--bg-base)', border: `1px solid ${file ? 'rgba(16,185,129,0.25)' : 'rgba(var(--accent-rgb),0.2)'}` }}>
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-                        style={{ background: file ? 'rgba(16,185,129,0.1)' : 'rgba(212,175,55,0.08)' }}>
-                        {file ? <CheckCircle2 className="w-4 h-4" style={{ color: '#10B981' }} /> : <Upload className="w-4 h-4" style={{ color: '#D4AF37' }} />}
+                        style={{ background: file ? 'rgba(16,185,129,0.1)' : 'rgba(var(--accent-rgb),0.08)' }}>
+                        {file ? <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--success)' }} /> : <Upload className="w-4 h-4" style={{ color: 'var(--accent)' }} />}
                       </div>
-                      <p className="text-xs font-semibold" style={{ color: file ? '#10B981' : '#A8A8A8' }}>{label}</p>
-                      <p className="text-xs truncate w-full" style={{ color: '#4A4A4A' }}>{file ? file.name : 'Required'}</p>
+                      <p className="text-xs font-semibold" style={{ color: file ? 'var(--success)' : 'var(--text-bright)' }}>{label}</p>
+                      <p className="text-xs truncate w-full" style={{ color: 'var(--text-faint)' }}>{file ? file.name : 'Required'}</p>
                       <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png"
                         onChange={e => setDsaDocs(prev => ({ ...prev, [key]: e.target.files?.[0] || null }))} />
                     </label>
@@ -593,7 +593,7 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
                 })}
               </div>
               {missingDsaDocs.length > 0 && (
-                <p className="text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg mt-3" style={{ background: 'rgba(239,68,68,0.06)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.15)' }}>
+                <p className="text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg mt-3" style={{ background: 'rgba(239,68,68,0.06)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.15)' }}>
                   <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                   Missing: {missingDsaDocs.map(d => d.label).join(', ')}
                 </p>
@@ -607,9 +607,9 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
         {/* Step: Basic Info */}
         {stepName === 'Basic Info' && (
           <div className="space-y-5">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <User className="w-4 h-4" style={{ color: '#D4AF37' }} /> Basic Information
-              {isDSA && <span className="text-xs px-2 py-0.5 rounded-lg" style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }}>DSA Client</span>}
+            <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <User className="w-4 h-4" style={{ color: 'var(--accent)' }} /> Basic Information
+              {isDSA && <span className="text-xs px-2 py-0.5 rounded-lg" style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>DSA Client</span>}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Full Name" required>
@@ -651,8 +651,8 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
         {/* Step: Demat & Bank */}
         {stepName === 'Demat & Bank' && (
           <div className="space-y-5">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Building2 className="w-4 h-4" style={{ color: '#D4AF37' }} /> Demat & Bank Details
+            <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <Building2 className="w-4 h-4" style={{ color: 'var(--accent)' }} /> Demat & Bank Details
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Demat Account No." required>
@@ -680,31 +680,31 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
         {/* Step: Documents */}
         {stepName === 'Documents' && (
           <div className="space-y-5">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Upload className="w-4 h-4" style={{ color: '#D4AF37' }} /> KYC Documents
+            <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <Upload className="w-4 h-4" style={{ color: 'var(--accent)' }} /> KYC Documents
             </h3>
-            <p className="text-xs" style={{ color: '#6B6B6B' }}>
-              All four documents are <span style={{ color: '#D4AF37' }}>mandatory</span>. Files are securely stored.
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              All four documents are <span style={{ color: 'var(--accent)' }}>mandatory</span>. Files are securely stored.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {CLIENT_DOC_TYPES.map(({ type, label }) => {
                 const existing = docFiles.find(d => d.type === type);
                 return (
                   <label key={type} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all"
-                    style={{ background: existing ? 'rgba(16,185,129,0.05)' : '#050505', border: `1px solid ${existing ? 'rgba(16,185,129,0.25)' : 'rgba(212,175,55,0.2)'}` }}>
+                    style={{ background: existing ? 'rgba(16,185,129,0.05)' : 'var(--bg-base)', border: `1px solid ${existing ? 'rgba(16,185,129,0.25)' : 'rgba(var(--accent-rgb),0.2)'}` }}>
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ background: existing ? 'rgba(16,185,129,0.1)' : 'rgba(212,175,55,0.08)' }}>
-                      <FileText className="w-4 h-4" style={{ color: existing ? '#10B981' : '#D4AF37' }} />
+                      style={{ background: existing ? 'rgba(16,185,129,0.1)' : 'rgba(var(--accent-rgb),0.08)' }}>
+                      <FileText className="w-4 h-4" style={{ color: existing ? 'var(--success)' : 'var(--accent)' }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="text-xs font-semibold" style={{ color: existing ? '#10B981' : '#A8A8A8' }}>{label}</p>
+                        <p className="text-xs font-semibold" style={{ color: existing ? 'var(--success)' : 'var(--text-bright)' }}>{label}</p>
                         {existing
-                          ? <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#10B981' }} />
-                          : <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }}>Required</span>
+                          ? <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--success)' }} />
+                          : <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>Required</span>
                         }
                       </div>
-                      <p className="text-xs truncate mt-0.5" style={{ color: '#4A4A4A' }}>{existing ? existing.file.name : 'Click to upload'}</p>
+                      <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-faint)' }}>{existing ? existing.file.name : 'Click to upload'}</p>
                     </div>
                     <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => handleDocFile(type, e.target.files?.[0] || null)} />
                   </label>
@@ -712,7 +712,7 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
               })}
             </div>
             {missingDocs.length > 0 && (
-              <p className="text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.06)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.15)' }}>
+              <p className="text-xs flex items-center gap-1.5 px-3 py-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.06)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.15)' }}>
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 Missing: {missingDocs.map(d => d.label).join(', ')}
               </p>
@@ -723,32 +723,32 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
         {/* Step: Review */}
         {stepName === 'Review' && (
           <div className="space-y-5">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" style={{ color: '#D4AF37' }} /> Review Details
+            <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--accent)' }} /> Review Details
             </h3>
             <div className="space-y-4">
               {/* Source badge */}
               <div className="flex items-center gap-2">
                 <span className="text-xs px-2.5 py-1 rounded-lg font-semibold"
-                  style={{ background: isDSA ? 'rgba(212,175,55,0.1)' : 'rgba(16,185,129,0.1)', color: isDSA ? '#D4AF37' : '#10B981', border: `1px solid ${isDSA ? 'rgba(212,175,55,0.3)' : 'rgba(16,185,129,0.3)'}` }}>
+                  style={{ background: isDSA ? 'rgba(var(--accent-rgb),0.1)' : 'rgba(16,185,129,0.1)', color: isDSA ? 'var(--accent)' : 'var(--success)', border: `1px solid ${isDSA ? 'rgba(var(--accent-rgb),0.3)' : 'rgba(16,185,129,0.3)'}` }}>
                   {isDSA ? 'DSA Sourced' : 'Direct'}
                 </span>
               </div>
 
               {isDSA && (
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#D4AF37' }}>
-                    DSA Info {dsaMode === 'existing' && <span className="ml-2 font-normal normal-case text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.2)' }}>Existing</span>}
-                    {dsaMode === 'new' && <span className="ml-2 font-normal normal-case text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }}>New</span>}
+                  <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>
+                    DSA Info {dsaMode === 'existing' && <span className="ml-2 font-normal normal-case text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.2)' }}>Existing</span>}
+                    {dsaMode === 'new' && <span className="ml-2 font-normal normal-case text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>New</span>}
                   </p>
-                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1A1A1A' }}>
+                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-subtle)' }}>
                     {(dsaMode === 'existing' && selectedExistingDSA
                       ? [['DSA Name', selectedExistingDSA.full_name], ['DSA Code', selectedExistingDSA.dsa_code], ['Mobile', selectedExistingDSA.mobile], ['Email', selectedExistingDSA.email]]
                       : [['DSA Name', dsaForm.full_name], ['Mobile', dsaForm.mobile], ['Email', dsaForm.email], ['PAN', dsaForm.pan], ['Bank', dsaForm.bank_name + ' · ' + dsaForm.bank_account]]
                     ).filter(r => r[1]).map(([k, v]) => (
-                      <div key={k} className="flex gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid #111' }}>
-                        <p className="text-xs w-28 flex-shrink-0" style={{ color: '#4A4A4A' }}>{k}</p>
-                        <p className="text-xs text-white">{v}</p>
+                      <div key={k} className="flex gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid var(--bg-raised)' }}>
+                        <p className="text-xs w-28 flex-shrink-0" style={{ color: 'var(--text-faint)' }}>{k}</p>
+                        <p className="text-xs text-text-primary">{v}</p>
                       </div>
                     ))}
                   </div>
@@ -761,12 +761,12 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
                 { title: 'Demat & Bank', rows: [['Demat A/C', form.demat_account], ['DP Name', form.dp_name], ['Bank A/C', form.bank_account], ['IFSC', form.bank_ifsc], ['Bank', form.bank_name]] },
               ].map(section => (
                 <div key={section.title}>
-                  <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#D4AF37' }}>{section.title}</p>
-                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1A1A1A' }}>
+                  <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>{section.title}</p>
+                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-subtle)' }}>
                     {section.rows.filter(r => r[1]).map(([k, v]) => (
-                      <div key={k} className="flex gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid #111' }}>
-                        <p className="text-xs w-28 flex-shrink-0" style={{ color: '#4A4A4A' }}>{k}</p>
-                        <p className="text-xs text-white">{v}</p>
+                      <div key={k} className="flex gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid var(--bg-raised)' }}>
+                        <p className="text-xs w-28 flex-shrink-0" style={{ color: 'var(--text-faint)' }}>{k}</p>
+                        <p className="text-xs text-text-primary">{v}</p>
                       </div>
                     ))}
                   </div>
@@ -775,7 +775,7 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
 
               {/* Client Login Setup */}
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: '#D4AF37' }}>Client Portal Login</p>
+                <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--accent)' }}>Client Portal Login</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { value: false, label: 'No Login', desc: 'Client will not have portal access.' },
@@ -784,11 +784,11 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
                     <button key={String(opt.value)} onClick={() => { setClientLoginEnabled(opt.value); if (!opt.value) setClientInitialPassword(''); }}
                       className="text-left p-3.5 rounded-xl transition-all"
                       style={{
-                        background: clientLoginEnabled === opt.value ? (opt.value ? 'rgba(16,185,129,0.08)' : 'rgba(107,107,107,0.08)') : '#050505',
-                        border: `2px solid ${clientLoginEnabled === opt.value ? (opt.value ? '#10B981' : '#6B6B6B') : '#1E1E24'}`,
+                        background: clientLoginEnabled === opt.value ? (opt.value ? 'rgba(16,185,129,0.08)' : 'rgba(107,107,107,0.08)') : 'var(--bg-base)',
+                        border: `2px solid ${clientLoginEnabled === opt.value ? (opt.value ? 'var(--success)' : 'var(--text-muted)') : 'var(--border)'}`,
                       }}>
-                      <p className="text-sm font-bold" style={{ color: clientLoginEnabled === opt.value ? (opt.value ? '#10B981' : '#A8A8A8') : '#6B6B6B' }}>{opt.label}</p>
-                      <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>{opt.desc}</p>
+                      <p className="text-sm font-bold" style={{ color: clientLoginEnabled === opt.value ? (opt.value ? 'var(--success)' : 'var(--text-bright)') : 'var(--text-muted)' }}>{opt.label}</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>{opt.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -803,25 +803,25 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
                       />
                     </Field>
                     {clientInitialPassword.length > 0 && clientInitialPassword.length < 8 && (
-                      <p className="text-xs" style={{ color: '#ef4444' }}>Password must be at least 8 characters.</p>
+                      <p className="text-xs" style={{ color: 'var(--danger)' }}>Password must be at least 8 characters.</p>
                     )}
-                    <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', color: '#6B6B6B' }}>
-                      Login ID: <span className="font-mono font-bold text-white">{form.pan.toUpperCase() || 'PAN'}</span> &nbsp;&middot;&nbsp; Email: <span className="text-white">{form.email || '—'}</span>
+                    <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', color: 'var(--text-muted)' }}>
+                      Login ID: <span className="font-mono font-bold text-text-primary">{form.pan.toUpperCase() || 'PAN'}</span> &nbsp;&middot;&nbsp; Email: <span className="text-text-primary">{form.email || '—'}</span>
                     </div>
                   </div>
                 )}
               </div>
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#D4AF37' }}>Documents</p>
+                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>Documents</p>
                 <div className="flex flex-wrap gap-2">
                   {CLIENT_DOC_TYPES.map(({ type, label }) => {
                     const uploaded = docFiles.find(d => d.type === type);
                     return (
                       <span key={type} className="text-xs px-2.5 py-1 rounded-lg flex items-center gap-1"
                         style={uploaded
-                          ? { background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.2)' }
-                          : { background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+                          ? { background: 'rgba(16,185,129,0.1)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.2)' }
+                          : { background: 'rgba(239,68,68,0.08)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)' }}>
                         {uploaded ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
                         {label}{!uploaded ? ' (Missing)' : ''}
                       </span>
@@ -838,19 +838,19 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
       <div className="flex justify-between">
         <button onClick={() => setStep(s => Math.max(0, s - 1))} disabled={step === 0}
           className="px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-30"
-          style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
+          style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
           Back
         </button>
         {step < STEPS.length - 1 ? (
           <button onClick={handleNext}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold text-black flex items-center gap-2"
-            style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+            className="px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent flex items-center gap-2"
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
             Next <ChevronRight className="w-4 h-4" />
           </button>
         ) : (
           <button onClick={handleSubmit} disabled={saving || missingDocs.length > 0 || clientLoginEnabled === null || (clientLoginEnabled === true && clientInitialPassword.trim().length < 8)}
-            className="px-6 py-2.5 rounded-xl text-sm font-bold text-black disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+            className="px-6 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
             {saving ? 'Saving...' : 'Complete Onboarding'}
           </button>
         )}

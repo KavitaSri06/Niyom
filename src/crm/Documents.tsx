@@ -14,13 +14,13 @@ interface Props {
 }
 
 export const DOC_FOLDERS = [
-  { key: 'PAN',              label: 'PAN Card',           color: '#F59E0B' },
-  { key: 'CML',              label: 'CML',                color: '#3B82F6' },
-  { key: 'BANK',             label: 'Bank Documents',     color: '#10B981' },
+  { key: 'PAN',              label: 'PAN Card',           color: 'var(--warning)' },
+  { key: 'CML',              label: 'CML',                color: 'var(--info)' },
+  { key: 'BANK',             label: 'Bank Documents',     color: 'var(--success)' },
   { key: 'DEAL_CONFIRMATION',label: 'Deal Confirmation',  color: '#8B5CF6' },
-  { key: 'MANDATE',          label: 'Mandate',            color: '#EF4444' },
-  { key: 'DSA_DOCUMENTS',    label: 'DSA Documents',      color: '#D4AF37' },
-  { key: 'OTHER_DOCUMENTS',  label: 'Other Documents',    color: '#6B7280' },
+  { key: 'MANDATE',          label: 'Mandate',            color: 'var(--danger)' },
+  { key: 'DSA_DOCUMENTS',    label: 'DSA Documents',      color: 'var(--accent)' },
+  { key: 'OTHER_DOCUMENTS',  label: 'Other Documents',    color: 'var(--text-muted)' },
 ] as const;
 
 export type DocFolderKey = typeof DOC_FOLDERS[number]['key'];
@@ -318,21 +318,21 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
       {/* Header */}
       <div className="flex items-center gap-3">
         {onBack && (
-          <button onClick={onBack} className="p-2 rounded-xl transition-colors" style={{ background: '#111', border: '1px solid #1E1E24' }}>
-            <ArrowLeft className="w-4 h-4 text-white" />
+          <button onClick={onBack} className="p-2 rounded-xl transition-colors" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
+            <ArrowLeft className="w-4 h-4 text-text-primary" />
           </button>
         )}
         <div className="flex-1">
-          <p className="text-xs uppercase tracking-widest mb-0.5" style={{ color: '#D4AF37' }}>Document Manager</p>
-          <h1 className="text-2xl font-bold text-white">
+          <p className="text-xs uppercase tracking-widest mb-0.5" style={{ color: 'var(--accent)' }}>Document Manager</p>
+          <h1 className="text-2xl font-bold text-text-primary">
             {selectedClient ? selectedClient.full_name : 'Client Documents'}
           </h1>
-          {selectedClient && <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>{selectedClient.client_code}</p>}
+          {selectedClient && <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{selectedClient.client_code}</p>}
         </div>
         {selectedClientId && (
           <button onClick={() => { setShowUpload(true); setUploadItems([]); }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-black"
-            style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-on-accent"
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
             <Plus className="w-4 h-4" /> Upload
           </button>
         )}
@@ -341,7 +341,7 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
       {/* Toast */}
       {toast && (
         <div className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl text-sm font-semibold transition-all`}
-          style={{ background: toast.type === 'success' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'}`, color: toast.type === 'success' ? '#10B981' : '#ef4444' }}>
+          style={{ background: toast.type === 'success' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'}`, color: toast.type === 'success' ? 'var(--success)' : 'var(--danger)' }}>
           {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
           {toast.msg}
         </div>
@@ -354,26 +354,26 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
 
       {/* Client selector (if no initialClientId) */}
       {!initialClientId && (
-        <div className="rounded-2xl p-5 flex flex-wrap gap-4 items-end" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+        <div className="rounded-2xl p-5 flex flex-wrap gap-4 items-end" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
           {isAdmin && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#6B6B6B' }}>Employee</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Employee</label>
               <div className="relative">
                 <select value={empFilter} onChange={e => { setEmpFilter(e.target.value); setSelectedClientId(''); setSelectedFolder(null); }}
-                  className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-                  style={{ background: '#050505', border: '1px solid rgba(212,175,55,0.4)' }}>
+                  className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+                  style={{ background: 'var(--bg-base)', border: '1px solid rgba(var(--accent-rgb),0.4)' }}>
                   <option value="all">All Employees</option>
                   {empList.map(e => <option key={e.id} value={e.id}>{e.full_name} ({e.employee_code})</option>)}
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#D4AF37' }} />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--accent)' }} />
               </div>
             </div>
           )}
           <div className="flex-1 min-w-52">
-            <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#6B6B6B' }}>Select Client</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Select Client</label>
             <select value={selectedClientId} onChange={e => { setSelectedClientId(e.target.value); setSelectedFolder(null); }}
-              className="w-full sm:max-w-sm px-3.5 py-2.5 rounded-xl text-sm text-white outline-none"
-              style={{ background: '#050505', border: '1px solid #1E1E24' }}>
+              className="w-full sm:max-w-sm px-3.5 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+              style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
               <option value="">— Choose a client —</option>
               {clients
                 .filter(c => empFilter === 'all' || c.employee_id === empFilter)
@@ -388,9 +388,9 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
           {/* Folder Grid */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#6B6B6B' }}>
+              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
                 {selectedFolder ? (
-                  <button onClick={() => setSelectedFolder(null)} className="flex items-center gap-1.5" style={{ color: '#D4AF37' }}>
+                  <button onClick={() => setSelectedFolder(null)} className="flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
                     <ArrowLeft className="w-3 h-3" /> All Folders
                   </button>
                 ) : 'Folders'}
@@ -407,17 +407,17 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
                 {folderCounts.map(f => (
                   <button key={f.key} onClick={() => setSelectedFolder(f.key)}
                     className="text-left p-4 rounded-2xl transition-all hover:scale-[1.02]"
-                    style={{ background: '#0B0B0F', border: `1px solid ${f.count > 0 ? f.color + '30' : '#1E1E24'}` }}>
+                    style={{ background: 'var(--bg-elevated)', border: `1px solid ${f.count > 0 ? `color-mix(in srgb, ${f.color} 19%, transparent)` : 'var(--border)'}` }}>
                     <div className="flex items-start justify-between mb-3">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: f.color + '15' }}>
-                        {f.count > 0 ? <FolderOpen className="w-4.5 h-4.5" style={{ color: f.color }} /> : <Folder className="w-4.5 h-4.5" style={{ color: f.color + '80' }} />}
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `color-mix(in srgb, ${f.color} 8%, transparent)` }}>
+                        {f.count > 0 ? <FolderOpen className="w-4.5 h-4.5" style={{ color: f.color }} /> : <Folder className="w-4.5 h-4.5" style={{ color: `color-mix(in srgb, ${f.color} 50%, transparent)` }} />}
                       </div>
                       {f.count > 0 && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-lg font-bold" style={{ background: f.color + '15', color: f.color }}>{f.count}</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded-lg font-bold" style={{ background: `color-mix(in srgb, ${f.color} 8%, transparent)`, color: f.color }}>{f.count}</span>
                       )}
                     </div>
-                    <p className="text-xs font-bold text-white leading-tight">{f.label}</p>
-                    <p className="text-xs mt-0.5" style={{ color: '#4A4A4A' }}>
+                    <p className="text-xs font-bold text-text-primary leading-tight">{f.label}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>
                       {f.count > 0 ? `${f.count} file${f.count > 1 ? 's' : ''} · ${fmtSize(f.size)}` : 'Empty'}
                     </p>
                   </button>
@@ -427,72 +427,72 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
           </div>
 
           {/* Document List */}
-          <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-            <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: '1px solid #1A1A1A' }}>
+          <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
               <div className="flex-1 relative">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#4A4A4A' }} />
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }} />
                 <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search files..."
-                  className="w-full pl-9 pr-3 py-2 rounded-xl text-sm text-white outline-none"
-                  style={{ background: '#050505', border: '1px solid #1E1E24' }} />
+                  className="w-full pl-9 pr-3 py-2 rounded-xl text-sm text-text-primary outline-none"
+                  style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }} />
               </div>
-              <button onClick={loadDocuments} className="p-2 rounded-xl" style={{ background: '#111', border: '1px solid #1E1E24' }}>
-                <RefreshCw className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
+              <button onClick={loadDocuments} className="p-2 rounded-xl" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
+                <RefreshCw className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
               </button>
             </div>
 
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#D4AF37', borderTopColor: 'transparent' }} />
+                <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
               </div>
             ) : visibleDocs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <Folder className="w-10 h-10" style={{ color: '#2A2A2A' }} />
-                <p className="text-sm" style={{ color: '#4A4A4A' }}>
+                <Folder className="w-10 h-10" style={{ color: 'var(--border-strong)' }} />
+                <p className="text-sm" style={{ color: 'var(--text-faint)' }}>
                   {selectedFolder ? `No files in ${folderInfo?.label}` : 'No documents uploaded yet'}
                 </p>
                 <button onClick={() => setShowUpload(true)}
-                  className="text-xs px-3 py-1.5 rounded-lg font-semibold" style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }}>
+                  className="text-xs px-3 py-1.5 rounded-lg font-semibold" style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>
                   Upload First Document
                 </button>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: '#1A1A1A' }}>
+              <div className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
                 {visibleDocs.map(doc => {
                   const Icon = fileIcon(doc.mime_type);
                   const folder = DOC_FOLDERS.find(f => f.key === doc.document_type);
                   return (
-                    <div key={doc.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: (folder?.color || '#6B7280') + '15' }}>
-                        <Icon className="w-4 h-4" style={{ color: folder?.color || '#6B7280' }} />
+                    <div key={doc.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-hover transition-colors">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `color-mix(in srgb, ${folder?.color || 'var(--text-muted)'} 8%, transparent)` }}>
+                        <Icon className="w-4 h-4" style={{ color: folder?.color || 'var(--text-muted)' }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-white truncate">{doc.file_name}</p>
+                        <p className="text-sm font-semibold text-text-primary truncate">{doc.file_name}</p>
                         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                          <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: (folder?.color || '#6B7280') + '15', color: folder?.color || '#6B7280' }}>{folder?.label}</span>
-                          <span className="text-xs" style={{ color: '#4A4A4A' }}>{fmtSize(doc.file_size)}</span>
-                          <span className="text-xs" style={{ color: '#4A4A4A' }}>{fmtDate(doc.uploaded_at)}</span>
-                          <span className="text-xs" style={{ color: '#4A4A4A' }}>by {doc.uploaded_by_name}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: `color-mix(in srgb, ${folder?.color || 'var(--text-muted)'} 8%, transparent)`, color: folder?.color || 'var(--text-muted)' }}>{folder?.label}</span>
+                          <span className="text-xs" style={{ color: 'var(--text-faint)' }}>{fmtSize(doc.file_size)}</span>
+                          <span className="text-xs" style={{ color: 'var(--text-faint)' }}>{fmtDate(doc.uploaded_at)}</span>
+                          <span className="text-xs" style={{ color: 'var(--text-faint)' }}>by {doc.uploaded_by_name}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <button onClick={() => handlePreview(doc)} title="Preview"
-                          className="p-1.5 rounded-lg transition-colors hover:bg-white/5">
-                          <Eye className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
+                          className="p-1.5 rounded-lg transition-colors hover:bg-hover">
+                          <Eye className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
                         </button>
                         <button onClick={() => handleDownload(doc)} title="Download"
-                          className="p-1.5 rounded-lg transition-colors hover:bg-white/5">
-                          <Download className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />
+                          className="p-1.5 rounded-lg transition-colors hover:bg-hover">
+                          <Download className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
                         </button>
                         <button onClick={() => triggerReplace(doc)} title="Edit / Replace" disabled={replacingId === doc.id}
-                          className="p-1.5 rounded-lg transition-colors hover:bg-white/5 disabled:opacity-50">
+                          className="p-1.5 rounded-lg transition-colors hover:bg-hover disabled:opacity-50">
                           {replacingId === doc.id
-                            ? <div className="w-3.5 h-3.5 rounded-full border-2 animate-spin" style={{ borderColor: '#D4AF37', borderTopColor: 'transparent' }} />
-                            : <Pencil className="w-3.5 h-3.5" style={{ color: '#6B6B6B' }} />}
+                            ? <div className="w-3.5 h-3.5 rounded-full border-2 animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+                            : <Pencil className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />}
                         </button>
                         {isAdmin && (
                           <button onClick={() => setDeleteDoc(doc)} title="Delete"
-                            className="p-1.5 rounded-lg transition-colors hover:bg-red-500/10">
-                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            className="p-1.5 rounded-lg transition-colors hover:bg-danger/10">
+                            <Trash2 className="w-3.5 h-3.5 text-c-red" />
                           </button>
                         )}
                       </div>
@@ -508,25 +508,25 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
       {/* Upload Modal */}
       {showUpload && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-lg rounded-3xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #1A1A1A' }}>
+          <div className="w-full max-w-lg rounded-3xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
               <div>
-                <p className="text-sm font-bold text-white">Upload Documents</p>
-                <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>{selectedClient?.full_name} · {selectedClient?.client_code}</p>
+                <p className="text-sm font-bold text-text-primary">Upload Documents</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{selectedClient?.full_name} · {selectedClient?.client_code}</p>
               </div>
               <button onClick={() => { setShowUpload(false); setUploadItems([]); }}
-                className="p-2 rounded-xl" style={{ background: '#111', border: '1px solid #1E1E24' }}>
-                <X className="w-4 h-4" style={{ color: '#6B6B6B' }} />
+                className="p-2 rounded-xl" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
+                <X className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
               </button>
             </div>
 
             <div className="p-6 space-y-4">
               {/* Folder select */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>Upload to Folder</label>
+                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Upload to Folder</label>
                 <select value={uploadFolder} onChange={e => setUploadFolder(e.target.value as DocFolderKey)}
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none"
-                  style={{ background: '#050505', border: '1px solid #1E1E24' }}>
+                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+                  style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
                   {DOC_FOLDERS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                 </select>
               </div>
@@ -538,11 +538,11 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
                 onDrop={e => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); }}
                 onClick={() => fileInputRef.current?.click()}
                 className="relative flex flex-col items-center justify-center gap-3 p-8 rounded-2xl cursor-pointer transition-all"
-                style={{ border: `2px dashed ${dragOver ? '#D4AF37' : '#1E1E24'}`, background: dragOver ? 'rgba(212,175,55,0.04)' : '#050505' }}>
-                <Upload className="w-8 h-8" style={{ color: dragOver ? '#D4AF37' : '#2A2A2A' }} />
+                style={{ border: `2px dashed ${dragOver ? 'var(--accent)' : 'var(--border)'}`, background: dragOver ? 'rgba(var(--accent-rgb),0.04)' : 'var(--bg-base)' }}>
+                <Upload className="w-8 h-8" style={{ color: dragOver ? 'var(--accent)' : 'var(--border-strong)' }} />
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-white">Drag & drop files here</p>
-                  <p className="text-xs mt-0.5" style={{ color: '#4A4A4A' }}>or click to browse · PDF, JPG, PNG, DOCX, XLSX · max 10MB each</p>
+                  <p className="text-sm font-semibold text-text-primary">Drag & drop files here</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>or click to browse · PDF, JPG, PNG, DOCX, XLSX · max 10MB each</p>
                 </div>
                 <input ref={fileInputRef} type="file" multiple className="hidden"
                   accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx"
@@ -553,24 +553,24 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
               {uploadItems.length > 0 && (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {uploadItems.map((item, i) => (
-                    <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: '#050505', border: `1px solid ${item.status === 'error' ? 'rgba(239,68,68,0.2)' : item.status === 'done' ? 'rgba(16,185,129,0.2)' : '#1A1A1A'}` }}>
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: item.status === 'error' ? 'rgba(239,68,68,0.1)' : item.status === 'done' ? 'rgba(16,185,129,0.1)' : 'rgba(212,175,55,0.08)' }}>
-                        {item.status === 'done' ? <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#10B981' }} />
-                          : item.status === 'error' ? <AlertCircle className="w-3.5 h-3.5 text-red-400" />
-                          : <FileText className="w-3.5 h-3.5" style={{ color: '#D4AF37' }} />}
+                    <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: 'var(--bg-base)', border: `1px solid ${item.status === 'error' ? 'rgba(239,68,68,0.2)' : item.status === 'done' ? 'rgba(16,185,129,0.2)' : 'var(--border-subtle)'}` }}>
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: item.status === 'error' ? 'rgba(239,68,68,0.1)' : item.status === 'done' ? 'rgba(16,185,129,0.1)' : 'rgba(var(--accent-rgb),0.08)' }}>
+                        {item.status === 'done' ? <CheckCircle2 className="w-3.5 h-3.5" style={{ color: 'var(--success)' }} />
+                          : item.status === 'error' ? <AlertCircle className="w-3.5 h-3.5 text-c-red" />
+                          : <FileText className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-white truncate">{item.name}</p>
-                        {item.status === 'error' && <p className="text-xs text-red-400 mt-0.5">{item.error}</p>}
+                        <p className="text-xs font-medium text-text-primary truncate">{item.name}</p>
+                        {item.status === 'error' && <p className="text-xs text-c-red mt-0.5">{item.error}</p>}
                         {item.status === 'uploading' && (
-                          <div className="w-full h-1 rounded-full mt-1.5" style={{ background: '#1A1A1A' }}>
-                            <div className="h-full rounded-full transition-all" style={{ width: `${item.progress}%`, background: '#D4AF37' }} />
+                          <div className="w-full h-1 rounded-full mt-1.5" style={{ background: 'var(--border-subtle)' }}>
+                            <div className="h-full rounded-full transition-all" style={{ width: `${item.progress}%`, background: 'var(--accent)' }} />
                           </div>
                         )}
                       </div>
                       {item.status === 'pending' && (
                         <button onClick={() => setUploadItems(prev => prev.filter((_, idx) => idx !== i))}>
-                          <X className="w-3.5 h-3.5" style={{ color: '#4A4A4A' }} />
+                          <X className="w-3.5 h-3.5" style={{ color: 'var(--text-faint)' }} />
                         </button>
                       )}
                     </div>
@@ -581,8 +581,8 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
               <button
                 onClick={handleUpload}
                 disabled={uploading || uploadItems.filter(i => i.status === 'pending').length === 0}
-                className="w-full py-3 rounded-2xl text-sm font-bold text-black disabled:opacity-40"
-                style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+                className="w-full py-3 rounded-2xl text-sm font-bold text-on-accent disabled:opacity-40"
+                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
                 {uploading ? 'Uploading...' : `Upload ${uploadItems.filter(i => i.status === 'pending').length} File${uploadItems.filter(i => i.status === 'pending').length !== 1 ? 's' : ''}`}
               </button>
             </div>
@@ -593,22 +593,22 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
       {/* Preview Modal */}
       {previewUrl && previewDoc && (
         <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'rgba(0,0,0,0.95)' }}>
-          <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ background: '#0B0B0F', borderBottom: '1px solid #1A1A1A' }}>
+          <div className="flex items-center justify-between px-6 py-4 flex-shrink-0" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)' }}>
             <div>
-              <p className="text-sm font-bold text-white truncate max-w-md">{previewDoc.file_name}</p>
-              <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>
+              <p className="text-sm font-bold text-text-primary truncate max-w-md">{previewDoc.file_name}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                 {fmtSize(previewDoc.file_size)} · Uploaded {fmtDate(previewDoc.uploaded_at)} by {previewDoc.uploaded_by_name}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => handleDownload(previewDoc)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold"
-                style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }}>
+                style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>
                 <Download className="w-3.5 h-3.5" /> Download
               </button>
               <button onClick={() => { setPreviewUrl(null); setPreviewDoc(null); }}
-                className="p-2 rounded-xl" style={{ background: '#111', border: '1px solid #1E1E24' }}>
-                <X className="w-4 h-4" style={{ color: '#6B6B6B' }} />
+                className="p-2 rounded-xl" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
+                <X className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
               </button>
             </div>
           </div>
@@ -619,11 +619,11 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
               <iframe src={previewUrl} className="w-full h-full rounded-xl" style={{ minHeight: '70vh' }} title={previewDoc.file_name} />
             ) : (
               <div className="text-center space-y-4">
-                <File className="w-16 h-16 mx-auto" style={{ color: '#2A2A2A' }} />
-                <p className="text-sm" style={{ color: '#6B6B6B' }}>Preview not available for this file type.</p>
+                <File className="w-16 h-16 mx-auto" style={{ color: 'var(--border-strong)' }} />
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Preview not available for this file type.</p>
                 <button onClick={() => handleDownload(previewDoc)}
-                  className="px-5 py-2.5 rounded-xl text-sm font-bold text-black"
-                  style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+                  className="px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent"
+                  style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
                   Download to View
                 </button>
               </div>
@@ -635,16 +635,16 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
       {/* Delete Confirm */}
       {deleteDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-sm rounded-3xl p-6 space-y-4" style={{ background: '#0B0B0F', border: '1px solid rgba(239,68,68,0.2)' }}>
+          <div className="w-full max-w-sm rounded-3xl p-6 space-y-4" style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(239,68,68,0.2)' }}>
             <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.1)' }}>
-              <Trash2 className="w-5 h-5 text-red-400" />
+              <Trash2 className="w-5 h-5 text-c-red" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Delete Document?</p>
-              <p className="text-xs mt-1" style={{ color: '#6B6B6B' }}>This will permanently delete <strong className="text-white">{deleteDoc.file_name}</strong> from storage. This cannot be undone.</p>
+              <p className="text-sm font-bold text-text-primary">Delete Document?</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>This will permanently delete <strong className="text-text-primary">{deleteDoc.file_name}</strong> from storage. This cannot be undone.</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteDoc(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>Cancel</button>
+              <button onClick={() => setDeleteDoc(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
               <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: '#DC2626' }}>Delete</button>
             </div>
           </div>

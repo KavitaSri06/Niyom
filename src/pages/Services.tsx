@@ -152,7 +152,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
   const Icon = activeService.icon;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-bg-base">
       <nav className="bg-black text-white py-5 px-6 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <button
@@ -198,7 +198,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
                   onBack();
                   setIsMobileMenuOpen(false);
                 }}
-                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-white/5 rounded transition-colors flex items-center gap-2"
+                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-bg-elevated/5 rounded transition-colors flex items-center gap-2"
               >
                 <ArrowLeft size={20} />
                 Back
@@ -217,17 +217,17 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
         )}
       </nav>
 
-      <section className="py-16 px-6 bg-gradient-to-b from-gray-50 to-white">
+      <section className="py-16 px-6 bg-gradient-to-b from-bg-raised to-bg-base">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-5xl font-bold text-black mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-              Our <span className="text-[#c9b896]">Services</span>
+            <h2 className="text-5xl font-bold text-text-primary mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+              Our <span className="text-accent">Services</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-text-secondary max-w-3xl mx-auto">
               Product distribution and information services to support your investment journey
             </p>
-            <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3 max-w-2xl mx-auto">
-              <p className="text-sm text-yellow-900 font-semibold">
+            <div className="mt-4 bg-warning/10 border border-warning/40 rounded-lg p-3 max-w-2xl mx-auto">
+              <p className="text-sm text-text-primary font-semibold">
                 We are not SEBI Registered Investment Advisers. Information provided is for educational purposes only and does not constitute investment advice.
               </p>
             </div>
@@ -242,8 +242,8 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
                   onClick={() => setActiveTab(service.id)}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
                     activeTab === service.id
-                      ? 'bg-[#c9b896] text-black shadow-lg'
-                      : 'bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-200'
+                      ? 'bg-accent text-on-accent shadow-lg'
+                      : 'bg-bg-elevated text-text-secondary hover:bg-bg-raised border-2 border-border'
                   }`}
                 >
                   <ServiceIcon size={20} />
@@ -253,7 +253,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
             })}
           </div>
 
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-t-4 border-[#c9b896]">
+          <div className="bg-bg-elevated rounded-2xl shadow-2xl overflow-hidden border-t-4 border-accent">
             <div className="h-80 overflow-hidden relative">
               <img
                 src={activeService.image}
@@ -275,20 +275,20 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
             </div>
 
             <div className="p-8 md:p-12">
-              <p className="text-gray-700 text-lg leading-relaxed mb-10 bg-gray-50 p-6 rounded-lg border-l-4 border-[#c9b896]">
+              <p className="text-text-secondary text-lg leading-relaxed mb-10 bg-bg-base p-6 rounded-lg border-l-4 border-accent">
                 {activeService.description}
               </p>
 
               <div className="grid md:grid-cols-2 gap-10">
                 <div>
-                  <h4 className="text-2xl font-bold text-black mb-6 flex items-center gap-2" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                    <div className="w-2 h-8 bg-[#c9b896]"></div>
+                  <h4 className="text-2xl font-bold text-text-primary mb-6 flex items-center gap-2" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                    <div className="w-2 h-8 bg-accent"></div>
                     What It Is
                   </h4>
                   <ul className="space-y-4">
                     {activeService.whatItIs.map((item, index) => (
-                      <li key={index} className="flex gap-3 text-gray-700 leading-relaxed">
-                        <span className="text-[#c9b896] font-bold text-lg mt-1">•</span>
+                      <li key={index} className="flex gap-3 text-text-secondary leading-relaxed">
+                        <span className="text-accent font-bold text-lg mt-1">•</span>
                         <span>{item}</span>
                       </li>
                     ))}
@@ -296,14 +296,14 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
                 </div>
 
                 <div>
-                  <h4 className="text-2xl font-bold text-black mb-6 flex items-center gap-2" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
-                    <div className="w-2 h-8 bg-[#c9b896]"></div>
+                  <h4 className="text-2xl font-bold text-text-primary mb-6 flex items-center gap-2" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                    <div className="w-2 h-8 bg-accent"></div>
                     How Niyom Wealth Helps
                   </h4>
                   <ul className="space-y-4">
                     {activeService.howWeHelp.map((item, index) => (
-                      <li key={index} className="flex gap-3 text-gray-700 leading-relaxed">
-                        <span className="text-[#c9b896] font-bold text-lg mt-1">•</span>
+                      <li key={index} className="flex gap-3 text-text-secondary leading-relaxed">
+                        <span className="text-accent font-bold text-lg mt-1">•</span>
                         <span>{item}</span>
                       </li>
                     ))}
@@ -314,7 +314,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
               <div className="mt-12 text-center">
                 <button
                   onClick={onGetStarted}
-                  className="bg-[#c9b896] hover:bg-[#b5a57d] text-black font-bold py-4 px-10 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-lg"
+                  className="bg-accent hover:bg-accent-strong text-on-accent font-bold py-4 px-10 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-lg"
                 >
                   Get Started Today
                 </button>
@@ -332,7 +332,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
               <h2 className="text-xl font-bold" style={{ fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.1em' }}>NIYOM WEALTH</h2>
             </div>
           </div>
-          <p className="text-gray-400">&copy; 2025 Niyom Wealth Distribution LLP. All rights reserved.</p>
+          <p className="text-text-muted">&copy; 2025 Niyom Wealth Distribution LLP. All rights reserved.</p>
         </div>
       </footer>
     </div>

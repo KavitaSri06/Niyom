@@ -1,6 +1,107 @@
+@import './theme/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* -----------------------------------------------------------------------------
+ * Theme transition
+ * Smoothly cross-fade colors when the theme switches. Scoped to color-ish
+ * properties so layout/transform animations are unaffected. A short-lived
+ * `theme-transition` class (added by ThemeProvider during a switch) could be
+ * used to limit this further; kept global+cheap here for a premium feel.
+ * -------------------------------------------------------------------------- */
+:root {
+  --theme-transition: background-color 0.25s ease, border-color 0.25s ease,
+    color 0.25s ease, fill 0.25s ease, stroke 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* NOTE (Phase 1): the app shell `body` background/text are intentionally NOT
+ * tokenized yet. The default theme is dark, but public pages still render their
+ * own light backgrounds; theming `body` is done per-surface during migration
+ * (Phase 2/3) so Phase 1 leaves the current look untouched. */
+
+@media (prefers-reduced-motion: no-preference) {
+  body * {
+    transition: var(--theme-transition);
+  }
+}
+
+/* Theme-aware placeholders, selection, focus ring and scrollbars.
+ * Kept subtle in dark to preserve the current look; these adapt with the theme. */
+::placeholder {
+  color: var(--text-placeholder);
+  opacity: 1;
+}
+
+::selection {
+  background: rgba(var(--accent-rgb), 0.3);
+  color: var(--text-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* -----------------------------------------------------------------------------
+ * CRM shell helpers — CSS-driven hover/active states (replace JS color hacks)
+ * so they are theme-aware automatically. Used by src/crm/Layout.tsx.
+ * -------------------------------------------------------------------------- */
+.crm-nav-item {
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+}
+.crm-nav-item:hover {
+  color: var(--text-bright);
+  background: var(--hover-bg);
+}
+.crm-nav-item.is-active {
+  color: var(--accent-soft);
+  background: rgba(var(--accent-soft-rgb), 0.1);
+  border-color: rgba(var(--accent-soft-rgb), 0.15);
+}
+.crm-nav-item.is-active:hover {
+  color: var(--accent-soft);
+  background: rgba(var(--accent-soft-rgb), 0.1);
+}
+
+/* Subtle accent-on-hover control (e.g. "Back to Website") */
+.crm-nav-link {
+  color: var(--text-muted);
+  border: 1px solid transparent;
+}
+.crm-nav-link:hover {
+  color: var(--accent-soft);
+  background: rgba(var(--accent-soft-rgb), 0.06);
+}
+
+/* Icon button that turns danger-red on hover (e.g. logout) */
+.crm-icon-danger {
+  color: var(--text-faint);
+}
+.crm-icon-danger:hover {
+  color: var(--danger);
+}
 
 @keyframes fadeInUp {
   from {

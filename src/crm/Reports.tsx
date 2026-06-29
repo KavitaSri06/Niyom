@@ -105,23 +105,23 @@ export default function Reports({ employee }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Analytics</p>
-          <h1 className="text-2xl font-bold text-white">Reports</h1>
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Analytics</p>
+          <h1 className="text-2xl font-bold text-text-primary">Reports</h1>
         </div>
-        <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>
+        <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
           <Download className="w-4 h-4" /> Export CSV
         </button>
       </div>
 
       {/* Mode tabs */}
-      <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+      <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
         {modes.map(m => {
           const Icon = m.icon;
           const active = mode === m.key;
           return (
             <button key={m.key} onClick={() => setMode(m.key)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-              style={active ? { background: 'rgba(212,175,55,0.1)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' } : { color: '#6B6B6B', border: '1px solid transparent' }}>
+              style={active ? { background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.2)' } : { color: 'var(--text-muted)', border: '1px solid transparent' }}>
               <Icon className="w-4 h-4" />{m.label}
             </button>
           );
@@ -133,56 +133,56 @@ export default function Reports({ employee }: Props) {
         {isAdmin && (
           <div className="relative">
             <select value={empFilter} onChange={e => { setEmpFilter(e.target.value); setClientFilter('all'); }}
-              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-              style={{ background: '#0B0B0F', border: '1px solid rgba(212,175,55,0.4)' }}>
+              className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(var(--accent-rgb),0.4)' }}>
               <option value="all">All Employees</option>
               {empList.map(e => <option key={e.id} value={e.id}>{e.full_name} ({e.employee_code})</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#D4AF37' }} />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--accent)' }} />
           </div>
         )}
         <div className="relative">
           <select value={clientFilter} onChange={e => setClientFilter(e.target.value)}
-            className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-white outline-none appearance-none"
-            style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+            className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
             <option value="all">All Clients</option>
             {filteredClients.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
           </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#4A4A4A' }} />
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--text-faint)' }} />
         </div>
         {mode === 'transactions' && (
           <>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} placeholder="From"
-              className="px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-              style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }} />
+              className="px-3 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }} />
             <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} placeholder="To"
-              className="px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-              style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }} />
+              className="px-3 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }} />
           </>
         )}
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#D4AF37', borderTopColor: 'transparent' }} /></div>
+        <div className="flex justify-center py-16"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} /></div>
       ) : (
         <>
           {mode === 'portfolio' && (
             <div className="space-y-5">
               {/* Bar chart by product */}
-              <div className="rounded-2xl p-6" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-                <h2 className="text-sm font-bold text-white mb-5">Portfolio by Product Type</h2>
+              <div className="rounded-2xl p-6" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                <h2 className="text-sm font-bold text-text-primary mb-5">Portfolio by Product Type</h2>
                 {productBreakdown.length === 0 ? (
-                  <p className="text-sm text-center py-8" style={{ color: '#4A4A4A' }}>No holdings data</p>
+                  <p className="text-sm text-center py-8" style={{ color: 'var(--text-faint)' }}>No holdings data</p>
                 ) : (
                   <div className="space-y-4">
                     {productBreakdown.map(([type, value]) => (
                       <div key={type} className="flex items-center gap-4">
-                        <p className="text-xs font-semibold w-32 flex-shrink-0 text-white">{PRODUCT_LABELS[type as ProductType]}</p>
-                        <div className="flex-1 h-8 rounded-lg overflow-hidden" style={{ background: '#111' }}>
+                        <p className="text-xs font-semibold w-32 flex-shrink-0 text-text-primary">{PRODUCT_LABELS[type as ProductType]}</p>
+                        <div className="flex-1 h-8 rounded-lg overflow-hidden" style={{ background: 'var(--bg-raised)' }}>
                           <div className="h-full rounded-lg flex items-center px-3 transition-all" style={{ width: `${(value / maxBarValue) * 100}%`, background: PRODUCT_CHART_COLORS[type as ProductType] + '40', borderRight: `2px solid ${PRODUCT_CHART_COLORS[type as ProductType]}` }}>
                           </div>
                         </div>
-                        <p className="text-sm font-bold text-white w-24 text-right flex-shrink-0">{fmt(value)}</p>
+                        <p className="text-sm font-bold text-text-primary w-24 text-right flex-shrink-0">{fmt(value)}</p>
                       </div>
                     ))}
                   </div>
@@ -190,25 +190,25 @@ export default function Reports({ employee }: Props) {
               </div>
 
               {/* Holdings table */}
-              <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+              <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead><tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+                    <thead><tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                       {['Product', 'Client', 'Type', 'Invested', 'Current Value', 'P&L'].map(h => (
-                        <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                        <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                       ))}
                     </tr></thead>
                     <tbody>
                       {filteredHoldings.map(h => {
                         const pl = (h.current_value || 0) - (h.invested_amount || 0);
                         return (
-                          <tr key={h.id} style={{ borderBottom: '1px solid #111' }}>
-                            <td className="px-5 py-3.5 text-sm font-medium text-white">{h.product_name}</td>
-                            <td className="px-5 py-3.5 text-xs" style={{ color: '#8A8A8A' }}>{(h as any).client?.full_name || '—'}</td>
+                          <tr key={h.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}>
+                            <td className="px-5 py-3.5 text-sm font-medium text-text-primary">{h.product_name}</td>
+                            <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-secondary)' }}>{(h as any).client?.full_name || '—'}</td>
                             <td className="px-5 py-3.5"><span className="text-xs px-1.5 py-0.5 rounded" style={{ background: PRODUCT_CHART_COLORS[h.product_type] + '20', color: PRODUCT_CHART_COLORS[h.product_type] }}>{PRODUCT_LABELS[h.product_type]}</span></td>
-                            <td className="px-5 py-3.5 text-sm text-white">{fmt(h.invested_amount || 0)}</td>
-                            <td className="px-5 py-3.5 text-sm font-bold text-white">{fmt(h.current_value || 0)}</td>
-                            <td className="px-5 py-3.5"><span className={`text-sm font-bold ${pl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{pl >= 0 ? '+' : ''}{fmt(pl)}</span></td>
+                            <td className="px-5 py-3.5 text-sm text-text-primary">{fmt(h.invested_amount || 0)}</td>
+                            <td className="px-5 py-3.5 text-sm font-bold text-text-primary">{fmt(h.current_value || 0)}</td>
+                            <td className="px-5 py-3.5"><span className={`text-sm font-bold ${pl >= 0 ? 'text-c-emerald' : 'text-c-red'}`}>{pl >= 0 ? '+' : ''}{fmt(pl)}</span></td>
                           </tr>
                         );
                       })}
@@ -220,24 +220,24 @@ export default function Reports({ employee }: Props) {
           )}
 
           {mode === 'transactions' && (
-            <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+            <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead><tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+                  <thead><tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     {['Date', 'Client', 'Type', 'Product', 'Amount'].map(h => (
-                      <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                      <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody>
                     {filteredTxns.length === 0 ? (
-                      <tr><td colSpan={5} className="text-center py-12 text-sm" style={{ color: '#4A4A4A' }}>No transactions in range</td></tr>
+                      <tr><td colSpan={5} className="text-center py-12 text-sm" style={{ color: 'var(--text-faint)' }}>No transactions in range</td></tr>
                     ) : filteredTxns.map(t => (
-                      <tr key={t.id} style={{ borderBottom: '1px solid #111' }}>
-                        <td className="px-5 py-3.5 text-xs" style={{ color: '#6B6B6B' }}>{fmtDate(t.txn_date)}</td>
-                        <td className="px-5 py-3.5 text-sm text-white">{(t.client as any)?.full_name || '—'}</td>
+                      <tr key={t.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}>
+                        <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-muted)' }}>{fmtDate(t.txn_date)}</td>
+                        <td className="px-5 py-3.5 text-sm text-text-primary">{(t.client as any)?.full_name || '—'}</td>
                         <td className="px-5 py-3.5"><span className={`text-xs font-bold px-2 py-1 rounded-lg ${TXN_COLORS[t.txn_type]}`}>{TXN_LABELS[t.txn_type]}</span></td>
-                        <td className="px-5 py-3.5 text-sm text-white">{t.product_name}</td>
-                        <td className="px-5 py-3.5 text-sm font-bold text-white">{fmt(t.consolidated_amount)}</td>
+                        <td className="px-5 py-3.5 text-sm text-text-primary">{t.product_name}</td>
+                        <td className="px-5 py-3.5 text-sm font-bold text-text-primary">{fmt(t.consolidated_amount)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -247,28 +247,28 @@ export default function Reports({ employee }: Props) {
           )}
 
           {mode === 'clients' && (
-            <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+            <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead><tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+                  <thead><tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     {['Client', 'Code', ...(isAdmin ? ['Employee'] : []), 'Portfolio', 'Status', 'Joined'].map(h => (
-                      <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                      <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody>
                     {filteredClients.length === 0 ? (
-                      <tr><td colSpan={isAdmin ? 6 : 5} className="text-center py-12 text-sm" style={{ color: '#4A4A4A' }}>No clients</td></tr>
+                      <tr><td colSpan={isAdmin ? 6 : 5} className="text-center py-12 text-sm" style={{ color: 'var(--text-faint)' }}>No clients</td></tr>
                     ) : filteredClients.map(c => (
-                      <tr key={c.id} style={{ borderBottom: '1px solid #111' }}>
+                      <tr key={c.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}>
                         <td className="px-5 py-3.5">
-                          <p className="text-sm font-medium text-white">{c.full_name}</p>
-                          <p className="text-xs" style={{ color: '#4A4A4A' }}>{c.email || c.phone}</p>
+                          <p className="text-sm font-medium text-text-primary">{c.full_name}</p>
+                          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{c.email || c.phone}</p>
                         </td>
-                        <td className="px-5 py-3.5"><span className="text-xs font-mono px-2 py-1 rounded" style={{ background: '#111', color: '#D4AF37' }}>{c.client_code}</span></td>
-                        {isAdmin && <td className="px-5 py-3.5 text-xs" style={{ color: '#8A8A8A' }}>{(c.employee as any)?.full_name || 'Admin'}</td>}
-                        <td className="px-5 py-3.5 text-sm font-bold text-white">{fmt(c.portfolio_value || 0)}</td>
-                        <td className="px-5 py-3.5 text-xs capitalize text-white">{c.verification_status}</td>
-                        <td className="px-5 py-3.5 text-xs" style={{ color: '#6B6B6B' }}>{fmtDate(c.created_at)}</td>
+                        <td className="px-5 py-3.5"><span className="text-xs font-mono px-2 py-1 rounded" style={{ background: 'var(--bg-raised)', color: 'var(--accent)' }}>{c.client_code}</span></td>
+                        {isAdmin && <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-secondary)' }}>{(c.employee as any)?.full_name || 'Admin'}</td>}
+                        <td className="px-5 py-3.5 text-sm font-bold text-text-primary">{fmt(c.portfolio_value || 0)}</td>
+                        <td className="px-5 py-3.5 text-xs capitalize text-text-primary">{c.verification_status}</td>
+                        <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-muted)' }}>{fmtDate(c.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>

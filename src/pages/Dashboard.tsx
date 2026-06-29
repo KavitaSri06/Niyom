@@ -55,14 +55,14 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-slate-600">Loading...</div>
+        <div className="text-text-secondary">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-black shadow-lg border-b border-[#c9b896]/20">
+    <div className="min-h-screen bg-bg-base">
+      <nav className="bg-black shadow-lg border-b border-accent/20">
         <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
           <button
             onClick={onClose}
@@ -71,21 +71,21 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
             <Logo size="md" />
             <div className="text-left">
               <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Client Portal</h1>
-              <p className="text-[#c9b896] text-xs tracking-wider">NIYOM WEALTH</p>
+              <p className="text-accent text-xs tracking-wider">NIYOM WEALTH</p>
             </div>
           </button>
 
           <div className="hidden md:flex items-center gap-3">
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-text-muted hover:text-white transition-colors"
               title="Close and return to landing page"
             >
               <X size={28} />
             </button>
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-2 bg-[#c9b896] hover:bg-[#b5a57d] text-black px-5 py-2.5 rounded-lg transition-all duration-300 font-semibold shadow-md"
+              className="flex items-center gap-2 bg-accent hover:bg-accent-strong text-on-accent px-5 py-2.5 rounded-lg transition-all duration-300 font-semibold shadow-md"
             >
               <LogOut size={18} />
               Sign Out
@@ -94,21 +94,21 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden text-white hover:text-[#c9b896] transition-colors"
+            className="md:hidden text-white hover:text-accent transition-colors"
           >
             {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
 
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-[#c9b896]/20 shadow-lg z-50">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-accent/20 shadow-lg z-50">
             <div className="flex flex-col p-4 space-y-3">
               <button
                 onClick={() => {
                   onClose();
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-2 text-white hover:text-[#c9b896] px-4 py-3 text-left hover:bg-white/5 rounded transition-colors font-medium"
+                className="flex items-center gap-2 text-white hover:text-accent px-4 py-3 text-left hover:bg-bg-elevated/5 rounded transition-colors font-medium"
               >
                 <X size={20} />
                 Close & Return to Home
@@ -118,7 +118,7 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
                   handleSignOut();
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-2 bg-[#c9b896] hover:bg-[#b5a57d] text-black px-4 py-3 rounded-lg transition-all duration-300 font-semibold"
+                className="flex items-center gap-2 bg-accent hover:bg-accent-strong text-on-accent px-4 py-3 rounded-lg transition-all duration-300 font-semibold"
               >
                 <LogOut size={18} />
                 Sign Out
@@ -130,21 +130,21 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-md border-t-4 border-[#c9b896] p-6 hover:shadow-lg transition-all duration-300">
+          <div className="bg-bg-elevated rounded-xl shadow-md border-t-4 border-accent p-6 hover:shadow-lg transition-all duration-300">
             <div className="flex items-center gap-4">
-              <User className="w-12 h-12 text-[#c9b896]" />
+              <User className="w-12 h-12 text-accent" />
               <div>
-                <p className="text-sm text-gray-600 font-medium">Account Status</p>
-                <p className="text-xl font-bold text-black" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Active</p>
+                <p className="text-sm text-text-secondary font-medium">Account Status</p>
+                <p className="text-xl font-bold text-text-primary" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Active</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md border-t-4 border-[#c9b896] p-6 hover:shadow-lg transition-all duration-300">
+          <div className="bg-bg-elevated rounded-xl shadow-md border-t-4 border-accent p-6 hover:shadow-lg transition-all duration-300">
             <div className="flex items-center gap-4">
-              <FileText className="w-12 h-12 text-[#c9b896]" />
+              <FileText className="w-12 h-12 text-accent" />
               <div>
-                <p className="text-sm text-gray-600 font-medium">KYC Status</p>
+                <p className="text-sm text-text-secondary font-medium">KYC Status</p>
                 <p className={`text-lg font-bold ${getStatusBadge(profile?.kyc_status || 'pending')}`}>
                   {profile?.kyc_status?.toUpperCase() || 'PENDING'}
                 </p>
@@ -152,51 +152,51 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md border-t-4 border-[#c9b896] p-6 hover:shadow-lg transition-all duration-300">
-            <p className="text-sm text-gray-600 font-medium mb-2">Email</p>
-            <p className="text-lg font-semibold text-black truncate">{user?.email}</p>
+          <div className="bg-bg-elevated rounded-xl shadow-md border-t-4 border-accent p-6 hover:shadow-lg transition-all duration-300">
+            <p className="text-sm text-text-secondary font-medium mb-2">Email</p>
+            <p className="text-lg font-semibold text-text-primary truncate">{user?.email}</p>
           </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
-          <div className="bg-white rounded-xl shadow-md border-l-4 border-[#c9b896] p-8 hover:shadow-lg transition-all duration-300">
-            <h2 className="text-2xl font-bold text-black mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Profile Information</h2>
+          <div className="bg-bg-elevated rounded-xl shadow-md border-l-4 border-accent p-8 hover:shadow-lg transition-all duration-300">
+            <h2 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Profile Information</h2>
             {profile ? (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-600 font-medium">Full Name</p>
-                  <p className="text-lg font-semibold text-black">{profile.full_name}</p>
+                  <p className="text-sm text-text-secondary font-medium">Full Name</p>
+                  <p className="text-lg font-semibold text-text-primary">{profile.full_name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-medium">Email</p>
-                  <p className="text-lg font-semibold text-black">{profile.email}</p>
+                  <p className="text-sm text-text-secondary font-medium">Email</p>
+                  <p className="text-lg font-semibold text-text-primary">{profile.email}</p>
                 </div>
                 {profile.phone && (
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Phone</p>
-                    <p className="text-lg font-semibold text-black">{profile.phone}</p>
+                    <p className="text-sm text-text-secondary font-medium">Phone</p>
+                    <p className="text-lg font-semibold text-text-primary">{profile.phone}</p>
                   </div>
                 )}
                 {profile.address && (
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Address</p>
-                    <p className="text-lg font-semibold text-black">{profile.address}</p>
+                    <p className="text-sm text-text-secondary font-medium">Address</p>
+                    <p className="text-lg font-semibold text-text-primary">{profile.address}</p>
                   </div>
                 )}
               </div>
             ) : (
-              <p className="text-gray-600">No profile information found</p>
+              <p className="text-text-secondary">No profile information found</p>
             )}
           </div>
 
-          <div className="bg-white rounded-xl shadow-md border-l-4 border-[#c9b896] p-8 hover:shadow-lg transition-all duration-300">
-            <h2 className="text-2xl font-bold text-black mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>KYC Verification</h2>
+          <div className="bg-bg-elevated rounded-xl shadow-md border-l-4 border-accent p-8 hover:shadow-lg transition-all duration-300">
+            <h2 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>KYC Verification</h2>
             {profile?.kyc_status === 'pending' && !kyc ? (
               <div className="text-center py-8">
-                <p className="text-gray-600 mb-4 font-medium">Complete your KYC to access all services</p>
+                <p className="text-text-secondary mb-4 font-medium">Complete your KYC to access all services</p>
                 <button
                   onClick={() => onNavigate('kyc')}
-                  className="bg-[#c9b896] hover:bg-[#b5a57d] text-black font-bold py-3 px-8 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="bg-accent hover:bg-accent-strong text-on-accent font-bold py-3 px-8 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   Start KYC Process
                 </button>
@@ -204,40 +204,40 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
             ) : kyc ? (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-600 font-medium">Submission Status</p>
+                  <p className="text-sm text-text-secondary font-medium">Submission Status</p>
                   <div className={`inline-block ${getStatusBadge(kyc.status)}`}>
                     {kyc.status.toUpperCase()}
                   </div>
                 </div>
                 {kyc.pan && (
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">PAN</p>
-                    <p className="font-semibold text-black">{kyc.pan}</p>
+                    <p className="text-sm text-text-secondary font-medium">PAN</p>
+                    <p className="font-semibold text-text-primary">{kyc.pan}</p>
                   </div>
                 )}
                 {kyc.aadhar && (
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Aadhar</p>
-                    <p className="font-semibold text-black">••••{kyc.aadhar.slice(-4)}</p>
+                    <p className="text-sm text-text-secondary font-medium">Aadhar</p>
+                    <p className="font-semibold text-text-primary">••••{kyc.aadhar.slice(-4)}</p>
                   </div>
                 )}
                 {kyc.notes && (
-                  <div className="bg-[#c9b896]/10 border-2 border-[#c9b896]/30 p-4 rounded-lg mt-4">
-                    <p className="text-sm text-gray-600 font-medium mb-1">Admin Notes</p>
-                    <p className="text-black">{kyc.notes}</p>
+                  <div className="bg-accent/10 border-2 border-accent/30 p-4 rounded-lg mt-4">
+                    <p className="text-sm text-text-secondary font-medium mb-1">Admin Notes</p>
+                    <p className="text-text-primary">{kyc.notes}</p>
                   </div>
                 )}
                 {kyc.status === 'pending' && (
                   <button
                     onClick={() => onNavigate('kyc')}
-                    className="w-full bg-[#c9b896] hover:bg-[#b5a57d] text-black font-bold py-3 rounded-lg transition-all duration-300 mt-4 shadow-md hover:shadow-lg"
+                    className="w-full bg-accent hover:bg-accent-strong text-on-accent font-bold py-3 rounded-lg transition-all duration-300 mt-4 shadow-md hover:shadow-lg"
                   >
                     Update KYC Information
                   </button>
                 )}
               </div>
             ) : (
-              <p className="text-gray-600">No KYC submission yet</p>
+              <p className="text-text-secondary">No KYC submission yet</p>
             )}
           </div>
         </div>
@@ -250,20 +250,20 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
             </p>
           </div>
 
-          <div className="bg-gradient-to-r from-[#c9b896]/10 to-[#c9b896]/5 rounded-xl p-8 border-l-4 border-[#c9b896]">
-            <h3 className="font-bold text-black mb-4 text-xl" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Next Steps</h3>
-            <ul className="text-gray-700 space-y-3 text-base">
+          <div className="bg-gradient-to-r from-accent/10 to-accent/5 rounded-xl p-8 border-l-4 border-accent">
+            <h3 className="font-bold text-text-primary mb-4 text-xl" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Next Steps</h3>
+            <ul className="text-text-secondary space-y-3 text-base">
               {profile?.kyc_status === 'pending' && (
-                <li className="flex items-start gap-2"><span className="text-[#c9b896] font-bold">•</span> Complete your KYC verification to access products and services</li>
+                <li className="flex items-start gap-2"><span className="text-accent font-bold">•</span> Complete your KYC verification to access products and services</li>
               )}
               {profile?.kyc_status === 'submitted' && (
-                <li className="flex items-start gap-2"><span className="text-[#c9b896] font-bold">•</span> Your KYC is under review. We'll notify you once verified.</li>
+                <li className="flex items-start gap-2"><span className="text-accent font-bold">•</span> Your KYC is under review. We'll notify you once verified.</li>
               )}
               {profile?.kyc_status === 'approved' && (
-                <li className="flex items-start gap-2"><span className="text-[#c9b896] font-bold">•</span> Your account is verified. You can now access investment products.</li>
+                <li className="flex items-start gap-2"><span className="text-accent font-bold">•</span> Your account is verified. You can now access investment products.</li>
               )}
-              <li className="flex items-start gap-2"><span className="text-[#c9b896] font-bold">•</span> Schedule a consultation to discuss available products</li>
-              <li className="flex items-start gap-2"><span className="text-[#c9b896] font-bold">•</span> Explore investment product options and educational resources</li>
+              <li className="flex items-start gap-2"><span className="text-accent font-bold">•</span> Schedule a consultation to discuss available products</li>
+              <li className="flex items-start gap-2"><span className="text-accent font-bold">•</span> Explore investment product options and educational resources</li>
             </ul>
           </div>
         </div>

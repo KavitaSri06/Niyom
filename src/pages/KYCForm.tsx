@@ -149,7 +149,7 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-slate-600">Loading...</div>
+        <div className="text-text-secondary">Loading...</div>
       </div>
     );
   }
@@ -168,12 +168,12 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-bg-base py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-10 border-t-4 border-[#c9b896] relative">
+        <div className="bg-bg-elevated rounded-2xl shadow-xl p-10 border-t-4 border-accent relative">
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute top-6 right-6 text-text-muted hover:text-text-secondary transition-colors"
             title="Close and return to landing page"
           >
             <X size={28} />
@@ -181,8 +181,8 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
           <div className="flex items-center gap-4 mb-8">
             <Logo size="lg" />
             <div>
-              <h2 className="text-3xl font-bold text-black" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Know Your Customer (KYC)</h2>
-              <p className="text-gray-600 font-medium">Complete your KYC profile to unlock full account access</p>
+              <h2 className="text-3xl font-bold text-text-primary" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Know Your Customer (KYC)</h2>
+              <p className="text-text-secondary font-medium">Complete your KYC profile to unlock full account access</p>
             </div>
           </div>
 
@@ -214,7 +214,7 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">
+              <label className="block text-sm font-semibold text-text-primary mb-2">
                 PAN (Permanent Account Number)
               </label>
               <input
@@ -223,17 +223,17 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
                 value={formData.pan}
                 onChange={handleInputChange}
                 placeholder="AAABP5055K"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c9b896] focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1 font-medium">Your 10-digit PAN</p>
+              <p className="text-xs text-text-muted mt-1 font-medium">Your 10-digit PAN</p>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">
+              <label className="block text-sm font-semibold text-text-primary mb-2">
                 PAN Document
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#c9b896] transition cursor-pointer bg-gray-50 hover:bg-[#c9b896]/5">
+              <div className="border-2 border-dashed border-border-strong rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-bg-base hover:bg-accent/5">
                 <input
                   type="file"
                   onChange={(e) => handleFileChange(e, 'pan_document')}
@@ -242,8 +242,8 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
                   id="pan-upload"
                 />
                 <label htmlFor="pan-upload" className="cursor-pointer">
-                  <Upload className="w-8 h-8 text-[#c9b896] mx-auto mb-2" />
-                  <p className="text-sm text-gray-700 font-medium">
+                  <Upload className="w-8 h-8 text-accent mx-auto mb-2" />
+                  <p className="text-sm text-text-secondary font-medium">
                     {files.pan_document ? files.pan_document.name : 'Upload PAN document'}
                   </p>
                 </label>
@@ -251,7 +251,7 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">
+              <label className="block text-sm font-semibold text-text-primary mb-2">
                 Aadhar Number
               </label>
               <input
@@ -260,17 +260,17 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
                 value={formData.aadhar}
                 onChange={handleInputChange}
                 placeholder="1234 5678 9012"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c9b896] focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1 font-medium">Your 12-digit Aadhar number</p>
+              <p className="text-xs text-text-muted mt-1 font-medium">Your 12-digit Aadhar number</p>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">
+              <label className="block text-sm font-semibold text-text-primary mb-2">
                 Aadhar Document
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#c9b896] transition cursor-pointer bg-gray-50 hover:bg-[#c9b896]/5">
+              <div className="border-2 border-dashed border-border-strong rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-bg-base hover:bg-accent/5">
                 <input
                   type="file"
                   onChange={(e) => handleFileChange(e, 'aadhar_document')}
@@ -279,8 +279,8 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
                   id="aadhar-upload"
                 />
                 <label htmlFor="aadhar-upload" className="cursor-pointer">
-                  <Upload className="w-8 h-8 text-[#c9b896] mx-auto mb-2" />
-                  <p className="text-sm text-gray-700 font-medium">
+                  <Upload className="w-8 h-8 text-accent mx-auto mb-2" />
+                  <p className="text-sm text-text-secondary font-medium">
                     {files.aadhar_document ? files.aadhar_document.name : 'Upload Aadhar document'}
                   </p>
                 </label>
@@ -288,7 +288,7 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">
+              <label className="block text-sm font-semibold text-text-primary mb-2">
                 Demat Account Details
               </label>
               <input
@@ -297,17 +297,17 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
                 value={formData.demat}
                 onChange={handleInputChange}
                 placeholder="DP ID and Client ID"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c9b896] focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1 font-medium">Your depository participant details</p>
+              <p className="text-xs text-text-muted mt-1 font-medium">Your depository participant details</p>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">
+              <label className="block text-sm font-semibold text-text-primary mb-2">
                 Demat Document
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#c9b896] transition cursor-pointer bg-gray-50 hover:bg-[#c9b896]/5">
+              <div className="border-2 border-dashed border-border-strong rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-bg-base hover:bg-accent/5">
                 <input
                   type="file"
                   onChange={(e) => handleFileChange(e, 'demat_document')}
@@ -316,8 +316,8 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
                   id="demat-upload"
                 />
                 <label htmlFor="demat-upload" className="cursor-pointer">
-                  <Upload className="w-8 h-8 text-[#c9b896] mx-auto mb-2" />
-                  <p className="text-sm text-gray-700 font-medium">
+                  <Upload className="w-8 h-8 text-accent mx-auto mb-2" />
+                  <p className="text-sm text-text-secondary font-medium">
                     {files.demat_document ? files.demat_document.name : 'Upload Demat document'}
                   </p>
                 </label>
@@ -325,10 +325,10 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">
+              <label className="block text-sm font-semibold text-text-primary mb-2">
                 Bank Cheque Leaf Copy
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#c9b896] transition cursor-pointer bg-gray-50 hover:bg-[#c9b896]/5">
+              <div className="border-2 border-dashed border-border-strong rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-bg-base hover:bg-accent/5">
                 <input
                   type="file"
                   onChange={(e) => handleFileChange(e, 'bank_cheque_leaf')}
@@ -337,8 +337,8 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
                   id="cheque-upload"
                 />
                 <label htmlFor="cheque-upload" className="cursor-pointer">
-                  <Upload className="w-8 h-8 text-[#c9b896] mx-auto mb-2" />
-                  <p className="text-sm text-gray-700 font-medium">
+                  <Upload className="w-8 h-8 text-accent mx-auto mb-2" />
+                  <p className="text-sm text-text-secondary font-medium">
                     {files.bank_cheque_leaf ? files.bank_cheque_leaf.name : 'Upload cheque leaf copy'}
                   </p>
                 </label>
@@ -348,7 +348,7 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-[#c9b896] hover:bg-[#b5a57d] text-black font-bold py-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+              className="w-full bg-accent hover:bg-accent-strong text-on-accent font-bold py-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
             >
               {submitting ? 'Submitting...' : 'Submit KYC Information'}
             </button>

@@ -30,25 +30,25 @@ export default function ChangePassword({ employee, onComplete }: Props) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8" style={{ background: '#050505' }}>
+    <div className="min-h-screen flex items-center justify-center p-8" style={{ background: 'var(--bg-base)' }}>
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-6" style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
-            <TrendingUp className="w-8 h-8 text-black" />
+          <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-6" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+            <TrendingUp className="w-8 h-8 text-on-accent" />
           </div>
-          <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-4" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}>
-            <ShieldCheck className="w-7 h-7" style={{ color: '#D4AF37' }} />
+          <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-4" style={{ background: 'rgba(var(--accent-rgb),0.1)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>
+            <ShieldCheck className="w-7 h-7" style={{ color: 'var(--accent)' }} />
           </div>
-          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: '#D4AF37' }}>Security Setup</p>
-          <h2 className="text-3xl font-bold text-white">Set New Password</h2>
-          <p className="mt-2 text-sm" style={{ color: '#8A8A8A' }}>
-            Welcome, <span className="text-white font-medium">{employee.full_name}</span>.<br />
+          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--accent)' }}>Security Setup</p>
+          <h2 className="text-3xl font-bold text-text-primary">Set New Password</h2>
+          <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            Welcome, <span className="text-text-primary font-medium">{employee.full_name}</span>.<br />
             Please set a new password to continue.
           </p>
         </div>
 
         {error && (
-          <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+          <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'rgb(var(--danger-soft-rgb))' }}>
             {error}
           </div>
         )}
@@ -59,22 +59,22 @@ export default function ChangePassword({ employee, onComplete }: Props) {
             { label: 'Confirm Password', val: confirm, set: setConfirm, key: 'cf' },
           ].map(f => (
             <div key={f.key}>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#8A8A8A' }}>{f.label}</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>{f.label}</label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#4A4A4A' }} />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
                 <input
                   type={showPw ? 'text' : 'password'}
                   required
                   value={f.val}
                   onChange={e => f.set(e.target.value)}
                   placeholder="Min 8 characters"
-                  className="w-full py-3 rounded-xl text-sm text-white outline-none transition-all"
-                  style={{ background: '#0D0D0D', border: '1px solid #1E1E24', paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
-                  onFocus={e => (e.target.style.borderColor = '#D4AF37')}
-                  onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                  className="w-full py-3 rounded-xl text-sm text-text-primary outline-none transition-all"
+                  style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
+                  onFocus={e => (e.target.style.borderColor = 'var(--accent)')}
+                  onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                 />
                 {f.key === 'pw' && (
-                  <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: '#4A4A4A' }}>
+                  <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }}>
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 )}
@@ -83,14 +83,14 @@ export default function ChangePassword({ employee, onComplete }: Props) {
           ))}
           <div className="space-y-2">
             {['At least 8 characters', 'Passwords must match'].map(r => (
-              <p key={r} className="text-xs flex items-center gap-1.5" style={{ color: '#4A4A4A' }}>
+              <p key={r} className="text-xs flex items-center gap-1.5" style={{ color: 'var(--text-faint)' }}>
                 <span className="w-1 h-1 rounded-full bg-current" /> {r}
               </p>
             ))}
           </div>
           <button type="submit" disabled={loading}
-            className="w-full py-3.5 rounded-xl font-bold text-sm text-black disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+            className="w-full py-3.5 rounded-xl font-bold text-sm text-on-accent disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
             {loading ? 'Setting Password...' : 'Set Password & Continue'}
           </button>
         </form>

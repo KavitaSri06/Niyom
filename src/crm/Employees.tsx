@@ -9,10 +9,10 @@ interface Props { employee: NWEmployee; }
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)' }}>
-      <div className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #1E1E24' }}>
-          <h3 className="text-sm font-bold text-white">{title}</h3>
-          <button onClick={onClose} style={{ color: '#4A4A4A' }}><X className="w-5 h-5" /></button>
+      <div className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
+          <h3 className="text-sm font-bold text-text-primary">{title}</h3>
+          <button onClick={onClose} style={{ color: 'var(--text-faint)' }}><X className="w-5 h-5" /></button>
         </div>
         {children}
       </div>
@@ -22,9 +22,9 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 
 const ROLE_LABELS: Record<string, string> = { super_admin: 'Super Admin', admin: 'Admin', employee: 'Employee' };
 const ROLE_COLORS: Record<string, string> = {
-  super_admin: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-  admin: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-  employee: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+  super_admin: 'text-c-amber bg-c-amber/10 border-c-amber/20',
+  admin: 'text-c-blue bg-c-blue/10 border-c-blue/20',
+  employee: 'text-c-emerald bg-c-emerald/10 border-c-emerald/20',
 };
 
 export default function Employees({ employee }: Props) {
@@ -103,18 +103,18 @@ export default function Employees({ employee }: Props) {
     inactive: employees.filter(e => e.status === 'inactive').length,
   };
 
-  const inputClass = "w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none";
-  const inputStyle = { background: '#050505', border: '1px solid #1E1E24' };
+  const inputClass = "w-full px-3 py-2.5 rounded-xl text-sm text-text-primary outline-none";
+  const inputStyle = { background: 'var(--bg-base)', border: '1px solid var(--border)' };
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Team</p>
-          <h1 className="text-2xl font-bold text-white">Employees</h1>
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Team</p>
+          <h1 className="text-2xl font-bold text-text-primary">Employees</h1>
         </div>
         {isSuperAdmin && (
-          <button onClick={() => { setShowAdd(true); setAddError(''); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-black" style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+          <button onClick={() => { setShowAdd(true); setAddError(''); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-on-accent" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
             <Plus className="w-4 h-4" /> Add Employee
           </button>
         )}
@@ -122,27 +122,27 @@ export default function Employees({ employee }: Props) {
 
       {toast && (
         <div className="p-3 rounded-xl flex items-center gap-2" style={{ background: toast.ok ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${toast.ok ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
-          {toast.ok ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-red-400" />}
-          <p className={`text-sm ${toast.ok ? 'text-emerald-400' : 'text-red-400'}`}>{toast.msg}</p>
+          {toast.ok ? <CheckCircle2 className="w-4 h-4 text-c-emerald" /> : <AlertCircle className="w-4 h-4 text-c-red" />}
+          <p className={`text-sm ${toast.ok ? 'text-c-emerald' : 'text-c-red'}`}>{toast.msg}</p>
         </div>
       )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Total', value: stats.total, icon: Users, color: '#D4AF37' },
-          { label: 'Active', value: stats.active, icon: UserCheck, color: '#10B981' },
-          { label: 'Inactive', value: stats.inactive, icon: UserX, color: '#ef4444' },
+          { label: 'Total', value: stats.total, icon: Users, color: 'var(--accent)' },
+          { label: 'Active', value: stats.active, icon: UserCheck, color: 'var(--success)' },
+          { label: 'Inactive', value: stats.inactive, icon: UserX, color: 'var(--danger)' },
         ].map(s => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className="rounded-2xl p-5 flex items-center gap-4" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: s.color + '15' }}>
+            <div key={s.label} className="rounded-2xl p-5 flex items-center gap-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `color-mix(in srgb, ${s.color} 8%, transparent)` }}>
                 <Icon className="w-5 h-5" style={{ color: s.color }} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{s.value}</p>
-                <p className="text-xs" style={{ color: '#4A4A4A' }}>{s.label}</p>
+                <p className="text-2xl font-bold text-text-primary">{s.value}</p>
+                <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{s.label}</p>
               </div>
             </div>
           );
@@ -150,55 +150,55 @@ export default function Employees({ employee }: Props) {
       </div>
 
       {/* Table */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 {['Employee', 'Code', 'Role', 'Status', 'Joined', 'Actions'].map(h => (
-                  <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                  <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="text-center py-12"><div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin mx-auto" style={{ borderColor: '#D4AF37', borderTopColor: 'transparent' }} /></td></tr>
+                <tr><td colSpan={6} className="text-center py-12"><div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin mx-auto" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} /></td></tr>
               ) : employees.map(e => (
-                <tr key={e.id} style={{ borderBottom: '1px solid #111' }}
-                  onMouseEnter={ev => (ev.currentTarget.style.background = '#0D0D0D')}
+                <tr key={e.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}
+                  onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bg-surface)')}
                   onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37' }}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)' }}>
                         {e.full_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-white">{e.full_name}</p>
-                        <p className="text-xs" style={{ color: '#4A4A4A' }}>{e.email}</p>
+                        <p className="text-sm font-medium text-text-primary">{e.full_name}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{e.email}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5"><span className="text-xs font-mono px-2 py-1 rounded" style={{ background: '#111', color: '#D4AF37' }}>{e.employee_code}</span></td>
+                  <td className="px-5 py-3.5"><span className="text-xs font-mono px-2 py-1 rounded" style={{ background: 'var(--bg-raised)', color: 'var(--accent)' }}>{e.employee_code}</span></td>
                   <td className="px-5 py-3.5">
                     <span className={`text-xs font-semibold px-2 py-1 rounded-lg border ${ROLE_COLORS[e.role]}`}>{ROLE_LABELS[e.role]}</span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-lg border ${e.status === 'active' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-red-400 bg-red-400/10 border-red-400/20'}`}>
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-lg border ${e.status === 'active' ? 'text-c-emerald bg-c-emerald/10 border-c-emerald/20' : 'text-c-red bg-c-red/10 border-c-red/20'}`}>
                       {e.status === 'active' ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5 text-xs" style={{ color: '#6B6B6B' }}>{fmtDate(e.joining_date || e.created_at)}</td>
+                  <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-muted)' }}>{fmtDate(e.joining_date || e.created_at)}</td>
                   <td className="px-5 py-3.5">
                     {e.id !== employee.id && (
                       <div className="flex items-center gap-1">
                         <button onClick={() => { setEditEmp(e); setEditForm({ full_name: e.full_name, phone: e.phone || '', role: e.role, status: e.status }); }}
-                          className="p-1.5 rounded-lg" style={{ color: '#4A4A4A' }}
-                          onMouseEnter={ev => (ev.currentTarget.style.color = '#60a5fa')} onMouseLeave={ev => (ev.currentTarget.style.color = '#4A4A4A')}>
+                          className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }}
+                          onMouseEnter={ev => (ev.currentTarget.style.color = 'rgb(var(--info-soft-rgb))')} onMouseLeave={ev => (ev.currentTarget.style.color = 'var(--text-faint)')}>
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={() => toggleStatus(e)} className="p-1.5 rounded-lg" style={{ color: '#4A4A4A' }}
-                          onMouseEnter={ev => (ev.currentTarget.style.color = e.status === 'active' ? '#ef4444' : '#10B981')}
-                          onMouseLeave={ev => (ev.currentTarget.style.color = '#4A4A4A')}>
+                        <button onClick={() => toggleStatus(e)} className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }}
+                          onMouseEnter={ev => (ev.currentTarget.style.color = e.status === 'active' ? 'var(--danger)' : 'var(--success)')}
+                          onMouseLeave={ev => (ev.currentTarget.style.color = 'var(--text-faint)')}>
                           {e.status === 'active' ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                         </button>
                       </div>
@@ -215,39 +215,39 @@ export default function Employees({ employee }: Props) {
       {showAdd && (
         <Modal title="Add Employee" onClose={() => setShowAdd(false)}>
           <div className="p-6 space-y-4">
-            {addError && <div className="p-3 rounded-xl text-sm text-red-400" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>{addError}</div>}
+            {addError && <div className="p-3 rounded-xl text-sm text-c-red" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>{addError}</div>}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>Employee ID <span style={{ color: '#D4AF37' }}>*</span></label>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Employee ID <span style={{ color: 'var(--accent)' }}>*</span></label>
               <input type="text" value={addForm.employee_code} onChange={e => setAddForm(f => ({ ...f, employee_code: e.target.value }))} placeholder="e.g. NIYOM-002" className={inputClass} style={inputStyle} />
-              <p className="text-xs mt-1" style={{ color: '#4A4A4A' }}>Client IDs will be generated as NW-002-0001, NW-002-0002, ...</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>Client IDs will be generated as NW-002-0001, NW-002-0002, ...</p>
             </div>
             {[['Full Name', 'full_name', 'text'], ['Email', 'email', 'email']].map(([label, key, type]) => (
               <div key={key}>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>{label}</label>
+                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>{label}</label>
                 <input type={type} value={(addForm as any)[key]} onChange={e => setAddForm(f => ({ ...f, [key]: e.target.value }))} className={inputClass} style={inputStyle} />
               </div>
             ))}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>Password</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Password</label>
               <div className="relative">
                 <input type={showPw ? 'text' : 'password'} value={addForm.password} onChange={e => setAddForm(f => ({ ...f, password: e.target.value }))} placeholder="Min 8 characters" className={`${inputClass} pr-10`} style={inputStyle} />
-                <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: '#4A4A4A' }}>
+                <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }}>
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>Role</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Role</label>
               <select value={addForm.role} onChange={e => setAddForm(f => ({ ...f, role: e.target.value }))} className={inputClass} style={inputStyle}>
                 <option value="employee">Employee</option>
                 <option value="admin">Admin</option>
                 {isSuperAdmin && <option value="super_admin">Super Admin</option>}
               </select>
             </div>
-            <p className="text-xs" style={{ color: '#4A4A4A' }}>Employee will be prompted to change password on first login.</p>
+            <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Employee will be prompted to change password on first login.</p>
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-xl text-sm" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>Cancel</button>
-              <button onClick={handleAdd} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-black disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+              <button onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
+              <button onClick={handleAdd} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
                 {saving ? 'Creating...' : 'Create Employee'}
               </button>
             </div>
@@ -261,12 +261,12 @@ export default function Employees({ employee }: Props) {
           <div className="p-6 space-y-4">
             {[['Full Name', 'full_name', 'text'], ['Phone', 'phone', 'tel']].map(([label, key, type]) => (
               <div key={key}>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>{label}</label>
+                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>{label}</label>
                 <input type={type} value={(editForm as any)[key]} onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))} className={inputClass} style={inputStyle} />
               </div>
             ))}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>Role</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Role</label>
               <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))} className={inputClass} style={inputStyle}>
                 <option value="employee">Employee</option>
                 <option value="admin">Admin</option>
@@ -274,15 +274,15 @@ export default function Employees({ employee }: Props) {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>Status</label>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Status</label>
               <select value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))} className={inputClass} style={inputStyle}>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setEditEmp(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>Cancel</button>
-              <button onClick={handleEdit} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-black disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+              <button onClick={() => setEditEmp(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
+              <button onClick={handleEdit} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>

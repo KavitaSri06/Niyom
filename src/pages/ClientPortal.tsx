@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { NWClient, NWHolding } from '../crm/types';
 import { fmt, fmtDate, PRODUCT_LABELS, PRODUCT_COLORS, PRODUCT_CHART_COLORS } from '../crm/utils';
 import { LogOut, TrendingUp, Shield, PieChart, RefreshCw, KeyRound, X, Eye, EyeOff } from 'lucide-react';
+import { ThemeToggle } from '../theme/ThemeToggle';
 
 interface Props {
   clientId: string;
@@ -77,49 +78,50 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
   const productTotals = [...new Set(holdings.map(h => h.product_type))].map(pt => ({
     label: PRODUCT_LABELS[pt] || pt,
     value: holdings.filter(h => h.product_type === pt).reduce((s, h) => s + (h.current_value || 0), 0),
-    color: PRODUCT_CHART_COLORS[pt] || '#888',
+    color: PRODUCT_CHART_COLORS[pt] || 'var(--text-muted)',
   })).filter(p => p.value > 0);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050505' }}>
-        <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#D4AF37', borderTopColor: 'transparent' }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+        <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#050505' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       {/* Topbar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-4" style={{ background: '#0B0B0F', borderBottom: '1px solid #1A1A1A' }}>
+      <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-4" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)' }}>
         <div className="flex items-center gap-3">
           <img src="/niyomlogo.png" alt="Niyom Wealth" className="h-8 w-auto object-contain" />
           <div>
-            <p className="font-bold text-sm" style={{ color: '#c9b896' }}>Niyom Wealth</p>
-            <p className="text-xs" style={{ color: '#4A4A4A' }}>Client Portal</p>
+            <p className="font-bold text-sm" style={{ color: 'var(--accent-soft)' }}>Niyom Wealth</p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Client Portal</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <ThemeToggle variant="icon" />
           {client && (
-            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: '#0D0D0D', border: '1px solid #1E1E24' }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: 'rgba(212,175,55,0.15)', color: '#D4AF37' }}>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent)' }}>
                 {client.full_name.charAt(0).toUpperCase()}
               </div>
               <div>
-                <p className="text-xs font-semibold text-white leading-none">{client.full_name}</p>
-                <p className="text-xs mt-0.5 font-mono" style={{ color: '#4A4A4A' }}>{client.client_code}</p>
+                <p className="text-xs font-semibold text-text-primary leading-none">{client.full_name}</p>
+                <p className="text-xs mt-0.5 font-mono" style={{ color: 'var(--text-secondary)' }}>{client.client_code}</p>
               </div>
             </div>
           )}
-          <button onClick={() => { setShowChangePw(true); setPwError(''); setPwSuccess(''); }} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all" style={{ background: '#0D0D0D', color: '#6B6B6B', border: '1px solid #1E1E24' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#D4AF37'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(212,175,55,0.3)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6B6B6B'; (e.currentTarget as HTMLElement).style.borderColor = '#1E1E24'; }}>
+          <button onClick={() => { setShowChangePw(true); setPwError(''); setPwSuccess(''); }} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(var(--accent-rgb),0.3)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}>
             <KeyRound className="w-4 h-4" />
             <span className="hidden sm:inline">Change Password</span>
           </button>
-          <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all" style={{ background: '#0D0D0D', color: '#6B6B6B', border: '1px solid #1E1E24' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ef4444'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.3)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6B6B6B'; (e.currentTarget as HTMLElement).style.borderColor = '#1E1E24'; }}>
+          <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--danger)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.3)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}>
             <LogOut className="w-4 h-4" /> Sign Out
           </button>
         </div>
@@ -128,23 +130,23 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
         {/* Welcome */}
         <div>
-          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Portfolio Overview</p>
-          <h1 className="text-2xl font-bold text-white">Welcome, {client?.full_name?.split(' ')[0] || 'Investor'}</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#6B6B6B' }}>Here is your investment summary as of today.</p>
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Portfolio Overview</p>
+          <h1 className="text-2xl font-bold text-text-primary">Welcome, {client?.full_name?.split(' ')[0] || 'Investor'}</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Here is your investment summary as of today.</p>
         </div>
 
         {/* Summary cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Portfolio Value', value: fmt(totalValue), color: '#D4AF37', sub: null },
-            { label: 'Total Invested', value: fmt(totalInvested), color: '#8A8A8A', sub: null },
-            { label: gainLoss >= 0 ? 'Total Gain' : 'Total Loss', value: `${gainLoss >= 0 ? '+' : ''}${fmt(gainLoss)}`, color: gainLoss >= 0 ? '#10B981' : '#ef4444', sub: `${gainLoss >= 0 ? '+' : ''}${gainPct}%` },
-            { label: 'Holdings', value: holdings.length.toString(), color: '#06B6D4', sub: `${new Set(holdings.map(h => h.product_type)).size} types` },
+            { label: 'Portfolio Value', value: fmt(totalValue), color: 'var(--accent)', sub: null },
+            { label: 'Total Invested', value: fmt(totalInvested), color: 'var(--text-muted)', sub: null },
+            { label: gainLoss >= 0 ? 'Total Gain' : 'Total Loss', value: `${gainLoss >= 0 ? '+' : ''}${fmt(gainLoss)}`, color: gainLoss >= 0 ? 'var(--success)' : 'var(--danger)', sub: `${gainLoss >= 0 ? '+' : ''}${gainPct}%` },
+            { label: 'Holdings', value: holdings.length.toString(), color: 'var(--chart-5)', sub: `${new Set(holdings.map(h => h.product_type)).size} types` },
           ].map(s => (
-            <div key={s.label} className="rounded-2xl p-5" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#4A4A4A' }}>{s.label}</p>
+            <div key={s.label} className="rounded-2xl p-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>{s.label}</p>
               <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
-              {s.sub && <p className="text-xs mt-1" style={{ color: s.color + '99' }}>{s.sub}</p>}
+              {s.sub && <p className="text-xs mt-1" style={{ color: `color-mix(in srgb, ${s.color} 60%, transparent)` }}>{s.sub}</p>}
             </div>
           ))}
         </div>
@@ -158,8 +160,8 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
             <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
               style={activeTab === tab.key
-                ? { background: 'rgba(212,175,55,0.12)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.25)' }
-                : { background: '#111', color: '#6B6B6B', border: '1px solid #1E1E24' }}>
+                ? { background: 'rgba(var(--accent-rgb),0.12)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.25)' }
+                : { background: 'var(--bg-raised)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
               <tab.icon className="w-4 h-4" />
               {tab.label}
             </button>
@@ -170,8 +172,8 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
           <div className="space-y-6">
             {/* Allocation */}
             {productTotals.length > 0 && (
-              <div className="rounded-2xl p-6 space-y-4" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-                <h2 className="text-sm font-bold text-white">Product Allocation</h2>
+              <div className="rounded-2xl p-6 space-y-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                <h2 className="text-sm font-bold text-text-primary">Product Allocation</h2>
                 <div className="space-y-3">
                   {productTotals.map(p => {
                     const pct = totalValue > 0 ? ((p.value / totalValue) * 100).toFixed(1) : '0';
@@ -180,10 +182,10 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
                         <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ background: p.color }} />
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1">
-                            <p className="text-xs font-semibold text-white">{p.label}</p>
-                            <p className="text-xs text-white">{fmt(p.value)} <span style={{ color: '#4A4A4A' }}>({pct}%)</span></p>
+                            <p className="text-xs font-semibold text-text-primary">{p.label}</p>
+                            <p className="text-xs text-text-primary">{fmt(p.value)} <span style={{ color: 'var(--text-secondary)' }}>({pct}%)</span></p>
                           </div>
-                          <div className="h-1.5 rounded-full" style={{ background: '#111' }}>
+                          <div className="h-1.5 rounded-full" style={{ background: 'var(--bg-raised)' }}>
                             <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: p.color }} />
                           </div>
                         </div>
@@ -196,10 +198,10 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
 
             {/* Client Details */}
             {client && (
-              <div className="rounded-2xl p-6 space-y-4" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+              <div className="rounded-2xl p-6 space-y-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
                 <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4" style={{ color: '#D4AF37' }} />
-                  <h2 className="text-sm font-bold text-white">Account Details</h2>
+                  <Shield className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+                  <h2 className="text-sm font-bold text-text-primary">Account Details</h2>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
@@ -210,9 +212,9 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
                     { label: 'City', value: client.city },
                     { label: 'State', value: client.state },
                   ].map(f => (
-                    <div key={f.label} className="flex gap-3 p-3 rounded-xl" style={{ background: '#0D0D0D' }}>
-                      <p className="text-xs w-24 flex-shrink-0" style={{ color: '#4A4A4A' }}>{f.label}</p>
-                      <p className="text-xs font-medium text-white">{f.value || '—'}</p>
+                    <div key={f.label} className="flex gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-surface)' }}>
+                      <p className="text-xs w-24 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{f.label}</p>
+                      <p className="text-xs font-medium text-text-primary">{f.value || '—'}</p>
                     </div>
                   ))}
                 </div>
@@ -222,19 +224,19 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
         )}
 
         {activeTab === 'holdings' && (
-          <div className="rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+          <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
             {holdings.length === 0 ? (
               <div className="py-16 text-center">
-                <RefreshCw className="w-8 h-8 mx-auto mb-3" style={{ color: '#1E1E24' }} />
-                <p className="text-sm" style={{ color: '#4A4A4A' }}>No holdings recorded yet.</p>
+                <RefreshCw className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--border)' }} />
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No holdings recorded yet.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #1A1A1A' }}>
+                    <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                       {['Product', 'Type', 'Qty', 'Invested', 'Current Value', 'P&L'].map(h => (
-                        <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#4A4A4A' }}>{h}</th>
+                        <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -245,16 +247,16 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
                       // For DSA clients, show client_price instead of avg_cost
                       const displayPrice = h.client_price ?? h.avg_cost;
                       return (
-                        <tr key={h.id} style={{ borderBottom: '1px solid #111' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = '#0D0D0D')}
+                        <tr key={h.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                           <td className="px-5 py-3.5">
-                            <p className="text-sm font-medium text-white">{h.product_name}</p>
+                            <p className="text-sm font-medium text-text-primary">{h.product_name}</p>
                             {BOND_TYPES.includes(h.product_type) && h.coupon_rate && (
-                              <p className="text-xs mt-0.5" style={{ color: '#10B981' }}>{h.coupon_rate}% · {PAYOUT_FREQ[h.payout_frequency || 'annual']}</p>
+                              <p className="text-xs mt-0.5" style={{ color: 'var(--success)' }}>{h.coupon_rate}% · {PAYOUT_FREQ[h.payout_frequency || 'annual']}</p>
                             )}
                             {h.product_type === 'mutual_fund' && h.folio_number && (
-                              <p className="text-xs mt-0.5 font-mono" style={{ color: '#EC4899' }}>{h.folio_number}</p>
+                              <p className="text-xs mt-0.5 font-mono" style={{ color: 'var(--chart-4)' }}>{h.folio_number}</p>
                             )}
                           </td>
                           <td className="px-5 py-3.5">
@@ -262,14 +264,14 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
                               {PRODUCT_LABELS[h.product_type]}
                             </span>
                           </td>
-                          <td className="px-5 py-3.5 text-sm text-white">{h.quantity || '—'}</td>
-                          <td className="px-5 py-3.5 text-sm text-white">{fmt(h.invested_amount || 0)}</td>
-                          <td className="px-5 py-3.5 text-sm font-bold text-white">{fmt(h.current_value || 0)}</td>
+                          <td className="px-5 py-3.5 text-sm text-text-primary">{h.quantity || '—'}</td>
+                          <td className="px-5 py-3.5 text-sm text-text-primary">{fmt(h.invested_amount || 0)}</td>
+                          <td className="px-5 py-3.5 text-sm font-bold text-text-primary">{fmt(h.current_value || 0)}</td>
                           <td className="px-5 py-3.5">
-                            <p className={`text-sm font-bold ${pl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            <p className={`text-sm font-bold ${pl >= 0 ? 'text-c-emerald' : 'text-c-red'}`}>
                               {pl >= 0 ? '+' : ''}{fmt(pl)}
                             </p>
-                            <p className="text-xs" style={{ color: '#4A4A4A' }}>{pl >= 0 ? '+' : ''}{plPct}%</p>
+                            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{pl >= 0 ? '+' : ''}{plPct}%</p>
                           </td>
                         </tr>
                       );
@@ -281,7 +283,7 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
           </div>
         )}
 
-        <p className="text-center text-xs py-4" style={{ color: '#2A2A2A' }}>
+        <p className="text-center text-xs py-4" style={{ color: 'var(--border-strong)' }}>
           Niyom Wealth Distribution &nbsp;&middot;&nbsp; Confidential &nbsp;&middot;&nbsp; For your eyes only
         </p>
       </main>
@@ -289,20 +291,20 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
       {/* Change Password Modal */}
       {showChangePw && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
-          <div className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
-            <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #1E1E24' }}>
+          <div className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
               <div className="flex items-center gap-2">
-                <KeyRound className="w-4 h-4" style={{ color: '#D4AF37' }} />
-                <h3 className="text-sm font-bold text-white">Change Password</h3>
+                <KeyRound className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+                <h3 className="text-sm font-bold text-text-primary">Change Password</h3>
               </div>
-              <button onClick={() => setShowChangePw(false)} style={{ color: '#4A4A4A' }}><X className="w-5 h-5" /></button>
+              <button onClick={() => setShowChangePw(false)} style={{ color: 'var(--text-secondary)' }}><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleChangePassword} className="p-6 space-y-4">
               {pwError && (
-                <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>{pwError}</div>
+                <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'rgb(var(--danger-soft-rgb))' }}>{pwError}</div>
               )}
               {pwSuccess && (
-                <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#10B981' }}>{pwSuccess}</div>
+                <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: 'var(--success)' }}>{pwSuccess}</div>
               )}
               {[
                 { label: 'Current Password', key: 'current' as const },
@@ -310,7 +312,7 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
                 { label: 'Confirm New Password', key: 'confirm' as const },
               ].map(f => (
                 <div key={f.key}>
-                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: '#6B6B6B' }}>{f.label}</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>{f.label}</label>
                   <div className="relative">
                     <input
                       type={showPw ? 'text' : 'password'}
@@ -318,13 +320,13 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
                       onChange={e => setPwForm(p => ({ ...p, [f.key]: e.target.value }))}
                       placeholder="••••••••"
                       required
-                      className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none transition-all"
-                      style={{ background: '#050505', border: '1px solid #1E1E24' }}
-                      onFocus={e => (e.target.style.borderColor = '#D4AF37')}
-                      onBlur={e => (e.target.style.borderColor = '#1E1E24')}
+                      className="w-full px-3.5 py-2.5 rounded-xl text-sm text-text-primary outline-none transition-all"
+                      style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}
+                      onFocus={e => (e.target.style.borderColor = 'var(--accent)')}
+                      onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                     />
                     {f.key === 'confirm' && (
-                      <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: '#4A4A4A' }}>
+                      <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-secondary)' }}>
                         {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     )}
@@ -336,17 +338,17 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
                   { text: 'At least 8 characters', met: pwForm.next.length >= 8 },
                   { text: 'Passwords match', met: pwForm.next === pwForm.confirm && pwForm.confirm.length > 0 },
                 ].map(r => (
-                  <p key={r.text} className="text-xs flex items-center gap-1.5" style={{ color: r.met ? '#10B981' : '#4A4A4A' }}>
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: r.met ? '#10B981' : '#4A4A4A' }} />
+                  <p key={r.text} className="text-xs flex items-center gap-1.5" style={{ color: r.met ? 'var(--success)' : 'var(--text-secondary)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: r.met ? 'var(--success)' : 'var(--text-secondary)' }} />
                     {r.text}
                   </p>
                 ))}
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowChangePw(false)} className="px-4 py-2 rounded-xl text-sm" style={{ background: '#111', color: '#8A8A8A', border: '1px solid #1E1E24' }}>Cancel</button>
+                <button type="button" onClick={() => setShowChangePw(false)} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>Cancel</button>
                 <button type="submit" disabled={pwLoading || pwForm.next.length < 8 || pwForm.next !== pwForm.confirm}
-                  className="px-5 py-2.5 rounded-xl text-sm font-bold text-black disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+                  className="px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
                   {pwLoading ? 'Updating...' : 'Update Password'}
                 </button>
               </div>
