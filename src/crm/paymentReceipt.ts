@@ -2,18 +2,34 @@ import html2pdf from 'html2pdf.js';
 import { NIYOM_COMPANY, amountInWords } from './dsaDebitNote';
 
 // ---------------------------------------------------------------------------
-// Payment Receipt PDF — same production-grade shape as the DSA Debit Note.
-// Rendered client-side with html2pdf.js and returned as base64 for upload
-// via the upload-receipt edge function.
+// Payment Receipt PDF — strictly monochrome, mirroring the exact style used
+// by the DSA Debit Note. Black ink on white, thin gray hairlines, one solid
+// black table header, right-aligned totals block. No colour, no fills, no
+// cards, no gradients.
+//
+// A Payment Receipt is an acknowledgement issued BY Niyom TO the client, so
+// it carries only ONE signature block on the right ("For Niyom Wealth").
+// There is no client signature block — that was correctly removed as part
+// of the Phase 3 business change.
 // ---------------------------------------------------------------------------
 
 const NIYOM_LOGO = '/niyomlogo.png';
 const NIYOM_SIGNATURE = '/Screenshot_2026-04-06_at_4.02.25_PM.png';
 
-// ARN details are the single source of truth in RegulatoryInfo.tsx; mirrored
-// here so the receipt can be regenerated without a React render.
 const ARN = 'ARN-362707';
 const ARN_VALID_TILL = '11-JUN-2029';
+
+// Monochrome style tokens — identical to dsaDebitNote.ts
+const SERIF = "Georgia, 'Times New Roman', Times, serif";
+const TIMES = "'Times New Roman', Times, serif";
+const SANS  = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+const INK   = '#111111';
+const SUB   = '#444444';
+const MUTE  = '#888888';
+const HAIR  = '#DADADA';
+const RULE  = '#111111';
+
+const label = `font-family:${SANS};font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:${MUTE};`;
 
 const MODE_LABEL: Record<string, string> = {
   imps: 'IMPS',
@@ -29,11 +45,12 @@ const MODE_LABEL: Record<string, string> = {
 };
 
 const inr = (n: number) =>
-  '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const fmtDate = (d: string | null | undefined) => {
+const fmtDate = (d: string | Date | null | undefined) => {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const dd = d instanceof Date ? d : new Date(d);
+  return dd.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
 };
 
 // ---------------------------------------------------------------------------
@@ -54,7 +71,7 @@ export interface ReceiptDealContext {
 
 export interface ReceiptPaymentContext {
   payment_number:      string;
-  receipt_number:      string;   // preview or existing
+  receipt_number:      string;
   amount_inr:          number;
   payment_mode:        string;
   utr_number?:         string | null;
@@ -72,7 +89,7 @@ export interface ReceiptPaymentContext {
 export interface ReceiptSummaryContext {
   total_paid_amount:   number;
   outstanding_amount:  number;
-  payment_status:      'not_paid' | 'partially_paid' | 'fully_paid' | 'over_paid';
+  payment_status:      'not_paid' | 'partially_paid' | 'fully_paid';
 }
 
 export interface ReceiptRenderInput {
@@ -85,278 +102,261 @@ export interface ReceiptRenderInput {
 }
 
 // ---------------------------------------------------------------------------
-// HTML template
+// Helpers
 // ---------------------------------------------------------------------------
 
-function statusPill(status: ReceiptSummaryContext['payment_status']): string {
-  const map: Record<string, { text: string; bg: string; fg: string }> = {
-    not_paid:       { text: 'NOT PAID',       bg: '#f3f3f3', fg: '#666' },
-    partially_paid: { text: 'PARTIALLY PAID', bg: '#FFF9EC', fg: '#B8961E' },
-    fully_paid:     { text: 'FULLY PAID',     bg: '#EDFBF2', fg: '#0A7B3B' },
-    over_paid:      { text: 'OVER PAID',      bg: '#FDECEC', fg: '#B42222' },
-  };
-  const s = map[status];
-  return `<span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:9px;font-weight:700;
-    background:${s.bg};color:${s.fg};letter-spacing:0.5px;">${s.text}</span>`;
-}
+const STATUS_LABEL: Record<ReceiptSummaryContext['payment_status'], string> = {
+  not_paid:       'NOT PAID',
+  partially_paid: 'PARTIALLY PAID',
+  fully_paid:     'FULLY PAID',
+};
 
 function referenceCell(p: ReceiptPaymentContext): string {
-  if (p.utr_number)          return `UTR: ${p.utr_number}`;
-  if (p.cheque_number)       return `Cheque: ${p.cheque_number}${p.cheque_bank ? ` (${p.cheque_bank})` : ''}`;
-  if (p.demand_draft_number) return `DD: ${p.demand_draft_number}`;
+  if (p.utr_number)            return `UTR: ${p.utr_number}`;
+  if (p.cheque_number)         return `Cheque: ${p.cheque_number}${p.cheque_bank ? ` (${p.cheque_bank})` : ''}`;
+  if (p.demand_draft_number)   return `DD: ${p.demand_draft_number}`;
   if (p.transaction_reference) return `Txn Ref: ${p.transaction_reference}`;
   return '—';
 }
 
-function buildHtml(input: ReceiptRenderInput): string {
-  const { deal, payment, summary, generatedByName, generatedByRole, issuedAt } = input;
+function metaRow(lbl: string, val: string): string {
+  return `<tr>
+    <td style="${label}text-align:right;padding:3px 12px 3px 0;white-space:nowrap;">${lbl}</td>
+    <td style="font-family:${SANS};font-size:10px;color:${INK};font-weight:600;text-align:right;padding:3px 0;white-space:nowrap;">${val}</td>
+  </tr>`;
+}
 
-  const modeLabel = MODE_LABEL[payment.payment_mode] ?? payment.payment_mode;
-
-  return `
-<div id="payment-receipt-pdf" style="
-  font-family: Arial, Helvetica, sans-serif;
-  color:#222; background:#ffffff;
-  width:794px; padding:36px 40px; box-sizing:border-box;
-  font-size:11px; line-height:1.55;">
-
-  <!-- ================== HEADER ================== -->
-  <div style="display:flex; align-items:flex-start; justify-content:space-between;
-       border-bottom:2px solid #D4AF37; padding-bottom:16px; margin-bottom:20px;">
-    <div style="display:flex; align-items:center; gap:14px;">
-      <img src="${NIYOM_LOGO}" alt="Niyom Wealth" style="height:56px; width:auto;" />
-      <div>
-        <div style="font-size:18px; font-weight:700; color:#111; letter-spacing:0.5px;">
-          ${NIYOM_COMPANY.name}
-        </div>
-        <div style="font-size:10px; color:#666; margin-top:2px;">
-          ${NIYOM_COMPANY.address}
-        </div>
-        <div style="font-size:10px; color:#666;">
-          ${NIYOM_COMPANY.email} &nbsp;·&nbsp; ${ARN} &nbsp;·&nbsp; Valid till ${ARN_VALID_TILL}
-        </div>
-      </div>
-    </div>
-    <div style="text-align:right;">
-      <div style="font-size:16px; font-weight:800; color:#111; letter-spacing:1px;">PAYMENT RECEIPT</div>
-      <div style="font-size:11px; margin-top:6px;">
-        <span style="color:#666;">Receipt No.:</span>
-        <strong style="color:#111;">${payment.receipt_number}</strong>
-      </div>
-      <div style="font-size:11px;">
-        <span style="color:#666;">Issued On:</span>
-        <strong style="color:#111;">${fmtDate(issuedAt.toISOString())}</strong>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================== CLIENT + DEAL ================== -->
-  <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
-    <tr>
-      <td style="width:50%; vertical-align:top; padding-right:12px;">
-        <div style="font-size:9px; font-weight:700; color:#8B7355; text-transform:uppercase;
-             letter-spacing:1px; margin-bottom:6px;">Received From</div>
-        <div style="border:1px solid #eee; border-radius:6px; padding:10px 12px;">
-          <div style="font-weight:700; color:#111; margin-bottom:4px;">${deal.snap_client_name || '—'}</div>
-          <div style="color:#555;">PAN: ${deal.snap_pan || '—'}</div>
-          ${payment.received_from_name && payment.received_from_name !== deal.snap_client_name
-            ? `<div style="color:#555; margin-top:4px; font-size:10px;">
-                 Paid by: ${payment.received_from_name}${payment.received_from_bank ? ` · ${payment.received_from_bank}` : ''}
-               </div>`
-            : ''}
-        </div>
-      </td>
-      <td style="width:50%; vertical-align:top; padding-left:12px;">
-        <div style="font-size:9px; font-weight:700; color:#8B7355; text-transform:uppercase;
-             letter-spacing:1px; margin-bottom:6px;">Against Deal</div>
-        <div style="border:1px solid #eee; border-radius:6px; padding:10px 12px;">
-          <div style="font-weight:700; color:#111; margin-bottom:4px;">${deal.confirmation_number}</div>
-          <div style="color:#555;">Deal Date: ${fmtDate(deal.deal_date)}</div>
-          <div style="color:#555; font-size:10px; margin-top:4px;">
-            ${deal.security_name}${deal.isin ? ` · ISIN ${deal.isin}` : ''}
-          </div>
-        </div>
-      </td>
-    </tr>
-  </table>
-
-  <!-- ================== PAYMENT DETAILS ================== -->
-  <div style="font-size:9px; font-weight:700; color:#8B7355; text-transform:uppercase;
-       letter-spacing:1px; margin-bottom:6px;">Payment Details</div>
-  <table style="width:100%; border-collapse:collapse; border:1px solid #eee; border-radius:6px; margin-bottom:14px;">
-    <tbody>
-      <tr>
-        <td style="padding:8px 12px; border-bottom:1px solid #eee; color:#666; width:35%;">Payment No.</td>
-        <td style="padding:8px 12px; border-bottom:1px solid #eee; font-weight:600; color:#111;">${payment.payment_number}</td>
-      </tr>
-      <tr>
-        <td style="padding:8px 12px; border-bottom:1px solid #eee; color:#666;">Mode</td>
-        <td style="padding:8px 12px; border-bottom:1px solid #eee; color:#111;">${modeLabel}</td>
-      </tr>
-      <tr>
-        <td style="padding:8px 12px; border-bottom:1px solid #eee; color:#666;">Reference</td>
-        <td style="padding:8px 12px; border-bottom:1px solid #eee; color:#111; font-family:Menlo,monospace;">${referenceCell(payment)}</td>
-      </tr>
-      <tr>
-        <td style="padding:8px 12px; border-bottom:1px solid #eee; color:#666;">Payment Date</td>
-        <td style="padding:8px 12px; border-bottom:1px solid #eee; color:#111;">${fmtDate(payment.payment_date)}</td>
-      </tr>
-      <tr>
-        <td style="padding:8px 12px; color:#666;">Value Date (Credit Realised)</td>
-        <td style="padding:8px 12px; color:#111;">${payment.value_date ? fmtDate(payment.value_date) : '—'}</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- ================== AMOUNT PANEL ================== -->
-  <div style="background:#FFF9EC; border:1px solid #D4AF37; border-radius:8px; padding:14px 18px; margin-bottom:16px;">
-    <div style="display:flex; align-items:center; justify-content:space-between;">
-      <div>
-        <div style="font-size:9px; font-weight:700; color:#8B7355; text-transform:uppercase; letter-spacing:1px;">
-          Amount Received
-        </div>
-        <div style="font-size:22px; font-weight:800; color:#111; margin-top:2px;">
-          ${inr(payment.amount_inr)}
-        </div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:9px; color:#8B7355; text-transform:uppercase; letter-spacing:1px;">Status</div>
-        <div style="margin-top:4px;">${statusPill(summary.payment_status)}</div>
-      </div>
-    </div>
-    <div style="font-size:10px; color:#666; font-style:italic; margin-top:8px;">
-      Amount in Words: <span style="color:#111;">${amountInWords(payment.amount_inr)}</span>
-    </div>
-  </div>
-
-  <!-- ================== BALANCE SUMMARY ================== -->
-  <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
-    <tr>
-      <td style="width:33%; padding:10px; border:1px solid #eee; border-radius:6px; text-align:center;">
-        <div style="font-size:9px; color:#8B7355; text-transform:uppercase; letter-spacing:1px;">Deal Amount</div>
-        <div style="font-size:14px; font-weight:700; color:#111; margin-top:4px;">${inr(deal.settlement_amount)}</div>
-      </td>
-      <td style="width:33%; padding:10px; border:1px solid #eee; text-align:center;">
-        <div style="font-size:9px; color:#8B7355; text-transform:uppercase; letter-spacing:1px;">Total Paid to Date</div>
-        <div style="font-size:14px; font-weight:700; color:#0A7B3B; margin-top:4px;">${inr(summary.total_paid_amount)}</div>
-      </td>
-      <td style="width:33%; padding:10px; border:1px solid #eee; text-align:center;">
-        <div style="font-size:9px; color:#8B7355; text-transform:uppercase; letter-spacing:1px;">Outstanding</div>
-        <div style="font-size:14px; font-weight:700; color:${summary.outstanding_amount > 0 ? '#B8961E' : summary.outstanding_amount < 0 ? '#B42222' : '#0A7B3B'}; margin-top:4px;">
-          ${inr(Math.abs(summary.outstanding_amount))}
-        </div>
-      </td>
-    </tr>
-  </table>
-
-  <!-- ================== DECLARATION ================== -->
-  <div style="font-size:10px; color:#555; margin-bottom:16px; padding:10px 12px;
-       background:#fafafa; border-left:3px solid #D4AF37; border-radius:4px;">
-    ${payment.payment_mode === 'cheque' || payment.payment_mode === 'demand_draft'
-      ? 'This receipt is issued subject to realisation of the instrument by the collecting bank.'
-      : 'This receipt acknowledges credit of the above amount to Niyom Wealth Distribution LLP in respect of the deal referenced above.'}
-    ${payment.remarks ? `<div style="margin-top:6px;"><strong>Remarks:</strong> ${payment.remarks}</div>` : ''}
-  </div>
-
-  <!-- ================== SIGNATURE BLOCK ================== -->
-  <table style="width:100%; border-collapse:collapse; margin-top:24px;">
-    <tr>
-      <td style="width:50%; vertical-align:bottom; padding-top:24px;">
-        <div style="border-top:1px solid #333; padding-top:6px; font-size:10px; color:#666;">
-          Received by Client / Authorised Signatory
-        </div>
-      </td>
-      <td style="width:50%; vertical-align:bottom; text-align:right; padding-top:24px;">
-        <img src="${NIYOM_SIGNATURE}" alt="Authorised Signature"
-             style="height:44px; width:auto; margin-bottom:6px; margin-right:8px;" />
-        <div style="border-top:1px solid #333; padding-top:6px; font-size:10px; color:#666;">
-          For ${NIYOM_COMPANY.name}<br/>
-          <strong style="color:#111;">${generatedByName}</strong> · ${generatedByRole}
-        </div>
-      </td>
-    </tr>
-  </table>
-
-  <!-- ================== FOOTER ================== -->
-  <div style="margin-top:28px; padding-top:12px; border-top:1px solid #eee;
-       font-size:9px; color:#888; line-height:1.6;">
-    <div><strong>Niyom Wealth Distribution LLP</strong> · AMFI Registered Mutual Fund Distributor · ${ARN} (Valid till ${ARN_VALID_TILL})</div>
-    <div>${NIYOM_COMPANY.address}</div>
-    <div style="margin-top:4px;">
-      Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.
-    </div>
-    <div style="margin-top:4px;">This receipt is intended for the named recipient only. Ref: ${payment.receipt_number}</div>
-  </div>
-</div>
-`;
+function kvRow(lbl: string, val: string): string {
+  return `<tr>
+    <td style="${label}padding:3px 14px 3px 0;white-space:nowrap;vertical-align:top;">${lbl}</td>
+    <td style="font-family:${SANS};font-size:10px;color:${INK};font-weight:600;padding:3px 0;vertical-align:top;">${val || '—'}</td>
+  </tr>`;
 }
 
 // ---------------------------------------------------------------------------
-// Render → base64 PDF
+// HTML template — matches dsaDebitNote structure line-for-line
 // ---------------------------------------------------------------------------
 
-export async function renderPaymentReceiptPdf(input: ReceiptRenderInput): Promise<string> {
-  const html = buildHtml(input);
+function buildHtml(input: ReceiptRenderInput): string {
+  const { deal, payment, summary, generatedByName, generatedByRole, issuedAt } = input;
+  const dateStr = fmtDate(issuedAt);
+  const modeLabel = MODE_LABEL[payment.payment_mode] ?? payment.payment_mode;
+  const excess = summary.outstanding_amount < 0 ? Math.abs(summary.outstanding_amount) : 0;
 
-  // Stage the HTML in an off-screen container so html2canvas has real
-  // layout to measure. Detached DOM does not work reliably for html2pdf.
+  return `
+  <div style="width:794px;box-sizing:border-box;padding:44px 48px 36px;font-family:${SANS};color:${INK};background:#ffffff;">
+
+    <!-- Header: logo + company (left) · title + doc meta (right) -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div style="max-width:58%;">
+        <img src="${NIYOM_LOGO}" alt="Niyom Wealth" style="height:40px;width:auto;object-fit:contain;display:block;margin-bottom:12px;" />
+        <div style="font-family:${SERIF};font-size:14px;font-weight:700;letter-spacing:0.04em;color:${INK};">${NIYOM_COMPANY.name}</div>
+        <div style="font-size:9px;color:${SUB};line-height:1.5;margin-top:4px;">${NIYOM_COMPANY.address}</div>
+        <div style="font-size:9px;color:${SUB};margin-top:3px;">Email: ${NIYOM_COMPANY.email}</div>
+      </div>
+      <div style="text-align:right;padding-top:4px;">
+        <div style="font-family:${SERIF};font-size:30px;font-weight:700;letter-spacing:0.02em;color:${INK};line-height:1;">Payment Receipt</div>
+        <table style="border-collapse:collapse;margin-left:auto;margin-top:14px;">
+          ${metaRow('Receipt No.', payment.receipt_number)}
+          ${metaRow('Payment No.', payment.payment_number)}
+          ${metaRow('Issued On', dateStr)}
+        </table>
+      </div>
+    </div>
+
+    <div style="border-top:2px solid ${RULE};margin-top:20px;"></div>
+
+    <!-- Received From + Against Deal -->
+    <div style="display:flex;margin-top:18px;gap:32px;">
+      <div style="flex:1;">
+        <div style="${label}margin-bottom:6px;">Received From</div>
+        <div style="font-family:${SERIF};font-size:13px;font-weight:700;color:${INK};">${deal.snap_client_name || '—'}</div>
+        <div style="font-size:9.5px;color:${SUB};margin-top:2px;"><span style="color:${MUTE};">PAN:</span> ${deal.snap_pan || '—'}</div>
+        ${payment.received_from_name && payment.received_from_name !== deal.snap_client_name
+          ? `<div style="font-size:9.5px;color:${SUB};margin-top:2px;"><span style="color:${MUTE};">Paid by:</span> ${payment.received_from_name}${payment.received_from_bank ? ` · ${payment.received_from_bank}` : ''}</div>`
+          : ''}
+      </div>
+      <div style="flex:1;">
+        <div style="${label}margin-bottom:6px;">Against Deal Confirmation</div>
+        <div style="font-family:${SERIF};font-size:13px;font-weight:700;color:${INK};">${deal.confirmation_number}</div>
+        <div style="font-size:9.5px;color:${SUB};margin-top:2px;"><span style="color:${MUTE};">Deal Date:</span> ${fmtDate(deal.deal_date)}</div>
+        <div style="font-size:9.5px;color:${SUB};margin-top:2px;"><span style="color:${MUTE};">Security:</span> ${deal.security_name}${deal.isin ? ` · ISIN ${deal.isin}` : ''}</div>
+      </div>
+    </div>
+
+    <!-- Particulars table (single row, but same visual treatment as debit note) -->
+    <table style="width:100%;border-collapse:collapse;margin-top:22px;">
+      <thead>
+        <tr style="background:${RULE};">
+          <th style="padding:8px 10px;text-align:left;font-family:${SANS};font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#ffffff;font-weight:600;">Payment Particulars</th>
+          <th style="padding:8px 10px;text-align:left;font-family:${SANS};font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#ffffff;font-weight:600;width:220px;">Reference</th>
+          <th style="padding:8px 10px;text-align:right;font-family:${SANS};font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#ffffff;font-weight:600;width:110px;">Payment Date</th>
+          <th style="padding:8px 10px;text-align:right;font-family:${SANS};font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#ffffff;font-weight:600;width:130px;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:9px 10px;border-bottom:1px solid ${HAIR};vertical-align:top;">
+            <div style="font-size:10.5px;color:${INK};font-weight:600;">${modeLabel}</div>
+            <div style="font-size:8.5px;color:${MUTE};text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Received via ${modeLabel}</div>
+          </td>
+          <td style="padding:9px 10px;border-bottom:1px solid ${HAIR};font-family:${TIMES};font-size:10px;color:${INK};vertical-align:top;">${referenceCell(payment)}</td>
+          <td style="padding:9px 10px;border-bottom:1px solid ${HAIR};font-size:10px;color:${INK};text-align:right;vertical-align:top;">${fmtDate(payment.payment_date)}${payment.value_date ? `<div style="font-size:8.5px;color:${MUTE};margin-top:2px;">Value: ${fmtDate(payment.value_date)}</div>` : ''}</td>
+          <td style="padding:9px 10px;border-bottom:1px solid ${HAIR};font-family:${TIMES};font-size:11px;color:${INK};text-align:right;vertical-align:top;font-variant-numeric:tabular-nums;">${inr(payment.amount_inr)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Right-aligned totals block (mirrors the "Net Payable" panel of the debit note) -->
+    <div style="display:flex;justify-content:flex-end;margin-top:28px;margin-bottom:30px;">
+      <div style="width:400px;">
+        <table style="border-collapse:collapse;width:100%;">
+          <tr>
+            <td style="font-family:${SANS};font-size:11px;color:${SUB};text-align:left;padding:9px 14px 9px 0;border-top:1px solid ${HAIR};">Deal Amount</td>
+            <td style="font-family:${TIMES};font-size:14px;color:${INK};text-align:right;padding:9px 0 9px 14px;border-top:1px solid ${HAIR};font-variant-numeric:tabular-nums;">${inr(deal.settlement_amount)}</td>
+          </tr>
+          <tr>
+            <td style="font-family:${SANS};font-size:11px;color:${SUB};text-align:left;padding:9px 14px 9px 0;">Total Paid to Date</td>
+            <td style="font-family:${TIMES};font-size:14px;color:${INK};text-align:right;padding:9px 0 9px 14px;font-variant-numeric:tabular-nums;">${inr(summary.total_paid_amount)}</td>
+          </tr>
+          <tr>
+            <td style="font-family:${SANS};font-size:11px;color:${SUB};text-align:left;padding:9px 14px 9px 0;border-bottom:1px solid ${HAIR};">Outstanding Balance</td>
+            <td style="font-family:${TIMES};font-size:14px;color:${INK};text-align:right;padding:9px 0 9px 14px;border-bottom:1px solid ${HAIR};font-variant-numeric:tabular-nums;">${inr(Math.max(summary.outstanding_amount, 0))}</td>
+          </tr>
+          <tr>
+            <td style="font-family:${TIMES};font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:#000000;font-weight:700;text-align:left;padding:16px 14px 16px 0;border-top:2px solid #000000;border-bottom:2px solid #000000;">Amount Received</td>
+            <td style="font-family:${TIMES};font-size:23px;font-weight:700;color:#000000;text-align:right;padding:16px 0 16px 14px;border-top:2px solid #000000;border-bottom:2px solid #000000;font-variant-numeric:tabular-nums;">${inr(payment.amount_inr)}</td>
+          </tr>
+        </table>
+        <div style="text-align:right;margin-top:14px;">
+          <div style="${label}margin-bottom:4px;">Amount in Words</div>
+          <div style="font-family:${SERIF};font-size:11px;font-style:italic;color:${INK};line-height:1.5;">${amountInWords(payment.amount_inr)}</div>
+        </div>
+        <div style="text-align:right;margin-top:12px;">
+          <div style="${label}margin-bottom:4px;">Payment Status</div>
+          <div style="font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:0.1em;color:${INK};">${STATUS_LABEL[summary.payment_status]}</div>
+          ${excess > 0 ? `<div style="font-size:9px;color:${MUTE};margin-top:3px;">Excess on record: ${inr(excess)}</div>` : ''}
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment To (left) + Remitting/Payer info (right) -->
+    <div style="display:flex;margin-top:6px;">
+      <div style="flex:1;padding-right:24px;">
+        <div style="${label}margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid ${HAIR};">Credited To (Niyom Wealth)</div>
+        <table style="border-collapse:collapse;width:100%;">
+          ${kvRow('Beneficiary', NIYOM_COMPANY.name)}
+        </table>
+      </div>
+      <div style="flex:1;padding-left:24px;border-left:1px solid ${HAIR};">
+        <div style="${label}margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid ${HAIR};">Payer</div>
+        <table style="border-collapse:collapse;width:100%;">
+          ${kvRow('Name', payment.received_from_name || deal.snap_client_name || '')}
+          ${payment.received_from_bank ? kvRow('Bank', payment.received_from_bank) : ''}
+        </table>
+      </div>
+    </div>
+
+    ${payment.remarks
+      ? `<div style="margin-top:24px;font-size:9.5px;color:${SUB};line-height:1.5;">
+          <span style="${label}">Remarks:&nbsp;</span>${payment.remarks}
+        </div>`
+      : ''}
+
+    ${(payment.payment_mode === 'cheque' || payment.payment_mode === 'demand_draft')
+      ? `<div style="margin-top:16px;font-size:9.5px;color:${SUB};font-style:italic;">
+          This receipt is issued subject to realisation of the instrument by the collecting bank.
+        </div>`
+      : ''}
+
+    <!-- Single signature block (right) — the client does NOT sign a receipt -->
+    <div style="display:flex;justify-content:flex-end;margin-top:44px;">
+      <div style="width:300px;text-align:center;">
+        <img src="${NIYOM_SIGNATURE}" alt="Authorized Signature" style="height:96px;max-width:280px;width:auto;object-fit:contain;display:inline-block;filter:grayscale(1);" />
+        <div style="border-top:1px solid ${RULE};margin-top:6px;padding-top:7px;">
+          <div style="font-family:${SERIF};font-size:11px;font-weight:700;color:${INK};">S. Purushothaman</div>
+          <div style="font-size:9px;color:${SUB};margin-top:2px;">Designated Partner</div>
+          <div style="font-size:9px;color:${SUB};margin-top:1px;">For ${NIYOM_COMPANY.name}</div>
+          <div style="${label}margin-top:6px;">Authorized Signatory</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top:32px;border-top:1px solid ${HAIR};padding-top:9px;">
+      <div style="display:flex;justify-content:space-between;font-size:7.5px;letter-spacing:0.04em;color:${MUTE};">
+        <span>Generated by ${generatedByName} · ${generatedByRole}</span>
+        <span>This is a system-generated payment receipt.</span>
+      </div>
+      <div style="font-size:7.5px;color:${MUTE};margin-top:5px;letter-spacing:0.04em;">
+        ${NIYOM_COMPANY.name} · AMFI Registered Mutual Fund Distributor · ${ARN} (Valid till ${ARN_VALID_TILL})
+      </div>
+      <div style="font-size:7.5px;color:${MUTE};margin-top:3px;letter-spacing:0.04em;">
+        Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing. Ref: ${payment.receipt_number}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Wait for image assets to load before capture (mirrors dsaDebitNote helper)
+// ---------------------------------------------------------------------------
+async function waitForImages(root: HTMLElement): Promise<void> {
+  const imgs = Array.from(root.querySelectorAll('img'));
+  await Promise.all(imgs.map(img => {
+    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+    return new Promise<void>(resolve => {
+      img.onload  = () => resolve();
+      img.onerror = () => resolve();
+    });
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Render → base64 (for upload) and → direct download
+// ---------------------------------------------------------------------------
+
+const PDF_OPTS = (filename: string) => ({
+  margin: 0,
+  filename,
+  image: { type: 'png' as const, quality: 1 },
+  html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794 },
+  jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
+  pagebreak: { mode: ['css', 'legacy'] as string[] },
+});
+
+export async function renderPaymentReceiptPdf(input: ReceiptRenderInput): Promise<string> {
   const wrap = document.createElement('div');
   wrap.style.position = 'fixed';
   wrap.style.left = '-10000px';
   wrap.style.top = '0';
-  wrap.style.width = '794px';
-  wrap.innerHTML = html;
+  wrap.innerHTML = buildHtml(input);
   document.body.appendChild(wrap);
-
   try {
-    const opts = {
-      margin: 0,
-      filename: `${input.payment.receipt_number}.pdf`,
-      image: { type: 'png' as const, quality: 1 },
-      html2canvas: { scale: 3, useCORS: true, logging: false, windowWidth: 794, letterRendering: true },
-      jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
-      pagebreak: { mode: ['css', 'legacy'] as string[] },
-    };
-
-    const pdfBlob: Blob = await html2pdf().set(opts).from(wrap.firstElementChild as HTMLElement).outputPdf('blob');
-
-    // Blob → base64 (strip data-URI prefix so Resend / storage accept it later)
-    const buf = await pdfBlob.arrayBuffer();
-    const bytes = new Uint8Array(buf);
-    let bin = '';
-    // Chunk to avoid stack overflow on large arrays
-    const CHUNK = 0x8000;
-    for (let i = 0; i < bytes.length; i += CHUNK) {
-      bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + CHUNK)));
-    }
-    return btoa(bin);
+    await waitForImages(wrap);
+    const dataUri: string = await html2pdf()
+      .set(PDF_OPTS(`${input.payment.receipt_number}.pdf`))
+      .from(wrap.firstElementChild as HTMLElement)
+      .output('datauristring');
+    return dataUri.split(',')[1];
   } finally {
     document.body.removeChild(wrap);
   }
 }
 
-// ---------------------------------------------------------------------------
-// Direct browser download (no upload) — used only if we ever want a pure
-// client-side download path; upload path uses renderPaymentReceiptPdf + the
-// upload-receipt edge function.
-// ---------------------------------------------------------------------------
 export async function downloadPaymentReceiptPdf(input: ReceiptRenderInput): Promise<void> {
-  const html = buildHtml(input);
   const wrap = document.createElement('div');
   wrap.style.position = 'fixed';
   wrap.style.left = '-10000px';
   wrap.style.top = '0';
-  wrap.style.width = '794px';
-  wrap.innerHTML = html;
+  wrap.innerHTML = buildHtml(input);
   document.body.appendChild(wrap);
   try {
-    await html2pdf().set({
-      margin: 0,
-      filename: `${input.payment.receipt_number}.pdf`,
-      image: { type: 'png' as const, quality: 1 },
-      html2canvas: { scale: 3, useCORS: true, logging: false, windowWidth: 794, letterRendering: true },
-      jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
-    }).from(wrap.firstElementChild as HTMLElement).save();
+    await waitForImages(wrap);
+    await html2pdf()
+      .set(PDF_OPTS(`${input.payment.receipt_number}.pdf`))
+      .from(wrap.firstElementChild as HTMLElement)
+      .save();
   } finally {
     document.body.removeChild(wrap);
   }

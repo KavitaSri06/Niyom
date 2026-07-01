@@ -160,6 +160,35 @@ const ACCEPTANCE_STYLES: Record<AcceptanceStatus, { label: string; bg: string; c
   expired:  { label: 'Expired',  bg: 'rgba(245,158,11,0.1)',  color: 'var(--warning)' },
 };
 
+// ---------- Payment Status Pill (deal-list quick entry) ----------
+const PAYMENT_STATUS_STYLES: Record<'not_paid' | 'partially_paid' | 'fully_paid', { label: string; bg: string; color: string }> = {
+  not_paid:       { label: 'Not Paid',       bg: 'rgba(107,107,107,0.10)', color: 'var(--text-secondary)' },
+  partially_paid: { label: 'Partially Paid', bg: 'rgba(245,158,11,0.10)',  color: 'var(--warning)' },
+  fully_paid:     { label: 'Fully Paid',     bg: 'rgba(16,185,129,0.10)',  color: 'var(--success)' },
+};
+
+function PaymentStatusPill({
+  summary,
+  onClick,
+}: {
+  summary?: { payment_status: 'not_paid' | 'partially_paid' | 'fully_paid'; outstanding_amount: number };
+  onClick: () => void;
+}) {
+  const status = summary?.payment_status ?? 'not_paid';
+  const s = PAYMENT_STATUS_STYLES[status];
+  return (
+    <button
+      onClick={onClick}
+      title="Open Manage Payments"
+      className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider transition-transform hover:scale-105"
+      style={{ background: s.bg, color: s.color, border: `1px solid color-mix(in srgb, ${s.color} 20%, transparent)` }}
+    >
+      <Wallet className="w-3 h-3" />
+      {s.label}
+    </button>
+  );
+}
+
 function AcceptanceBadge({ status }: { status: AcceptanceStatus }) {
   const s = ACCEPTANCE_STYLES[status] ?? ACCEPTANCE_STYLES.pending;
   return (
@@ -191,6 +220,7 @@ export default function DealConfirmation({ employee }: Props) {
   const [deleteDeal, setDeleteDeal] = useState<DealRecord | null>(null);
   const [search, setSearch] = useState('');
   const [emailSending, setEmailSending] = useState(false);
+  const [paySummaries, setPaySummaries] = useState<Record<string, { payment_status: 'not_paid' | 'partially_paid' | 'fully_paid'; outstanding_amount: number }>>({});
 
   const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
   const clientDropRef = useRef<HTMLDivElement>(null);
@@ -214,8 +244,24 @@ export default function DealConfirmation({ employee }: Props) {
       .order('created_at', { ascending: false });
     if (!isAdmin) q = q.eq('employee_id', employee.id);
     const { data } = await q;
-    setDeals((data as DealRecord[]) || []);
+    const rows = (data as DealRecord[]) || [];
+    setDeals(rows);
     setLoading(false);
+
+    // Batch-fetch payment summaries for accepted deals so the list can show
+    // a clickable Payment Status pill without extra round-trips per row.
+    const acceptedIds = rows.filter(r => r.acceptance_status === 'accepted').map(r => r.id);
+    if (acceptedIds.length) {
+      const { data: sums } = await supabase
+        .from('nw_deal_payment_summary')
+        .select('deal_id, payment_status, outstanding_amount')
+        .in('deal_id', acceptedIds);
+      const map: Record<string, { payment_status: any; outstanding_amount: number }> = {};
+      (sums ?? []).forEach((s: any) => { map[s.deal_id] = { payment_status: s.payment_status, outstanding_amount: Number(s.outstanding_amount) }; });
+      setPaySummaries(map);
+    } else {
+      setPaySummaries({});
+    }
   }, [isAdmin, employee.id]);
 
   useEffect(() => { loadDeals(); }, [loadDeals]);
@@ -834,9 +880,17 @@ export default function DealConfirmation({ employee }: Props) {
                         {d.status === 'confirmed' ? 'Confirmed' : 'Draft'}
                       </span>
                     </td>
-                    {/* Acceptance lifecycle */}
+                    {/* Acceptance lifecycle + quick entry to payments */}
                     <td className="px-5 py-3.5">
-                      <AcceptanceBadge status={d.acceptance_status ?? 'pending'} />
+                      <div className="flex flex-col gap-1.5 items-start">
+                        <AcceptanceBadge status={d.acceptance_status ?? 'pending'} />
+                        {d.acceptance_status === 'accepted' && (
+                          <PaymentStatusPill
+                            summary={paySummaries[d.id]}
+                            onClick={() => { setPreviewDeal(d); setView('payments'); }}
+                          />
+                        )}
+                      </div>
                     </td>
                     {/* Actions */}
                     <td className="px-5 py-3.5">

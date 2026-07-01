@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { NWEmployee } from './types';
 import {
   ChevronLeft, Plus, X, Loader2, CheckCircle2, AlertCircle,
-  Wallet, IndianRupee, Receipt, Info, FileText, RefreshCw, Eye,
+  Wallet, IndianRupee, Receipt, Info, FileText, RefreshCw, Eye, Mail, Bell,
 } from 'lucide-react';
 import { renderPaymentReceiptPdf } from './paymentReceipt';
 
@@ -11,7 +11,7 @@ import { renderPaymentReceiptPdf } from './paymentReceipt';
 // Types
 // ---------------------------------------------------------------------------
 
-type PaymentStatus = 'not_paid' | 'partially_paid' | 'fully_paid' | 'over_paid';
+type PaymentStatus = 'not_paid' | 'partially_paid' | 'fully_paid';
 
 type PaymentMode =
   | 'imps' | 'neft' | 'rtgs' | 'upi' | 'cheque' | 'cash'
@@ -79,8 +79,19 @@ interface PaymentRow {
   remarks: string;
   status: 'active' | 'cancelled' | 'superseded';
   receipt_pdf_path: string | null;
+  receipt_generated_at: string | null;
   receipt_regen_count: number;
+  updated_at: string;
   created_at: string;
+}
+
+interface EmailLogRow {
+  id: string;
+  payment_id: string | null;
+  email_type: 'payment_reminder' | 'payment_partial' | 'payment_final' | 'secure_link' | 'signed_pdf';
+  status: 'sent' | 'failed' | 'partial';
+  sent_at: string;
+  metadata: Record<string, unknown> | null;
 }
 
 interface Props {
@@ -105,7 +116,6 @@ const STATUS_STYLES: Record<PaymentStatus, { label: string; bg: string; color: s
   not_paid:       { label: 'Not Paid',       bg: 'rgba(107,107,107,0.10)', color: 'var(--text-secondary)', border: 'rgba(107,107,107,0.25)' },
   partially_paid: { label: 'Partially Paid', bg: 'rgba(245,158,11,0.10)',  color: 'var(--warning)',        border: 'rgba(245,158,11,0.25)' },
   fully_paid:     { label: 'Fully Paid',     bg: 'rgba(16,185,129,0.10)',  color: 'var(--success)',        border: 'rgba(16,185,129,0.25)' },
-  over_paid:      { label: 'Over Paid',      bg: 'rgba(239,68,68,0.10)',   color: 'var(--danger)',         border: 'rgba(239,68,68,0.25)' },
 };
 
 function StatusPill({ status }: { status: PaymentStatus }) {
@@ -116,7 +126,7 @@ function StatusPill({ status }: { status: PaymentStatus }) {
       style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}
     >
       {status === 'fully_paid' && <CheckCircle2 className="w-3.5 h-3.5" />}
-      {(status === 'over_paid' || status === 'partially_paid') && <AlertCircle className="w-3.5 h-3.5" />}
+      {status === 'partially_paid' && <AlertCircle className="w-3.5 h-3.5" />}
       {s.label}
     </span>
   );
@@ -222,11 +232,13 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [emailLog, setEmailLog] = useState<EmailLogRow[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<PaymentForm>(emptyForm(deal.snap_client_name));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [emailBusy, setEmailBusy] = useState<string | null>(null); // paymentId or 'reminder'
 
   const set = <K extends keyof PaymentForm>(k: K, v: PaymentForm[K]) =>
     setForm(prev => ({ ...prev, [k]: v }));
@@ -238,14 +250,19 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [sumRes, payRes] = await Promise.all([
+    const [sumRes, payRes, emailRes] = await Promise.all([
       supabase.from('nw_deal_payment_summary')
         .select('deal_id, deal_amount, total_paid_amount, outstanding_amount, payment_status, payment_count, last_payment_at')
         .eq('deal_id', deal.id).maybeSingle(),
       supabase.from('nw_deal_payments')
-        .select('id, payment_number, receipt_number, amount, amount_inr, currency, direction, payment_mode, utr_number, cheque_number, cheque_bank, transaction_reference, demand_draft_number, payment_date, value_date, received_from_name, received_from_bank, remarks, status, receipt_pdf_path, receipt_regen_count, created_at')
+        .select('id, payment_number, receipt_number, amount, amount_inr, currency, direction, payment_mode, utr_number, cheque_number, cheque_bank, transaction_reference, demand_draft_number, payment_date, value_date, received_from_name, received_from_bank, remarks, status, receipt_pdf_path, receipt_generated_at, receipt_regen_count, updated_at, created_at')
         .eq('deal_confirmation_id', deal.id)
         .order('created_at', { ascending: false }),
+      supabase.from('nw_deal_email_log')
+        .select('id, payment_id, email_type, status, sent_at, metadata')
+        .eq('deal_confirmation_id', deal.id)
+        .in('email_type', ['payment_reminder','payment_partial','payment_final'])
+        .order('sent_at', { ascending: false }),
     ]);
     // If no payments yet, the view returns a row with zeros. Fall back to a
     // synthesised summary from the deal amount when maybeSingle returns null.
@@ -259,6 +276,7 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
       last_payment_at: null,
     });
     setPayments((payRes.data as PaymentRow[]) ?? []);
+    setEmailLog((emailRes.data as EmailLogRow[]) ?? []);
     setLoading(false);
   }, [deal.id, deal.settlement_amount]);
 
@@ -417,8 +435,61 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
   };
 
   // -----------------------------------------------------------------------
+  // Email actions
+  // -----------------------------------------------------------------------
+
+  const sendReminder = async () => {
+    setEmailBusy('reminder');
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('send-payment-acknowledgement', {
+        body: { dealId: deal.id },
+      });
+      if (fnErr || !data?.success) {
+        throw new Error(data?.error || fnErr?.message || 'Could not send reminder.');
+      }
+      showToast('Payment reminder sent to client.');
+      await load();
+    } catch (err: any) {
+      showToast(err?.message || 'Could not send reminder.', false);
+    } finally {
+      setEmailBusy(null);
+    }
+  };
+
+  const sendReceipt = async (p: PaymentRow) => {
+    setEmailBusy(p.id);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('send-payment-acknowledgement', {
+        body: { paymentId: p.id },
+      });
+      if (fnErr || !data?.success) {
+        throw new Error(data?.error || fnErr?.message || 'Could not send receipt.');
+      }
+      const type = data.email_type as string;
+      showToast(
+        type === 'payment_final' ? 'Full-payment receipt sent to client.'
+        : type === 'payment_partial' ? 'Partial-payment receipt sent to client.'
+        : 'Email sent to client.'
+      );
+      await load();
+    } catch (err: any) {
+      showToast(err?.message || 'Could not send receipt.', false);
+    } finally {
+      setEmailBusy(null);
+    }
+  };
+
+  // -----------------------------------------------------------------------
   // Render helpers
   // -----------------------------------------------------------------------
+
+  const isStale = (p: PaymentRow): boolean => {
+    if (!p.receipt_pdf_path || !p.receipt_generated_at) return false;
+    return new Date(p.updated_at).getTime() > new Date(p.receipt_generated_at).getTime();
+  };
+
+  const lastEmailedFor = (paymentId: string): EmailLogRow | null =>
+    emailLog.find(e => e.payment_id === paymentId && e.status === 'sent') ?? null;
 
   const modeNeedsUtr = useMemo(() => {
     const m = form.paymentMode;
@@ -489,18 +560,27 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
         </div>
       )}
 
-      {/* Over-paid warning */}
-      {summary?.payment_status === 'over_paid' && (
+      {/* Excess-payment note (status remains fully_paid; excess is informational) */}
+      {summary && summary.outstanding_amount < 0 && (
         <div
           className="rounded-xl px-4 py-3 flex items-start gap-2 text-sm"
-          style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)' }}
+          style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', color: 'var(--warning)' }}
         >
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
           <span>
-            Total payments exceed the deal amount by <strong>{inr(Math.abs(summary.outstanding_amount))}</strong>.
-            Review the ledger and record a refund entry if appropriate.
+            An excess of <strong>{inr(Math.abs(summary.outstanding_amount))}</strong> has been recorded against this deal.
+            Consider recording a refund entry once processed.
           </span>
         </div>
+      )}
+
+      {/* Payment reminder — only when nothing has been received */}
+      {summary?.payment_status === 'not_paid' && (
+        <ReminderCard
+          lastSentAt={emailLog.find(e => e.email_type === 'payment_reminder' && e.status === 'sent')?.sent_at ?? null}
+          busy={emailBusy === 'reminder'}
+          onSend={() => sendReminder()}
+        />
       )}
 
       {/* Record-payment inline form */}
@@ -674,9 +754,16 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
               </thead>
               <tbody>
                 {payments.map(p => {
-                  const busy = receiptBusyId === p.id;
-                  const hasReceipt = !!p.receipt_pdf_path && !!p.receipt_number;
-                  const canIssue = p.status === 'active';
+                  const receiptBusy = receiptBusyId === p.id;
+                  const mailBusy    = emailBusy === p.id;
+                  const hasReceipt  = !!p.receipt_pdf_path && !!p.receipt_number;
+                  const canIssue    = p.status === 'active';
+                  const stale       = isStale(p);
+                  const lastEmail   = lastEmailedFor(p.id);
+                  const emailDisabledReason =
+                    !hasReceipt ? 'Generate the receipt first.'
+                    : stale     ? 'Payment data has changed. Regenerate the receipt before emailing.'
+                    : null;
                   return (
                     <tr key={p.id} style={{ borderTop: '1px solid var(--border)' }}>
                       <Td>{fmtDate(p.payment_date)}</Td>
@@ -695,39 +782,57 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
                       </Td>
                       <Td>
                         {!canIssue ? (
-                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                            {p.status}
-                          </span>
+                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.status}</span>
                         ) : hasReceipt ? (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <button
-                              onClick={() => previewOpen(p.receipt_pdf_path!)}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold"
-                              style={{ background: 'rgba(var(--accent-rgb),0.10)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.25)' }}
-                              title={p.receipt_number ?? undefined}
-                            >
-                              <Eye className="w-3 h-3" /> View
-                            </button>
-                            <button
-                              onClick={() => generateOrRegenerate(p)}
-                              disabled={busy}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs"
-                              style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)', opacity: busy ? 0.6 : 1 }}
-                              title={`v${p.receipt_regen_count} → v${p.receipt_regen_count + 1}`}
-                            >
-                              {busy
-                                ? <><Loader2 className="w-3 h-3 animate-spin" /> Regen…</>
-                                : <><RefreshCw className="w-3 h-3" /> Regenerate</>}
-                            </button>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <button
+                                onClick={() => previewOpen(p.receipt_pdf_path!)}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold"
+                                style={{ background: 'rgba(var(--accent-rgb),0.10)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.25)' }}
+                                title={p.receipt_number ?? undefined}
+                              >
+                                <Eye className="w-3 h-3" /> View
+                              </button>
+                              <button
+                                onClick={() => generateOrRegenerate(p)}
+                                disabled={receiptBusy}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs"
+                                style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)', opacity: receiptBusy ? 0.6 : 1 }}
+                                title={`v${p.receipt_regen_count} → v${p.receipt_regen_count + 1}`}
+                              >
+                                {receiptBusy
+                                  ? <><Loader2 className="w-3 h-3 animate-spin" /> Regen…</>
+                                  : <><RefreshCw className="w-3 h-3" /> Regenerate</>}
+                              </button>
+                              <button
+                                onClick={() => sendReceipt(p)}
+                                disabled={!!emailDisabledReason || mailBusy}
+                                title={emailDisabledReason ?? (lastEmail ? `Resend to client (last sent ${fmtDate(lastEmail.sent_at)})` : 'Send receipt to client')}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold"
+                                style={emailDisabledReason
+                                  ? { background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'not-allowed', opacity: 0.6 }
+                                  : { background: 'rgba(16,185,129,0.10)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.25)', opacity: mailBusy ? 0.6 : 1 }}
+                              >
+                                {mailBusy
+                                  ? <><Loader2 className="w-3 h-3 animate-spin" /> Sending…</>
+                                  : <><Mail className="w-3 h-3" /> {lastEmail ? 'Resend' : 'Email'}</>}
+                              </button>
+                            </div>
+                            <div className="text-[10px] leading-tight" style={{ color: 'var(--text-faint)' }}>
+                              {p.receipt_number ? `${p.receipt_number} · v${p.receipt_regen_count}` : ''}
+                              {stale ? <span style={{ color: 'var(--warning)' }}> · out of date</span> : null}
+                              {lastEmail ? ` · last emailed ${fmtDate(lastEmail.sent_at)}` : ''}
+                            </div>
                           </div>
                         ) : (
                           <button
                             onClick={() => generateOrRegenerate(p)}
-                            disabled={busy}
+                            disabled={receiptBusy}
                             className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold text-on-accent"
-                            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', opacity: busy ? 0.6 : 1 }}
+                            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', opacity: receiptBusy ? 0.6 : 1 }}
                           >
-                            {busy
+                            {receiptBusy
                               ? <><Loader2 className="w-3 h-3 animate-spin" /> Generating…</>
                               : <><FileText className="w-3 h-3" /> Generate Receipt</>}
                           </button>
@@ -770,6 +875,51 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
 // ---------------------------------------------------------------------------
 // Small presentational helpers
 // ---------------------------------------------------------------------------
+
+function ReminderCard({ lastSentAt, busy, onSend }: {
+  lastSentAt: string | null;
+  busy: boolean;
+  onSend: () => void;
+}) {
+  const fmt = (d: string) => new Date(d).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+  return (
+    <div
+      className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap"
+      style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}
+    >
+      <div className="flex items-start gap-2">
+        <Bell className="w-4 h-4 mt-0.5" style={{ color: 'var(--warning)' }} />
+        <div>
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            No payments recorded yet
+          </p>
+          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+            {lastSentAt
+              ? `Reminder last sent to the client on ${fmt(lastSentAt)}.`
+              : 'You can send the client a Payment Reminder email.'}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={onSend}
+        disabled={busy}
+        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold"
+        style={{
+          background: 'var(--bg-base)',
+          color: 'var(--text-primary)',
+          border: '1px solid var(--border)',
+          opacity: busy ? 0.6 : 1,
+        }}
+      >
+        {busy
+          ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
+          : <><Mail className="w-4 h-4" /> {lastSentAt ? 'Resend Reminder' : 'Send Payment Reminder'}</>}
+      </button>
+    </div>
+  );
+}
 
 function SummaryCard({
   icon, label, value, tone,
