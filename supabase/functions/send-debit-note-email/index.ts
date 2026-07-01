@@ -59,9 +59,11 @@ Deno.serve(async (req: Request) => {
 
     const dsa = (note as any).dsa as { id: string; full_name: string; email: string; dsa_code: string; employee_id: string } | null;
 
-    // Ownership check (admins may send any)
+    // Ownership check (admins may send any). Ownership is determined only by the
+    // DSA assignment: a non-admin may act on a debit note only when the note's
+    // DSA is assigned to them (nw_dsa.employee_id === employee.id).
     const isAdmin = employee.role === "admin" || employee.role === "super_admin";
-    const owns = note.created_by === employee.id || (dsa && dsa.employee_id === employee.id);
+    const owns = !!dsa && dsa.employee_id === employee.id;
     if (!isAdmin && !owns) return json({ success: false, error: "Forbidden" }, 403);
 
     if (note.signature_status === "signed") {

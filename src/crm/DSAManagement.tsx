@@ -90,6 +90,9 @@ export default function DSAManagement({ employee }: Props) {
 
   const fetchDSAs = useCallback(async () => {
     setLoading(true);
+    // Ownership = the DSA assignment only (nw_dsa.employee_id). A non-admin sees
+    // exactly the DSAs assigned to them; admins see all and may filter by the
+    // assigned employee. Also defended in depth by RLS.
     let q = supabase.from('nw_dsa').select('*, employee:nw_employees(full_name, employee_code)').order('dsa_code');
     if (!isAdmin) q = q.eq('employee_id', employee.id);
     else if (empFilter !== 'all') q = q.eq('employee_id', empFilter);
@@ -509,23 +512,26 @@ export default function DSAManagement({ employee }: Props) {
                     onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
                     <Eye className="w-4 h-4" />
                   </button>
+                  {/* Status toggle — stewardship: assigned employee or admin
+                      (non-destructive). */}
+                  {(isAdmin || dsa.employee_id === employee.id) && (
+                    <button onClick={() => toggleStatus(dsa)} title={dsa.status === 'active' ? 'Deactivate' : 'Activate'}
+                      className="p-2 rounded-lg transition-colors"
+                      style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)', color: dsa.status === 'active' ? 'var(--success)' : 'var(--text-faint)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = dsa.status === 'active' ? 'var(--danger)' : 'var(--success)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = dsa.status === 'active' ? 'var(--success)' : 'var(--text-faint)')}>
+                      {dsa.status === 'active' ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                    </button>
+                  )}
+                  {/* Delete — admin only: cascades into historical debit notes. */}
                   {isAdmin && (
-                    <>
-                      <button onClick={() => toggleStatus(dsa)} title={dsa.status === 'active' ? 'Deactivate' : 'Activate'}
-                        className="p-2 rounded-lg transition-colors"
-                        style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)', color: dsa.status === 'active' ? 'var(--success)' : 'var(--text-faint)' }}
-                        onMouseEnter={e => (e.currentTarget.style.color = dsa.status === 'active' ? 'var(--danger)' : 'var(--success)')}
-                        onMouseLeave={e => (e.currentTarget.style.color = dsa.status === 'active' ? 'var(--success)' : 'var(--text-faint)')}>
-                        {dsa.status === 'active' ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-                      </button>
-                      <button onClick={() => setDeleteDSA(dsa)} title="Delete DSA"
-                        className="p-2 rounded-lg transition-colors"
-                        style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)', color: 'var(--text-faint)' }}
-                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
-                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </>
+                    <button onClick={() => setDeleteDSA(dsa)} title="Delete DSA"
+                      className="p-2 rounded-lg transition-colors"
+                      style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)', color: 'var(--text-faint)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
               </div>

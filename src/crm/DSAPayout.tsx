@@ -83,13 +83,22 @@ export default function DSAPayout({ employee }: Props) {
   const calculate = useCallback(async () => {
     setLoading(true);
 
-    // Fetch clients with DSA mapping
+    // Fetch clients with DSA mapping.
     let clientQuery = supabase
       .from('nw_clients')
       .select('id, full_name, client_code, employee_id, sourced_via, dsa_id, dsa:nw_dsa(id, dsa_code, full_name)')
       .eq('sourced_via', 'dsa');
-    if (!isAdmin) clientQuery = clientQuery.eq('employee_id', employee.id);
-    else if (empFilter !== 'all') clientQuery = clientQuery.eq('employee_id', empFilter);
+    if (!isAdmin) {
+      // Employee login only: scope to the DSAs assigned to this employee
+      // (nw_dsa.employee_id). Resolve the owned DSA ids, then restrict the client
+      // mapping to those DSAs. Admin logic below is left exactly as before.
+      const { data: ownedDsas } = await supabase.from('nw_dsa').select('id').eq('employee_id', employee.id);
+      const ownedDsaIds = (ownedDsas as { id: string }[] | null)?.map(d => d.id) || [];
+      if (ownedDsaIds.length === 0) { setGroups([]); setLoading(false); setHasLoaded(true); return; }
+      clientQuery = clientQuery.in('dsa_id', ownedDsaIds);
+    } else if (empFilter !== 'all') {
+      clientQuery = clientQuery.eq('employee_id', empFilter);
+    }
     const { data: clientData } = await clientQuery;
     const dsaClients = (clientData as (NWClient & { dsa: NWDSA })[]) || [];
 

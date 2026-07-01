@@ -119,8 +119,12 @@ export default function CRM() {
       case 'documents': return <Documents employee={employee} initialClientId={pageParams.clientId} onBack={pageParams.clientId ? () => navigate('clients') : undefined} />;
       case 'admin_documents': return isAdmin ? <AdminDocuments employee={employee} /> : <Documents employee={employee} />;
       case 'mis': return <MIS employee={employee} />;
-      case 'dsa_management': return isAdmin ? <DSAManagement employee={employee} /> : <Dashboard employee={employee} onNavigate={navigate} />;
-      case 'dsa_payout': return isAdmin ? <DSAPayout employee={employee} /> : <Dashboard employee={employee} onNavigate={navigate} />;
+      // DSA Management (directory) and DSA Payout are employee-accessible; data
+      // scope + RLS enforce the ownership model — a non-admin only sees the DSAs
+      // assigned to them (nw_dsa.employee_id). Admin-only sub-actions stay gated
+      // inside.
+      case 'dsa_management': return <DSAManagement employee={employee} />;
+      case 'dsa_payout': return <DSAPayout employee={employee} />;
       case 'employees': return isAdmin ? <Employees employee={employee} /> : <Dashboard employee={employee} onNavigate={navigate} />;
       case 'deal_confirmation': return <DealConfirmation employee={employee} />;
       case 'settings': return <Settings employee={employee} />;
