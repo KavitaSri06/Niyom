@@ -3,10 +3,11 @@ import { supabase } from '../lib/supabase';
 import { NWEmployee, NWClient } from './types';
 import {
   FileText, Plus, Search, ChevronDown, Eye, Pencil, Trash2,
-  Download, CheckCircle2, AlertCircle, ChevronLeft, Send, Lock,
+  Download, CheckCircle2, AlertCircle, ChevronLeft, Send, Lock, Wallet,
 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import DealDocument from './DealDocument';
+import DealPayments from './DealPayments';
 
 type AcceptanceStatus = 'pending' | 'viewed' | 'accepted' | 'rejected' | 'expired';
 
@@ -174,7 +175,7 @@ function AcceptanceBadge({ status }: { status: AcceptanceStatus }) {
 
 // ============================================================
 export default function DealConfirmation({ employee }: Props) {
-  const [view, setView] = useState<'list' | 'form' | 'preview'>('list');
+  const [view, setView] = useState<'list' | 'form' | 'preview' | 'payments'>('list');
   const [deals, setDeals] = useState<DealRecord[]>([]);
   const [clients, setClients] = useState<NWClient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -432,6 +433,24 @@ export default function DealConfirmation({ employee }: Props) {
     d.security_name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // ===================== PAYMENTS ======================
+  if (view === 'payments' && previewDeal) {
+    return (
+      <DealPayments
+        deal={{
+          id: previewDeal.id,
+          confirmation_number: previewDeal.confirmation_number,
+          snap_client_name: previewDeal.snap_client_name,
+          snap_pan: previewDeal.snap_pan,
+          settlement_amount: previewDeal.settlement_amount,
+          employee_id: previewDeal.employee_id,
+        }}
+        employee={employee}
+        onBack={() => setView('preview')}
+      />
+    );
+  }
+
   // ===================== PREVIEW ======================
   if (view === 'preview' && previewDeal) {
     const alreadyAccepted = previewDeal.acceptance_status === 'accepted';
@@ -475,6 +494,13 @@ export default function DealConfirmation({ employee }: Props) {
                   <Download className="w-4 h-4" /> Signed PDF
                 </button>
               )}
+              <button
+                onClick={() => setView('payments')}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent"
+                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}
+              >
+                <Wallet className="w-4 h-4" /> Manage Payments
+              </button>
             </>
           ) : (
             <button
