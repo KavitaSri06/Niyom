@@ -221,6 +221,7 @@ export default function DealConfirmation({ employee }: Props) {
   const [search, setSearch] = useState('');
   const [emailSending, setEmailSending] = useState(false);
   const [paySummaries, setPaySummaries] = useState<Record<string, { payment_status: 'not_paid' | 'partially_paid' | 'fully_paid'; outstanding_amount: number }>>({});
+  const [paySummariesLoaded, setPaySummariesLoaded] = useState(false);
 
   const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
   const clientDropRef = useRef<HTMLDivElement>(null);
@@ -250,6 +251,8 @@ export default function DealConfirmation({ employee }: Props) {
 
     // Batch-fetch payment summaries for accepted deals so the list can show
     // a clickable Payment Status pill without extra round-trips per row.
+    // Single query with IN() — no N+1. The DB view is the sole source of truth.
+    setPaySummariesLoaded(false);
     const acceptedIds = rows.filter(r => r.acceptance_status === 'accepted').map(r => r.id);
     if (acceptedIds.length) {
       const { data: sums } = await supabase
@@ -262,6 +265,7 @@ export default function DealConfirmation({ employee }: Props) {
     } else {
       setPaySummaries({});
     }
+    setPaySummariesLoaded(true);
   }, [isAdmin, employee.id]);
 
   useEffect(() => { loadDeals(); }, [loadDeals]);
@@ -846,7 +850,7 @@ export default function DealConfirmation({ employee }: Props) {
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  {['Reference', 'Client', 'Security', 'Type', 'Date', 'Settlement', 'Status', 'Acceptance', ''].map(h => (
+                  {['Reference', 'Client', 'Security', 'Type', 'Date', 'Settlement', 'Deal Status', 'Acceptance', 'Payment Status', ''].map(h => (
                     <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                   ))}
                 </tr>
@@ -880,17 +884,29 @@ export default function DealConfirmation({ employee }: Props) {
                         {d.status === 'confirmed' ? 'Confirmed' : 'Draft'}
                       </span>
                     </td>
-                    {/* Acceptance lifecycle + quick entry to payments */}
+                    {/* Acceptance lifecycle (unchanged) */}
                     <td className="px-5 py-3.5">
-                      <div className="flex flex-col gap-1.5 items-start">
-                        <AcceptanceBadge status={d.acceptance_status ?? 'pending'} />
-                        {d.acceptance_status === 'accepted' && (
-                          <PaymentStatusPill
-                            summary={paySummaries[d.id]}
-                            onClick={() => { setPreviewDeal(d); setView('payments'); }}
-                          />
-                        )}
-                      </div>
+                      <AcceptanceBadge status={d.acceptance_status ?? 'pending'} />
+                    </td>
+                    {/* Payment Status — derived from nw_deal_payment_summary; only
+                        meaningful for accepted deals. Clicking navigates to
+                        Manage Payments to reduce clicks. */}
+                    <td className="px-5 py-3.5">
+                      {d.acceptance_status !== 'accepted' ? (
+                        <span className="text-xs" style={{ color: 'var(--text-faint)' }}>—</span>
+                      ) : !paySummariesLoaded ? (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider"
+                          style={{ background: 'rgba(107,107,107,0.10)', color: 'var(--text-faint)', border: '1px solid rgba(107,107,107,0.20)' }}
+                        >
+                          Loading…
+                        </span>
+                      ) : (
+                        <PaymentStatusPill
+                          summary={paySummaries[d.id]}
+                          onClick={() => { setPreviewDeal(d); setView('payments'); }}
+                        />
+                      )}
                     </td>
                     {/* Actions */}
                     <td className="px-5 py-3.5">
