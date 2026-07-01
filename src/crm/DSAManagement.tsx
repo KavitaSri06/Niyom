@@ -4,7 +4,7 @@ import { NWEmployee, NWDSA } from './types';
 import {
   Handshake, Plus, X, Upload, CheckCircle2, AlertCircle,
   Search, Phone, Mail, CreditCard, Building2, User, Eye, EyeOff,
-  ToggleLeft, ToggleRight, Trash2, ChevronDown,
+  ToggleLeft, ToggleRight, Trash2, ChevronDown, Pencil,
 } from 'lucide-react';
 
 interface Props { employee: NWEmployee; }
@@ -74,6 +74,10 @@ export default function DSAManagement({ employee }: Props) {
   const [dsas, setDsas] = useState<NWDSA[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  // When set, the form modal is in EDIT mode for this DSA (id + code retained;
+  // the code is immutable and reused for the document storage slot).
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCode, setEditingCode] = useState('');
   const [form, setForm] = useState<DSAFormData>(EMPTY_FORM);
   const [docs, setDocs] = useState<{ photo: File | null; pan: File | null; bank: File | null }>({ photo: null, pan: null, bank: null });
   const [saving, setSaving] = useState(false);
@@ -129,6 +133,43 @@ export default function DSAManagement({ employee }: Props) {
     return data.publicUrl;
   };
 
+  const openCreate = () => {
+    setEditingId(null);
+    setEditingCode('');
+    setForm(EMPTY_FORM);
+    setDocs({ photo: null, pan: null, bank: null });
+    setError('');
+    setSuccess('');
+    setShowForm(true);
+  };
+
+  // Open the shared form modal in EDIT mode, prefilled from an existing DSA.
+  const openEdit = (dsa: NWDSA) => {
+    setEditingId(dsa.id);
+    setEditingCode(dsa.dsa_code);
+    setForm({
+      full_name: dsa.full_name || '',
+      email: dsa.email || '',
+      mobile: dsa.mobile || '',
+      pan: dsa.pan || '',
+      address: dsa.address || '',
+      bank_name: dsa.bank_name || '',
+      bank_account: dsa.bank_account || '',
+      bank_ifsc: dsa.bank_ifsc || '',
+    });
+    setDocs({ photo: null, pan: null, bank: null });
+    setError('');
+    setSuccess('');
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setEditingCode('');
+    setError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -136,42 +177,75 @@ export default function DSAManagement({ employee }: Props) {
 
     setSaving(true);
     try {
-      const { data: dsaCode, error: codeErr } = await supabase.rpc('nw2_generate_dsa_code', { p_employee_id: employee.id });
-      if (codeErr || !dsaCode) throw new Error('Failed to generate DSA code.');
+      if (editingId) {
+        // EDIT: update the existing DSA in place. The code is immutable and its
+        // storage slot is reused, so only newly-picked documents are re-uploaded
+        // (upsert overwrites); untouched documents keep their existing URLs.
+        const slot = `dsa/${editingCode}`;
+        const [photoUrl, panUrl, bankUrl] = await Promise.all([
+          docs.photo ? uploadDoc(docs.photo, `${slot}/photo`) : Promise.resolve(null),
+          docs.pan   ? uploadDoc(docs.pan,   `${slot}/pan`)   : Promise.resolve(null),
+          docs.bank  ? uploadDoc(docs.bank,  `${slot}/bank`)  : Promise.resolve(null),
+        ]);
 
-      const slot = `dsa/${dsaCode}`;
-      const [photoUrl, panUrl, bankUrl] = await Promise.all([
-        docs.photo ? uploadDoc(docs.photo, `${slot}/photo`) : Promise.resolve(null),
-        docs.pan   ? uploadDoc(docs.pan,   `${slot}/pan`)   : Promise.resolve(null),
-        docs.bank  ? uploadDoc(docs.bank,  `${slot}/bank`)  : Promise.resolve(null),
-      ]);
+        const updates: Record<string, any> = {
+          full_name: form.full_name.trim(),
+          email: form.email.trim().toLowerCase(),
+          mobile: form.mobile,
+          pan: form.pan.toUpperCase(),
+          address: form.address.trim(),
+          bank_name: form.bank_name.trim(),
+          bank_account: form.bank_account.trim(),
+          bank_ifsc: form.bank_ifsc.toUpperCase(),
+        };
+        if (photoUrl) updates.photo_url = photoUrl;
+        if (panUrl) updates.pan_doc_url = panUrl;
+        if (bankUrl) updates.bank_doc_url = bankUrl;
 
-      const { error: insertErr } = await supabase.from('nw_dsa').insert([{
-        dsa_code: dsaCode,
-        employee_id: employee.id,
-        full_name: form.full_name.trim(),
-        email: form.email.trim().toLowerCase(),
-        mobile: form.mobile,
-        pan: form.pan.toUpperCase(),
-        address: form.address.trim(),
-        bank_name: form.bank_name.trim(),
-        bank_account: form.bank_account.trim(),
-        bank_ifsc: form.bank_ifsc.toUpperCase(),
-        photo_url: photoUrl,
-        pan_doc_url: panUrl,
-        bank_doc_url: bankUrl,
-        status: 'active',
-      }]);
+        const { error: updateErr } = await supabase.from('nw_dsa').update(updates).eq('id', editingId);
+        if (updateErr) throw updateErr;
 
-      if (insertErr) throw insertErr;
+        setSuccess(`DSA ${editingCode} updated successfully.`);
+      } else {
+        const { data: dsaCode, error: codeErr } = await supabase.rpc('nw2_generate_dsa_code', { p_employee_id: employee.id });
+        if (codeErr || !dsaCode) throw new Error('Failed to generate DSA code.');
 
-      setSuccess(`DSA created successfully with code ${dsaCode}.`);
+        const slot = `dsa/${dsaCode}`;
+        const [photoUrl, panUrl, bankUrl] = await Promise.all([
+          docs.photo ? uploadDoc(docs.photo, `${slot}/photo`) : Promise.resolve(null),
+          docs.pan   ? uploadDoc(docs.pan,   `${slot}/pan`)   : Promise.resolve(null),
+          docs.bank  ? uploadDoc(docs.bank,  `${slot}/bank`)  : Promise.resolve(null),
+        ]);
+
+        const { error: insertErr } = await supabase.from('nw_dsa').insert([{
+          dsa_code: dsaCode,
+          employee_id: employee.id,
+          full_name: form.full_name.trim(),
+          email: form.email.trim().toLowerCase(),
+          mobile: form.mobile,
+          pan: form.pan.toUpperCase(),
+          address: form.address.trim(),
+          bank_name: form.bank_name.trim(),
+          bank_account: form.bank_account.trim(),
+          bank_ifsc: form.bank_ifsc.toUpperCase(),
+          photo_url: photoUrl,
+          pan_doc_url: panUrl,
+          bank_doc_url: bankUrl,
+          status: 'active',
+        }]);
+        if (insertErr) throw insertErr;
+
+        setSuccess(`DSA created successfully with code ${dsaCode}.`);
+      }
+
       setForm(EMPTY_FORM);
       setDocs({ photo: null, pan: null, bank: null });
+      setEditingId(null);
+      setEditingCode('');
       setShowForm(false);
       fetchDSAs();
     } catch (err: any) {
-      setError(err.message || 'Failed to create DSA.');
+      setError(err.message || (editingId ? 'Failed to update DSA.' : 'Failed to create DSA.'));
     } finally {
       setSaving(false);
     }
@@ -209,7 +283,7 @@ export default function DSAManagement({ employee }: Props) {
           <h1 className="text-2xl font-bold text-text-primary">DSA Management</h1>
           <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Create and manage Direct Selling Agents</p>
         </div>
-        <button onClick={() => { setShowForm(true); setError(''); setSuccess(''); }}
+        <button onClick={openCreate}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent"
           style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
           <Plus className="w-4 h-4" /> New DSA
@@ -232,10 +306,10 @@ export default function DSAManagement({ employee }: Props) {
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid var(--border)' }}>
               <div>
-                <p className="text-xs uppercase tracking-widest mb-0.5" style={{ color: 'var(--accent)' }}>New DSA</p>
-                <h2 className="text-lg font-bold text-text-primary">Create DSA Code</h2>
+                <p className="text-xs uppercase tracking-widest mb-0.5" style={{ color: 'var(--accent)' }}>{editingId ? `Edit DSA · ${editingCode}` : 'New DSA'}</p>
+                <h2 className="text-lg font-bold text-text-primary">{editingId ? 'Edit DSA Details' : 'Create DSA Code'}</h2>
               </div>
-              <button onClick={() => { setShowForm(false); setError(''); }} style={{ color: 'var(--text-faint)' }}
+              <button onClick={closeForm} style={{ color: 'var(--text-faint)' }}
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-bright)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
                 <X className="w-5 h-5" />
@@ -322,14 +396,16 @@ export default function DSAManagement({ employee }: Props) {
 
               {/* Footer */}
               <div className="px-6 py-4 flex items-center justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
-                <button type="button" onClick={() => { setShowForm(false); setError(''); }}
+                <button type="button" onClick={closeForm}
                   className="px-5 py-2.5 rounded-xl text-sm font-semibold" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
                   Cancel
                 </button>
                 <button type="submit" disabled={saving}
                   className="px-6 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50 flex items-center gap-2"
                   style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
-                  {saving ? 'Creating...' : <><Plus className="w-4 h-4" /> Create DSA</>}
+                  {editingId
+                    ? (saving ? 'Saving...' : <><Pencil className="w-4 h-4" /> Save Changes</>)
+                    : (saving ? 'Creating...' : <><Plus className="w-4 h-4" /> Create DSA</>)}
                 </button>
               </div>
             </form>
@@ -512,6 +588,17 @@ export default function DSAManagement({ employee }: Props) {
                     onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
                     <Eye className="w-4 h-4" />
                   </button>
+                  {/* Edit — stewardship: assigned employee or admin (matches the
+                      nw_dsa UPDATE policy). */}
+                  {(isAdmin || dsa.employee_id === employee.id) && (
+                    <button onClick={() => openEdit(dsa)} title="Edit DSA"
+                      className="p-2 rounded-lg transition-colors"
+                      style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  )}
                   {/* Status toggle — stewardship: assigned employee or admin
                       (non-destructive). */}
                   {(isAdmin || dsa.employee_id === employee.id) && (
