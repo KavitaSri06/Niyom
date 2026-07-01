@@ -444,6 +444,11 @@ export default function DealConfirmation({ employee }: Props) {
           snap_pan: previewDeal.snap_pan,
           settlement_amount: previewDeal.settlement_amount,
           employee_id: previewDeal.employee_id,
+          deal_date: previewDeal.deal_date,
+          security_name: previewDeal.security_name,
+          isin: previewDeal.isin,
+          quantity: previewDeal.quantity,
+          rate_per_unit: previewDeal.rate_per_unit,
         }}
         employee={employee}
         onBack={() => setView('preview')}

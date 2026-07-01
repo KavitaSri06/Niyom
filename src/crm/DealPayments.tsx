@@ -3,8 +3,9 @@ import { supabase } from '../lib/supabase';
 import { NWEmployee } from './types';
 import {
   ChevronLeft, Plus, X, Loader2, CheckCircle2, AlertCircle,
-  Wallet, IndianRupee, Receipt, Info,
+  Wallet, IndianRupee, Receipt, Info, FileText, RefreshCw, Eye,
 } from 'lucide-react';
+import { renderPaymentReceiptPdf } from './paymentReceipt';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,6 +40,12 @@ interface DealBrief {
   snap_pan: string;
   settlement_amount: number;
   employee_id: string;
+  // Extra fields needed for the receipt PDF
+  deal_date: string;
+  security_name: string;
+  isin: string;
+  quantity: number;
+  rate_per_unit: number;
 }
 
 interface Summary {
@@ -64,11 +71,15 @@ interface PaymentRow {
   cheque_number: string | null;
   cheque_bank: string | null;
   transaction_reference: string | null;
+  demand_draft_number: string | null;
   payment_date: string;
   value_date: string | null;
   received_from_name: string;
+  received_from_bank: string | null;
   remarks: string;
   status: 'active' | 'cancelled' | 'superseded';
+  receipt_pdf_path: string | null;
+  receipt_regen_count: number;
   created_at: string;
 }
 
@@ -232,7 +243,7 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
         .select('deal_id, deal_amount, total_paid_amount, outstanding_amount, payment_status, payment_count, last_payment_at')
         .eq('deal_id', deal.id).maybeSingle(),
       supabase.from('nw_deal_payments')
-        .select('id, payment_number, receipt_number, amount, amount_inr, currency, direction, payment_mode, utr_number, cheque_number, cheque_bank, transaction_reference, payment_date, value_date, received_from_name, remarks, status, created_at')
+        .select('id, payment_number, receipt_number, amount, amount_inr, currency, direction, payment_mode, utr_number, cheque_number, cheque_bank, transaction_reference, demand_draft_number, payment_date, value_date, received_from_name, received_from_bank, remarks, status, receipt_pdf_path, receipt_regen_count, created_at')
         .eq('deal_confirmation_id', deal.id)
         .order('created_at', { ascending: false }),
     ]);
@@ -307,6 +318,101 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
       setError(err?.message || 'Could not record payment.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // -----------------------------------------------------------------------
+  // Receipt actions
+  // -----------------------------------------------------------------------
+
+  const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
+
+  const previewOpen = async (path: string) => {
+    const { data, error: err } = await supabase.storage.from('deal-documents')
+      .createSignedUrl(path, 120);
+    if (err || !data?.signedUrl) { showToast('Could not open receipt.', false); return; }
+    window.open(data.signedUrl, '_blank');
+  };
+
+  const buildReceiptInput = (p: PaymentRow, receiptNumberFallback: string) => ({
+    deal: {
+      confirmation_number: deal.confirmation_number,
+      snap_client_name:    deal.snap_client_name,
+      snap_pan:            deal.snap_pan,
+      deal_date:           deal.deal_date,
+      security_name:       deal.security_name,
+      isin:                deal.isin,
+      quantity:            deal.quantity,
+      rate_per_unit:       deal.rate_per_unit,
+      settlement_amount:   deal.settlement_amount,
+    },
+    payment: {
+      payment_number:        p.payment_number,
+      receipt_number:        p.receipt_number ?? receiptNumberFallback,
+      amount_inr:            p.amount_inr,
+      payment_mode:          p.payment_mode,
+      utr_number:            p.utr_number,
+      cheque_number:         p.cheque_number,
+      cheque_bank:           p.cheque_bank,
+      transaction_reference: p.transaction_reference,
+      demand_draft_number:   p.demand_draft_number,
+      payment_date:          p.payment_date,
+      value_date:            p.value_date,
+      received_from_name:    p.received_from_name || null,
+      received_from_bank:    p.received_from_bank,
+      remarks:               p.remarks || null,
+    },
+    summary: {
+      total_paid_amount:  summary?.total_paid_amount ?? 0,
+      outstanding_amount: summary?.outstanding_amount ?? 0,
+      payment_status:     summary?.payment_status ?? 'not_paid',
+    },
+    generatedByName: employee.full_name,
+    generatedByRole: employee.role === 'admin' ? 'Admin'
+      : employee.role === 'super_admin' ? 'Super Admin'
+      : 'Relationship Manager',
+    issuedAt: new Date(),
+  });
+
+  const generateOrRegenerate = async (p: PaymentRow) => {
+    setReceiptBusyId(p.id);
+    try {
+      // The receipt number in the PDF for a fresh generation is a *preview*.
+      // The server may allocate a different number under race; on regeneration
+      // the existing number is preserved so this is always accurate.
+      const receiptNumberFallback =
+        p.receipt_number ?? `RCPT-${deal.confirmation_number}-PENDING`;
+
+      const pdfBase64 = await renderPaymentReceiptPdf(
+        buildReceiptInput(p, receiptNumberFallback)
+      );
+
+      const { data, error: fnErr } = await supabase.functions.invoke('upload-receipt', {
+        body: { paymentId: p.id, pdfBase64 },
+      });
+      if (fnErr || !data?.success) {
+        throw new Error(data?.error || fnErr?.message || 'Could not upload receipt.');
+      }
+
+      // If the server allocated a different number than our preview
+      // (edge case under concurrent first-generation), re-render + re-upload
+      // once so the stored PDF and the receipt_number match.
+      if (!p.receipt_number && data.receipt_number && data.receipt_number !== receiptNumberFallback) {
+        const fixedPdf = await renderPaymentReceiptPdf(
+          buildReceiptInput({ ...p, receipt_number: data.receipt_number }, data.receipt_number)
+        );
+        await supabase.functions.invoke('upload-receipt', {
+          body: { paymentId: p.id, pdfBase64: fixedPdf },
+        });
+      }
+
+      showToast(p.receipt_number ? 'Receipt regenerated.' : 'Receipt generated.');
+      await load();
+      if (data.signed_url) window.open(data.signed_url, '_blank');
+    } catch (err: any) {
+      showToast(err?.message || 'Could not generate receipt.', false);
+    } finally {
+      setReceiptBusyId(null);
     }
   };
 
@@ -563,34 +669,73 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
                   <Th>Reference</Th>
                   <Th>Received From</Th>
                   <Th align="right">Amount</Th>
-                  <Th>Status</Th>
+                  <Th>Receipt</Th>
                 </tr>
               </thead>
               <tbody>
-                {payments.map(p => (
-                  <tr key={p.id} style={{ borderTop: '1px solid var(--border)' }}>
-                    <Td>{fmtDate(p.payment_date)}</Td>
-                    <Td mono>{p.payment_number}</Td>
-                    <Td>{MODE_LABEL[p.payment_mode]}</Td>
-                    <Td mono>
-                      {p.utr_number ||
-                        p.cheque_number ||
-                        p.transaction_reference ||
-                        '—'}
-                    </Td>
-                    <Td>{p.received_from_name || '—'}</Td>
-                    <Td align="right" strong>
-                      {p.direction === 'refund' ? '-' : ''}{inr(Math.abs(p.amount_inr))}
-                    </Td>
-                    <Td>
-                      {p.status === 'active' ? (
-                        <span className="text-xs" style={{ color: 'var(--success)' }}>Active</span>
-                      ) : (
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.status}</span>
-                      )}
-                    </Td>
-                  </tr>
-                ))}
+                {payments.map(p => {
+                  const busy = receiptBusyId === p.id;
+                  const hasReceipt = !!p.receipt_pdf_path && !!p.receipt_number;
+                  const canIssue = p.status === 'active';
+                  return (
+                    <tr key={p.id} style={{ borderTop: '1px solid var(--border)' }}>
+                      <Td>{fmtDate(p.payment_date)}</Td>
+                      <Td mono>{p.payment_number}</Td>
+                      <Td>{MODE_LABEL[p.payment_mode]}</Td>
+                      <Td mono>
+                        {p.utr_number ||
+                          p.cheque_number ||
+                          p.demand_draft_number ||
+                          p.transaction_reference ||
+                          '—'}
+                      </Td>
+                      <Td>{p.received_from_name || '—'}</Td>
+                      <Td align="right" strong>
+                        {p.direction === 'refund' ? '-' : ''}{inr(Math.abs(p.amount_inr))}
+                      </Td>
+                      <Td>
+                        {!canIssue ? (
+                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            {p.status}
+                          </span>
+                        ) : hasReceipt ? (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <button
+                              onClick={() => previewOpen(p.receipt_pdf_path!)}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold"
+                              style={{ background: 'rgba(var(--accent-rgb),0.10)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.25)' }}
+                              title={p.receipt_number ?? undefined}
+                            >
+                              <Eye className="w-3 h-3" /> View
+                            </button>
+                            <button
+                              onClick={() => generateOrRegenerate(p)}
+                              disabled={busy}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs"
+                              style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)', opacity: busy ? 0.6 : 1 }}
+                              title={`v${p.receipt_regen_count} → v${p.receipt_regen_count + 1}`}
+                            >
+                              {busy
+                                ? <><Loader2 className="w-3 h-3 animate-spin" /> Regen…</>
+                                : <><RefreshCw className="w-3 h-3" /> Regenerate</>}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => generateOrRegenerate(p)}
+                            disabled={busy}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold text-on-accent"
+                            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', opacity: busy ? 0.6 : 1 }}
+                          >
+                            {busy
+                              ? <><Loader2 className="w-3 h-3 animate-spin" /> Generating…</>
+                              : <><FileText className="w-3 h-3" /> Generate Receipt</>}
+                          </button>
+                        )}
+                      </Td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
