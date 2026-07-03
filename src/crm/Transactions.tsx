@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { NWEmployee, NWTransaction, NWClient, ProductType } from './types';
 import { fmt, fmtDate, PRODUCT_LABELS, PRODUCT_COLORS, TXN_LABELS, TXN_COLORS } from './utils';
@@ -9,8 +9,6 @@ interface Props { employee: NWEmployee; }
 const PRODUCTS: ProductType[] = ['unlisted_share', 'secondary_bond', 'primary_bond', 'mutual_fund', 'fixed_deposit', 'insurance'];
 const TXN_TYPES = ['buy', 'sell'];
 const BOND_TYPES: ProductType[] = ['secondary_bond', 'primary_bond', 'fixed_deposit'];
-const ISIN_TYPES: ProductType[] = ['secondary_bond', 'primary_bond'];
-
 const PAYOUT_FREQ: Record<string, string> = { annual: 'Annual', halfyearly: 'Half-Yearly', quarterly: 'Quarterly', monthly: 'Monthly' };
 const PAYOUT_DIVISORS: Record<string, number> = { annual: 1, halfyearly: 2, quarterly: 4, monthly: 12 };
 
@@ -270,7 +268,7 @@ export default function Transactions({ employee }: Props) {
   const loadTxns = useCallback(async () => {
     setLoading(true);
     let query = supabase.from('nw_transactions')
-      .select('*, client:nw_clients(full_name, client_code, employee_id), employee:nw_employees(full_name, employee_code), documents:nw_txn_documents(*)')
+      .select('*, client:nw_clients(full_name, client_code, employee_id), employee:nw_employees!nw_transactions_employee_id_fkey(full_name, employee_code), documents:nw_txn_documents(*)')
       .order('txn_date', { ascending: false });
     if (typeFilter !== 'all') query = query.eq('txn_type', typeFilter);
     if (productFilter !== 'all') query = query.eq('product_type', productFilter);

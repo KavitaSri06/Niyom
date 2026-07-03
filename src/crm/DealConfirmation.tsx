@@ -4,6 +4,7 @@ import { NWEmployee, NWClient } from './types';
 import {
   FileText, Plus, Search, ChevronDown, Eye, Pencil, Trash2,
   Download, CheckCircle2, AlertCircle, ChevronLeft, Send, Lock, Wallet,
+  ShieldOff, EyeOff,
 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import DealDocument from './DealDocument';
@@ -25,6 +26,12 @@ interface DealForm {
   base_rate: string;       // raw value user types
   rate_per_unit: string;   // adjusted = base_rate - (base_rate * 0.015/100)
   notes: string;
+  // Internal Revenue Basis (internal-only; never sent to the client)
+  landing_cost: string;
+  insurance_revenue: string;
+  brokerage_amount: string;
+  trail_percent: string;
+  trail_start_date: string;
 }
 
 interface DealRecord {
@@ -69,6 +76,16 @@ interface DealRecord {
   signer_email?: string | null;
   signed_pdf_path?: string | null;
   client?: { full_name: string; client_code: string };
+  // Internal revenue basis + audit stamps
+  landing_cost?: number | null;
+  insurance_revenue?: number | null;
+  brokerage_amount?: number | null;
+  trail_percent?: number | null;
+  trail_start_date?: string | null;
+  revenue_basis_entered_by?: string | null;
+  revenue_basis_entered_at?: string | null;
+  revenue_basis_last_modified_by?: string | null;
+  revenue_basis_last_modified_at?: string | null;
 }
 
 const PRODUCT_TYPES = [
@@ -86,6 +103,11 @@ const emptyForm = (): DealForm => ({
   base_rate: '',
   rate_per_unit: '',
   notes: '',
+  landing_cost: '',
+  insurance_revenue: '',
+  brokerage_amount: '',
+  trail_percent: '',
+  trail_start_date: '',
 });
 
 function adjustRate(base: string): string {
@@ -321,6 +343,11 @@ export default function DealConfirmation({ employee }: Props) {
       base_rate: String(deal.base_rate ?? deal.rate_per_unit),
       rate_per_unit: String(deal.rate_per_unit),
       notes: deal.notes,
+      landing_cost:      deal.landing_cost      == null ? '' : String(deal.landing_cost),
+      insurance_revenue: deal.insurance_revenue == null ? '' : String(deal.insurance_revenue),
+      brokerage_amount:  deal.brokerage_amount  == null ? '' : String(deal.brokerage_amount),
+      trail_percent:     deal.trail_percent     == null ? '' : String(deal.trail_percent),
+      trail_start_date:  deal.trail_start_date ?? '',
     });
     const c = clients.find(c => c.id === deal.client_id);
     setSelectedClient(c || null);
@@ -345,6 +372,33 @@ export default function DealConfirmation({ employee }: Props) {
     if (!form.isin.trim()) { setError('ISIN number is required.'); return false; }
     if (!form.quantity || isNaN(parseFloat(form.quantity)) || parseFloat(form.quantity) <= 0) { setError('Valid quantity is required.'); return false; }
     if (!form.base_rate || isNaN(parseFloat(form.base_rate)) || parseFloat(form.base_rate) <= 0) { setError('Valid rate per unit is required.'); return false; }
+
+    // Revenue Basis validation — all optional, but if present must obey ranges.
+    const nonNeg = (v: string, label: string) => {
+      if (!v.trim()) return null;
+      const n = parseFloat(v);
+      if (isNaN(n)) return `${label} must be a number.`;
+      if (n < 0)   return `${label} cannot be negative.`;
+      return null;
+    };
+    for (const err of [
+      nonNeg(form.landing_cost,      'Landing Cost'),
+      nonNeg(form.insurance_revenue, 'Insurance Revenue'),
+      nonNeg(form.brokerage_amount,  'Brokerage Amount'),
+    ]) if (err) { setError(err); return false; }
+
+    if (form.trail_percent.trim()) {
+      const tp = parseFloat(form.trail_percent);
+      if (isNaN(tp) || tp < 0 || tp > 100) {
+        setError('Trail Percentage must be between 0 and 100.');
+        return false;
+      }
+    }
+    if (form.trail_start_date && form.deal_date && form.trail_start_date < form.deal_date) {
+      setError('Trail Start Date cannot precede the Deal Date.');
+      return false;
+    }
+
     setError('');
     return true;
   };
@@ -380,6 +434,14 @@ export default function DealConfirmation({ employee }: Props) {
       snap_phone: selectedClient.phone,
       snap_email: selectedClient.email,
       notes: form.notes,
+      // Internal Revenue Basis — persisted with the deal; NEVER surfaced on
+      // client-facing artefacts (PDF, emails). Audit stamps (entered_by/at,
+      // last_modified_by/at) are populated by the DB trigger.
+      landing_cost:      form.landing_cost.trim()      ? parseFloat(form.landing_cost)      : null,
+      insurance_revenue: form.insurance_revenue.trim() ? parseFloat(form.insurance_revenue) : null,
+      brokerage_amount:  form.brokerage_amount.trim()  ? parseFloat(form.brokerage_amount)  : null,
+      trail_percent:     form.trail_percent.trim()     ? parseFloat(form.trail_percent)     : null,
+      trail_start_date:  form.trail_start_date || null,
     };
 
     if (editDeal) {
@@ -762,6 +824,13 @@ export default function DealConfirmation({ employee }: Props) {
           )}
         </div>
 
+        {/* Internal Revenue Basis (internal-only; NEVER on client PDFs / emails) */}
+        <RevenueBasisSection
+          form={form}
+          setForm={setForm}
+          editDeal={editDeal}
+        />
+
         {/* Actions */}
         <div className="flex items-center gap-3 flex-wrap">
           <button onClick={() => setView('list')} className="px-4 py-2.5 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
@@ -995,6 +1064,180 @@ export default function DealConfirmation({ employee }: Props) {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Internal Revenue Basis section — Phase 4
+//
+// Captures the RM's private profitability inputs (landing cost / brokerage /
+// insurance revenue / trail commission) alongside the deal terms. These
+// values are NEVER rendered on:
+//   • Client-signed Deal Confirmation PDF (DealDocument.tsx)
+//   • Client emails (send-deal-confirmation-email, closure email, etc.)
+//   • Any client-facing export
+//
+// The DB trigger nw_track_revenue_basis_changes stamps entered_by/at +
+// last_modified_by/at, appends 'revenue_basis_updated' events on change,
+// and blocks writes after the deal has been transferred.
+// ---------------------------------------------------------------------------
+
+interface RevenueBasisSectionProps {
+  form: DealForm;
+  setForm: React.Dispatch<React.SetStateAction<DealForm>>;
+  editDeal: DealRecord | null;
+}
+
+function RevenueBasisSection({ form, setForm, editDeal }: RevenueBasisSectionProps) {
+  const [open, setOpen] = useState(true);
+
+  const set = <K extends keyof DealForm>(k: K, v: DealForm[K]) =>
+    setForm(f => ({ ...f, [k]: v }));
+
+  const hasAudit =
+    editDeal && (editDeal.revenue_basis_entered_at || editDeal.revenue_basis_last_modified_at);
+
+  const fmtStamp = (d: string | null | undefined) => {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  };
+
+  return (
+    <div
+      className="rounded-2xl p-6 space-y-4"
+      style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <div>
+          <p
+            className="text-xs font-bold uppercase tracking-wider"
+            style={{ color: 'var(--accent)' }}
+          >
+            Step 4 — Internal Revenue Basis
+          </p>
+          <p
+            className="text-[11px] mt-1 flex items-center gap-1.5"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <EyeOff className="w-3 h-3" />
+            <span>
+              Internal only. Never shown on the client-signed PDF or any client email.
+            </span>
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider"
+            style={{
+              background: 'rgba(107,107,107,0.10)',
+              color: 'var(--text-secondary)',
+              border: '1px solid rgba(107,107,107,0.25)',
+            }}
+          >
+            <ShieldOff className="w-3 h-3" /> Internal Only
+          </span>
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`}
+            style={{ color: 'var(--text-muted)' }}
+          />
+        </div>
+      </button>
+
+      {open && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Field
+              label="Landing Cost (₹)"
+              hint="Cost basis per unit for shares / bonds."
+            >
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.landing_cost}
+                onChange={e => set('landing_cost', e.target.value)}
+                placeholder="0.00"
+              />
+            </Field>
+            <Field label="Brokerage Amount (₹)" hint="Total brokerage on this deal.">
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.brokerage_amount}
+                onChange={e => set('brokerage_amount', e.target.value)}
+                placeholder="0.00"
+              />
+            </Field>
+            <Field label="Insurance Revenue (₹)" hint="For insurance product deals.">
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.insurance_revenue}
+                onChange={e => set('insurance_revenue', e.target.value)}
+                placeholder="0.00"
+              />
+            </Field>
+            <Field label="Trail Percentage (%)" hint="Annual trail commission (0–100).">
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={form.trail_percent}
+                onChange={e => set('trail_percent', e.target.value)}
+                placeholder="0.00"
+              />
+            </Field>
+            <Field
+              label="Trail Start Date"
+              hint="Date from which trail is calculated (must be ≥ Deal Date)."
+            >
+              <Input
+                type="date"
+                min={form.deal_date || undefined}
+                value={form.trail_start_date}
+                onChange={e => set('trail_start_date', e.target.value)}
+              />
+            </Field>
+          </div>
+
+          {hasAudit && (
+            <div
+              className="mt-2 rounded-xl px-4 py-3 flex flex-wrap gap-x-6 gap-y-1 text-xs"
+              style={{
+                background: 'var(--bg-raised)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <span>
+                <span style={{ color: 'var(--text-muted)' }}>First recorded:</span>{' '}
+                <strong>{fmtStamp(editDeal?.revenue_basis_entered_at)}</strong>
+              </span>
+              <span>
+                <span style={{ color: 'var(--text-muted)' }}>Last modified:</span>{' '}
+                <strong>{fmtStamp(editDeal?.revenue_basis_last_modified_at)}</strong>
+              </span>
+              <span
+                className="italic"
+                style={{ color: 'var(--text-faint)' }}
+              >
+                Every change is logged as a revenue_basis_updated audit event.
+              </span>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

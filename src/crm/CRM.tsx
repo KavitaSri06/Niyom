@@ -18,6 +18,7 @@ import DSAManagement from './DSAManagement';
 import Employees from './Employees';
 import Settings from './Settings';
 import DealConfirmation from './DealConfirmation';
+import TransferQueue from './TransferQueue';
 
 export default function CRM() {
   const [employee, setEmployee] = useState<NWEmployee | null>(null);
@@ -34,6 +35,7 @@ export default function CRM() {
     'dashboard',
     'onboarding',
     'deal_confirmation',
+    'transfer_queue',
     'clients',
     'portfolio',
     'transactions',
@@ -127,6 +129,7 @@ export default function CRM() {
       case 'dsa_payout': return <DSAPayout employee={employee} />;
       case 'employees': return isAdmin ? <Employees employee={employee} /> : <Dashboard employee={employee} onNavigate={navigate} />;
       case 'deal_confirmation': return <DealConfirmation employee={employee} />;
+      case 'transfer_queue': return isAdmin ? <TransferQueue employee={employee} /> : <Dashboard employee={employee} onNavigate={navigate} />;
       case 'settings': return <Settings employee={employee} />;
       default: return <Dashboard employee={employee} onNavigate={navigate} />;
     }

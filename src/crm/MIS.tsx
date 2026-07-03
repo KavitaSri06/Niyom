@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { NWEmployee, NWTransaction, NWClient } from './types';
+import { NWEmployee, NWTransaction, NWClient, ProductType } from './types';
 import { fmt, PRODUCT_LABELS } from './utils';
 import { BarChart3, Download, ChevronDown } from 'lucide-react';
 
@@ -10,7 +10,7 @@ interface MISRow {
   client_id: string;
   client_name: string;
   client_code: string;
-  product_type: string;
+  product_type: ProductType;
   product_name: string;
   revenue_type: 'landing_cost' | 'insurance' | 'trail';
   revenue: number;
@@ -45,6 +45,7 @@ export default function MIS({ employee }: Props) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [empList, setEmpList] = useState<{ id: string; full_name: string; employee_code: string }[]>([]);
   const [empFilter, setEmpFilter] = useState('all');
+  const [showLegacyTransactions, setShowLegacyTransactions] = useState(false);
 
   const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
 
@@ -76,7 +77,7 @@ export default function MIS({ employee }: Props) {
 
     if (clientIds.length === 0) { setRows([]); setLoading(false); setHasLoaded(true); return; }
 
-    // Fetch transactions within the selected period (new business only)
+    // Fetch transactions within the selected period.
     const { data: txnData } = await supabase
       .from('nw_transactions')
       .select('*')
@@ -89,65 +90,66 @@ export default function MIS({ employee }: Props) {
     const computed: MISRow[] = [];
 
     for (const t of txns) {
-      const client = clientList.find(c => c.id === t.client_id);
+      const transaction = t as NWTransaction & { deal_confirmation_id?: string | null; transfer_stage?: string | null };
+      const isTransferredDeal = transaction.deal_confirmation_id != null && transaction.transfer_stage === 'transferred';
+      const isLegacyManual = transaction.deal_confirmation_id == null && transaction.transfer_stage == null;
+      if (!isTransferredDeal && !(showLegacyTransactions && isLegacyManual)) continue;
+
+      const client = clientList.find(c => c.id === transaction.client_id);
       if (!client) continue;
 
       const baseRow = {
-        client_id: t.client_id,
+        client_id: transaction.client_id,
         client_name: client.full_name,
         client_code: client.client_code,
-        product_type: t.product_type,
-        product_name: t.product_name,
+        product_type: transaction.product_type,
+        product_name: transaction.product_name,
       };
 
       // Unlisted shares / secondary bonds / primary bonds → profit vs landing cost.
       // BUY:  (Client Price − Landing Cost) × qty
       // SELL: (Landing Cost − Client Price) × qty  (direction reversed)
-      if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(t.product_type)) {
-        const landingCost = (t as any).landing_cost || 0;
-const qty = t.quantity || 0;
-
-const client = clientList.find(c => c.id === t.client_id);
-
-
-const price =
-  client?.sourced_via === 'dsa'
-    ? ((t as any).dsa_price || 0)
-    : ((t as any).per_unit_price || 0);
-
-const revenue = t.txn_type === 'sell'
-  ? (landingCost - price) * qty
-  : (price - landingCost) * qty;
+      if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(transaction.product_type)) {
+        const landingCost = (transaction as any).landing_cost || 0;
+        const qty = transaction.quantity || 0;
+        const price =
+          client?.sourced_via === 'dsa'
+            ? ((transaction as any).dsa_price || 0)
+            : ((transaction as any).per_unit_price || 0);
+        const revenue = transaction.txn_type === 'sell'
+          ? (landingCost - price) * qty
+          : (price - landingCost) * qty;
         if (revenue !== 0) {
           computed.push({
             ...baseRow,
             revenue_type: 'landing_cost',
             revenue,
-notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,          });
+            notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
+          });
         }
       }
 
       // Insurance → flat insurance_revenue
-      if (t.product_type === 'insurance') {
-        const rev = (t as any).insurance_revenue || 0;
+      if (transaction.product_type === 'insurance') {
+        const rev = (transaction as any).insurance_revenue || 0;
         if (rev > 0) {
           computed.push({
             ...baseRow,
             revenue_type: 'insurance',
             revenue: rev,
-            notes: `Policy: ${t.policy_number || '—'} | ${t.insurer_name || '—'}`,
+            notes: `Policy: ${transaction.policy_number || '—'} | ${transaction.insurer_name || '—'}`,
           });
         }
       }
 
       // Mutual fund → trail commission at anniversary month of txn_date
-      if (t.product_type === 'mutual_fund' && (t as any).trail_percent && (t as any).trail_start_date) {
-        if (isTrailAnniversaryInMonth((t as any).trail_start_date, selectedYear, selectedMonth)) {
-          const invested = t.consolidated_amount || 0;
-          const trail = (t as any).trail_percent || 0;
+      if (transaction.product_type === 'mutual_fund' && (transaction as any).trail_percent && (transaction as any).trail_start_date) {
+        if (isTrailAnniversaryInMonth((transaction as any).trail_start_date, selectedYear, selectedMonth)) {
+          const invested = transaction.consolidated_amount || 0;
+          const trail = (transaction as any).trail_percent || 0;
           const revenue = (invested * trail) / 100;
           if (revenue > 0) {
-            const yrs = selectedYear - new Date((t as any).trail_start_date).getFullYear();
+            const yrs = selectedYear - new Date((transaction as any).trail_start_date).getFullYear();
             computed.push({
               ...baseRow,
               revenue_type: 'trail',
@@ -162,7 +164,7 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
     setRows(computed);
     setLoading(false);
     setHasLoaded(true);
-  }, [selectedYear, selectedMonth, empFilter, isAdmin, employee.id, startDate, endDate]);
+  }, [selectedYear, selectedMonth, empFilter, isAdmin, employee.id, startDate, endDate, showLegacyTransactions]);
 
   const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
   const byType = {
@@ -251,7 +253,7 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
         <div>
           <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Revenue</p>
           <h1 className="text-2xl font-bold text-text-primary">MIS Report</h1>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Management Information System — monthly revenue overview</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Revenue is generated only from transferred and approved deals.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {hasLoaded && rows.length > 0 && (
@@ -285,6 +287,15 @@ notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
               <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--accent)' }} />
             </div>
           )}
+          <label className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
+            <input
+              type="checkbox"
+              checked={showLegacyTransactions}
+              onChange={e => setShowLegacyTransactions(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <span style={{ color: 'var(--text-secondary)' }}>Show Legacy Transactions</span>
+          </label>
           <div className="relative">
             <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))}
               className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"

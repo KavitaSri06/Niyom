@@ -270,4 +270,5 @@ export type CRMPage =
   | 'admin_documents'
   | 'employees'
   | 'deal_confirmation'
+  | 'transfer_queue'
   | 'settings';
