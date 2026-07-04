@@ -45,7 +45,6 @@ export default function MIS({ employee }: Props) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [empList, setEmpList] = useState<{ id: string; full_name: string; employee_code: string }[]>([]);
   const [empFilter, setEmpFilter] = useState('all');
-  const [showLegacyTransactions, setShowLegacyTransactions] = useState(false);
 
   const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
 
@@ -90,33 +89,28 @@ export default function MIS({ employee }: Props) {
     const computed: MISRow[] = [];
 
     for (const t of txns) {
-      const transaction = t as NWTransaction & { deal_confirmation_id?: string | null; transfer_stage?: string | null };
-      const isTransferredDeal = transaction.deal_confirmation_id != null && transaction.transfer_stage === 'transferred';
-      const isLegacyManual = transaction.deal_confirmation_id == null && transaction.transfer_stage == null;
-      if (!isTransferredDeal && !(showLegacyTransactions && isLegacyManual)) continue;
-
-      const client = clientList.find(c => c.id === transaction.client_id);
+      const client = clientList.find(c => c.id === t.client_id);
       if (!client) continue;
 
       const baseRow = {
-        client_id: transaction.client_id,
+        client_id: t.client_id,
         client_name: client.full_name,
         client_code: client.client_code,
-        product_type: transaction.product_type,
-        product_name: transaction.product_name,
+        product_type: t.product_type,
+        product_name: t.product_name,
       };
 
       // Unlisted shares / secondary bonds / primary bonds → profit vs landing cost.
       // BUY:  (Client Price − Landing Cost) × qty
       // SELL: (Landing Cost − Client Price) × qty  (direction reversed)
-      if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(transaction.product_type)) {
-        const landingCost = (transaction as any).landing_cost || 0;
-        const qty = transaction.quantity || 0;
+      if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(t.product_type)) {
+        const landingCost = (t as any).landing_cost || 0;
+        const qty = t.quantity || 0;
         const price =
           client?.sourced_via === 'dsa'
-            ? ((transaction as any).dsa_price || 0)
-            : ((transaction as any).per_unit_price || 0);
-        const revenue = transaction.txn_type === 'sell'
+            ? ((t as any).dsa_price || 0)
+            : ((t as any).per_unit_price || 0);
+        const revenue = t.txn_type === 'sell'
           ? (landingCost - price) * qty
           : (price - landingCost) * qty;
         if (revenue !== 0) {
@@ -130,26 +124,26 @@ export default function MIS({ employee }: Props) {
       }
 
       // Insurance → flat insurance_revenue
-      if (transaction.product_type === 'insurance') {
-        const rev = (transaction as any).insurance_revenue || 0;
+      if (t.product_type === 'insurance') {
+        const rev = (t as any).insurance_revenue || 0;
         if (rev > 0) {
           computed.push({
             ...baseRow,
             revenue_type: 'insurance',
             revenue: rev,
-            notes: `Policy: ${transaction.policy_number || '—'} | ${transaction.insurer_name || '—'}`,
+            notes: `Policy: ${t.policy_number || '—'} | ${t.insurer_name || '—'}`,
           });
         }
       }
 
       // Mutual fund → trail commission at anniversary month of txn_date
-      if (transaction.product_type === 'mutual_fund' && (transaction as any).trail_percent && (transaction as any).trail_start_date) {
-        if (isTrailAnniversaryInMonth((transaction as any).trail_start_date, selectedYear, selectedMonth)) {
-          const invested = transaction.consolidated_amount || 0;
-          const trail = (transaction as any).trail_percent || 0;
+      if (t.product_type === 'mutual_fund' && (t as any).trail_percent && (t as any).trail_start_date) {
+        if (isTrailAnniversaryInMonth((t as any).trail_start_date, selectedYear, selectedMonth)) {
+          const invested = t.consolidated_amount || 0;
+          const trail = (t as any).trail_percent || 0;
           const revenue = (invested * trail) / 100;
           if (revenue > 0) {
-            const yrs = selectedYear - new Date((transaction as any).trail_start_date).getFullYear();
+            const yrs = selectedYear - new Date((t as any).trail_start_date).getFullYear();
             computed.push({
               ...baseRow,
               revenue_type: 'trail',
@@ -164,7 +158,7 @@ export default function MIS({ employee }: Props) {
     setRows(computed);
     setLoading(false);
     setHasLoaded(true);
-  }, [selectedYear, selectedMonth, empFilter, isAdmin, employee.id, startDate, endDate, showLegacyTransactions]);
+  }, [selectedYear, selectedMonth, empFilter, isAdmin, employee.id, startDate, endDate]);
 
   const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
   const byType = {
@@ -287,15 +281,6 @@ export default function MIS({ employee }: Props) {
               <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--accent)' }} />
             </div>
           )}
-          <label className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
-            <input
-              type="checkbox"
-              checked={showLegacyTransactions}
-              onChange={e => setShowLegacyTransactions(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
-            />
-            <span style={{ color: 'var(--text-secondary)' }}>Show Legacy Transactions</span>
-          </label>
           <div className="relative">
             <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))}
               className="pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"

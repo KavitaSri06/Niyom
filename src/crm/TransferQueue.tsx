@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { NWEmployee } from './types';
 import {
-  Send, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-  CheckCircle2, AlertCircle, Loader2, X, Clock,
-  IndianRupee, ShieldCheck, Info, RefreshCw,
+  Send, Search, ChevronLeft, ChevronRight,
+  CheckCircle2, AlertCircle, Loader2, X,
+  ShieldCheck, Info, RefreshCw,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -15,10 +15,26 @@ interface Props {
   employee: NWEmployee;
 }
 
-type OverallStage =
-  | 'draft' | 'confirmed' | 'accepted'
-  | 'partially_paid' | 'transfer_pending' | 'closed'
-  | 'rejected' | 'expired' | 'unknown';
+// Payment ledger row — read from nw_deal_payments on preview open.
+// Shape mirrors the columns needed by Section 5's ledger table.
+interface LedgerRow {
+  id: string;
+  payment_number: string;
+  payment_date: string;
+  payment_mode: string;
+  amount_inr: number;
+  utr_number: string | null;
+  cheque_number: string | null;
+  transaction_reference: string | null;
+}
+
+// Short-label map for payment_mode (used only in the ledger table)
+const MODE_LABEL: Record<string, string> = {
+  imps: 'IMPS', neft: 'NEFT', rtgs: 'RTGS', upi: 'UPI',
+  cheque: 'Cheque', cash: 'Cash', bank_transfer: 'Bank Transfer',
+  online_gateway: 'Online Gateway', demand_draft: 'Demand Draft',
+  internal_adjustment: 'Internal Adjustment',
+};
 
 interface EligibleDeal {
   deal_id: string;
@@ -86,81 +102,37 @@ const fmtDateTime = (d: string | null | undefined) => {
 };
 
 // ---------------------------------------------------------------------------
-// Preview group config — extensible without touching this component.
-// Each group is a titled block of labelled fields; each field is one cell.
+// Demat account parser — Business rule:
+//   NSDL format: "IN" + 6-digit DP ID + 8-digit Client ID (16 chars total)
+//   CDSL format: 16 digits, first 8 = DP ID, last 8 = Client ID
+// Returns null when the account doesn't match either convention — the UI
+// then shows only the full account as a source of truth (graceful fallback).
 // ---------------------------------------------------------------------------
+function parseDemat(
+  account: string | null | undefined,
+  depository: string | null | undefined,
+): { dpId: string; clientId: string } | null {
+  if (!account) return null;
+  const clean = String(account).replace(/\s+/g, '').toUpperCase();
+  const dep = String(depository || '').toUpperCase();
 
-interface PreviewField {
-  label: string;
-  value: React.ReactNode;
-  span?: 1 | 2 | 3;
-}
-interface PreviewGroup {
-  key: string;
-  title: string;
-  fields: PreviewField[];
-}
+  // NSDL: "IN" prefix + 14 digits
+  if ((dep === 'NSDL' || clean.startsWith('IN')) && /^IN\d{14}$/.test(clean)) {
+    return {
+      dpId:     clean.slice(0, 8),   // "IN" + 6 digits
+      clientId: clean.slice(8, 16),  // 8 digits
+    };
+  }
 
-function buildPreviewGroups(d: EligibleDeal): PreviewGroup[] {
-  return [
-    {
-      key: 'client',
-      title: 'Client Snapshot',
-      fields: [
-        { label: 'Full Name',      value: d.snap_client_name || '—' },
-        { label: 'PAN',            value: d.snap_pan || '—' },
-        { label: 'Email',          value: d.snap_email || '—' },
-        { label: 'Phone',          value: d.snap_phone || '—' },
-        { label: 'DP Name',        value: d.snap_dp_name || '—' },
-        { label: 'Demat Account',  value: d.snap_demat_account || '—' },
-        { label: 'Bank',           value: d.snap_bank_name || '—' },
-        { label: 'A/C No.',        value: d.snap_bank_account || '—' },
-        { label: 'IFSC',           value: d.snap_bank_ifsc || '—' },
-        { label: 'Address',        value: d.snap_address || '—', span: 3 },
-      ],
-    },
-    {
-      key: 'instrument',
-      title: 'Instrument & Deal Terms',
-      fields: [
-        { label: 'Product',           value: d.product_type || '—' },
-        { label: 'Transaction Type',  value: d.transaction_type || '—' },
-        { label: 'Deal Date',         value: fmtDate(d.deal_date) },
-        { label: 'Security',          value: d.security_name || '—', span: 2 },
-        { label: 'ISIN',              value: d.isin || '—' },
-        { label: 'Quantity',          value: Number(d.quantity).toLocaleString('en-IN') },
-        { label: 'Rate per Unit',     value: inr(d.rate_per_unit) },
-        { label: 'Stamp Duty',        value: inr(d.stamp_duty) },
-      ],
-    },
-    {
-      key: 'revenue_basis',
-      title: 'Revenue Basis (internal, from Deal Confirmation)',
-      fields: [
-        { label: 'Landing Cost',       value: d.landing_cost      == null ? '—' : inr(d.landing_cost) },
-        { label: 'Brokerage',          value: d.brokerage_amount  == null ? '—' : inr(d.brokerage_amount) },
-        { label: 'Insurance Revenue',  value: d.insurance_revenue == null ? '—' : inr(d.insurance_revenue) },
-        { label: 'Trail %',            value: d.trail_percent     == null ? '—' : `${d.trail_percent}%` },
-        { label: 'Trail Start Date',   value: fmtDate(d.trail_start_date) },
-      ],
-    },
-    {
-      key: 'acceptance',
-      title: 'Acceptance & Signed Documents',
-      fields: [
-        { label: 'Accepted On',     value: fmtDateTime(d.accepted_at) },
-        { label: 'Signer Email',    value: d.signer_email || '—' },
-        { label: 'Signed PDF',      value: d.signed_pdf_path ? 'On record' : '—' },
-      ],
-    },
-    {
-      key: 'notes',
-      title: 'Deal Notes',
-      fields: [
-        { label: 'Notes', value: d.notes || '—', span: 3 },
-      ],
-    },
-  ];
+  // CDSL: 16 digits
+  if ((dep === 'CDSL' || /^\d{16}$/.test(clean)) && /^\d{16}$/.test(clean)) {
+    return {
+      dpId:     clean.slice(0, 8),
+      clientId: clean.slice(8, 16),
+    };
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -177,34 +149,6 @@ const CHECKLIST_ITEMS = [
 ] as const;
 
 type ChecklistKey = typeof CHECKLIST_ITEMS[number]['key'];
-
-// ---------------------------------------------------------------------------
-// Style tokens (matching existing CRM)
-// ---------------------------------------------------------------------------
-
-const OVERALL_STAGE_STYLES: Record<OverallStage, { label: string; bg: string; color: string; border: string }> = {
-  draft:            { label: 'Draft',            bg: 'rgba(107,107,107,0.10)', color: 'var(--text-secondary)', border: 'rgba(107,107,107,0.25)' },
-  confirmed:        { label: 'Confirmed',        bg: 'rgba(96,165,250,0.10)',  color: 'rgb(var(--info-soft-rgb))', border: 'rgba(96,165,250,0.25)' },
-  accepted:         { label: 'Accepted',         bg: 'rgba(16,185,129,0.08)',  color: 'var(--success)',        border: 'rgba(16,185,129,0.20)' },
-  partially_paid:   { label: 'Partially Paid',   bg: 'rgba(245,158,11,0.10)',  color: 'var(--warning)',        border: 'rgba(245,158,11,0.25)' },
-  transfer_pending: { label: 'Transfer Pending', bg: 'rgba(245,158,11,0.15)',  color: 'var(--warning)',        border: 'rgba(245,158,11,0.30)' },
-  closed:           { label: 'Closed',           bg: 'rgba(16,185,129,0.15)',  color: 'var(--success)',        border: 'rgba(16,185,129,0.30)' },
-  rejected:         { label: 'Rejected',         bg: 'rgba(239,68,68,0.10)',   color: 'var(--danger)',         border: 'rgba(239,68,68,0.25)' },
-  expired:          { label: 'Expired',          bg: 'rgba(107,107,107,0.10)', color: 'var(--text-muted)',     border: 'rgba(107,107,107,0.25)' },
-  unknown:          { label: 'Unknown',          bg: 'rgba(107,107,107,0.10)', color: 'var(--text-muted)',     border: 'rgba(107,107,107,0.25)' },
-};
-
-function OverallStagePill({ stage }: { stage: OverallStage }) {
-  const s = OVERALL_STAGE_STYLES[stage] ?? OVERALL_STAGE_STYLES.unknown;
-  return (
-    <span
-      className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg uppercase tracking-wider"
-      style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}
-    >
-      {s.label}
-    </span>
-  );
-}
 
 const PAGE_SIZE = 10;
 
@@ -225,8 +169,8 @@ export default function TransferQueue({ employee }: Props) {
   const [dateTo, setDateTo] = useState('');
 
   const [preview, setPreview] = useState<EligibleDeal | null>(null);
-  const [previewStage, setPreviewStage] = useState<OverallStage>('transfer_pending');
-  const [rmName, setRmName] = useState<string>('');
+  const [ledger, setLedger] = useState<LedgerRow[]>([]);
+  const [depository, setDepository] = useState<string | null>(null);
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [remarks, setRemarks] = useState('');
@@ -298,7 +242,10 @@ export default function TransferQueue({ employee }: Props) {
   useEffect(() => { loadList(); }, [loadList]);
 
   // -------------------------------------------------------------------------
-  // Open preview — also fetch the RM's name + overall_stage
+  // Open preview — fetch:
+  //   (a) the full Payment Ledger (chronological) for Section 5
+  //   (b) snap_depository (not part of nw_deal_transfer_eligible; used by the
+  //       Demat parser). No schema change — read directly from the deal row.
   // -------------------------------------------------------------------------
 
   const openPreview = async (d: EligibleDeal) => {
@@ -307,18 +254,28 @@ export default function TransferQueue({ employee }: Props) {
     setChecks({ kyc: false, payment: false, ledger: false, docs: false, investment: false, attest: false });
     setRemarks('');
     setError('');
-    // Fetch RM full_name
-    const { data: emp } = await supabase.from('nw_employees')
-      .select('full_name').eq('id', d.employee_id).maybeSingle();
-    setRmName(emp?.full_name ?? '—');
-    // Fetch overall stage (should be transfer_pending, but read live for accuracy)
-    const { data: st } = await supabase.from('nw_deal_overall_stage')
-      .select('overall_stage').eq('deal_id', d.deal_id).maybeSingle();
-    setPreviewStage(((st as any)?.overall_stage as OverallStage) ?? 'transfer_pending');
+    setLedger([]);
+    setDepository(null);
+
+    const [ledgerRes, depRes] = await Promise.all([
+      supabase.from('nw_deal_payments')
+        .select('id, payment_number, payment_date, payment_mode, amount_inr, utr_number, cheque_number, transaction_reference')
+        .eq('deal_confirmation_id', d.deal_id)
+        .eq('status', 'active')
+        .order('payment_date', { ascending: true }),
+      supabase.from('nw_deal_confirmations')
+        .select('snap_depository')
+        .eq('id', d.deal_id)
+        .maybeSingle(),
+    ]);
+    setLedger((ledgerRes.data as LedgerRow[]) ?? []);
+    setDepository((depRes.data as { snap_depository: string | null } | null)?.snap_depository ?? null);
   };
 
   const closePreview = () => {
     setPreview(null);
+    setLedger([]);
+    setDepository(null);
     setView('list');
   };
 
@@ -471,79 +428,206 @@ export default function TransferQueue({ employee }: Props) {
   }
 
   // ---- PREVIEW SCREEN ------------------------------------------------------
+  // Operations Verification Screen. Shows ONLY the fields the employee
+  // needs while entering the transfer into the external Transfer / Registrar
+  // portal. All other CRM chrome is intentionally omitted.
   if (view === 'preview' && preview) {
-    const groups = buildPreviewGroups(preview);
+    const demat        = parseDemat(preview.snap_demat_account, depository);
+    const outstanding  = Number(preview.outstanding_amount);
+    const isFullyPaid  = outstanding === 0;
+
     return (
-      <div className="space-y-6">
-        {/* Preview header */}
+      <div className="space-y-5 pb-24">
+        {/* Header — minimal cross-reference */}
         <div className="flex items-center gap-3">
           <button onClick={closePreview} className="flex items-center gap-2 text-sm"
             style={{ color: 'var(--text-secondary)' }}>
             <ChevronLeft className="w-4 h-4" /> Back to Queue
           </button>
         </div>
+        <div>
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>
+            Transfer Preview
+          </p>
+          <h1 className="text-xl font-bold text-text-primary font-mono">
+            {preview.confirmation_number}
+          </h1>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+            Deal Date: {fmtDate(preview.deal_date)}
+          </p>
+        </div>
 
-        {/* Summary header — shows Transfer Reference (pending), Overall Stage,
-             Deal Number, Client, RM, Transfer Status */}
-        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>
-                Transfer Preview
-              </p>
-              <h1 className="text-xl font-bold text-text-primary">
-                {preview.confirmation_number} — {preview.snap_client_name}
-              </h1>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>
-                A Transfer Reference (TRF-YYYY-NNNNNN) will be allocated on approval.
-              </p>
+        {/* --- Section 1: Client Details --- */}
+        <Section title="Client Details">
+          <FieldRow label="Client Name" value={preview.snap_client_name || '—'} />
+          <FieldRow label="PAN Number"  value={preview.snap_pan || '—'} mono />
+        </Section>
+
+        {/* --- Section 2: Consideration --- */}
+        <Section title="Consideration">
+          <FieldRow
+            label="Total Settlement Amount"
+            value={inr(preview.settlement_amount)}
+            emphasis
+          />
+        </Section>
+
+        {/* --- Section 3: Demat Details --- */}
+        <Section title="Demat Details">
+          {demat ? (
+            <>
+              <FieldRow label="DP ID"                       value={demat.dpId}    mono strong />
+              <FieldRow label="Client ID (Demat Client ID)" value={demat.clientId} mono strong />
+            </>
+          ) : (
+            <div className="rounded-lg px-3 py-2 text-xs italic"
+              style={{ background: 'rgba(245,158,11,0.06)', color: 'var(--warning)', border: '1px solid rgba(245,158,11,0.20)' }}>
+              DP ID / Client ID could not be parsed automatically from the demat account.
+              Use the full account number below as the source of truth.
             </div>
-            <div className="flex items-center gap-2">
-              <OverallStagePill stage={previewStage} />
-              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg uppercase tracking-wider"
-                style={{ background: 'rgba(245,158,11,0.10)', color: 'var(--warning)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                <Clock className="w-3 h-3" /> Awaiting Approval
+          )}
+          {depository && (
+            <FieldRow label="Depository" value={depository} />
+          )}
+          <FieldRow
+            label="Full Demat Account (source of truth)"
+            value={preview.snap_demat_account || '—'}
+            mono
+          />
+        </Section>
+
+        {/* --- Section 4: Bank Details --- */}
+        <Section title="Bank Details">
+          <FieldRow label="Bank Name" value={preview.snap_bank_name || '—'} />
+          <FieldRow label="IFSC Code" value={preview.snap_bank_ifsc || '—'} mono />
+        </Section>
+
+        {/* --- Section 5: Payment Verification --- */}
+        <Section title="Payment Verification">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <SummaryTile label="Total Settlement Amount" value={inr(preview.settlement_amount)}   strong />
+            <SummaryTile label="Total Amount Paid"        value={inr(preview.total_paid_amount)}  strong tone="success" />
+            <SummaryTile
+              label="Outstanding Amount"
+              value={isFullyPaid ? '₹0.00' : inr(outstanding)}
+              strong
+              tone={isFullyPaid ? 'success' : 'warning'}
+            />
+          </div>
+
+          <div className="mt-4">
+            {isFullyPaid ? (
+              <div className="flex items-center gap-3 rounded-xl px-5 py-4"
+                style={{
+                  background: 'rgba(16,185,129,0.08)',
+                  border: '1px solid rgba(16,185,129,0.30)',
+                }}>
+                <CheckCircle2 className="w-8 h-8 shrink-0" style={{ color: 'var(--success)' }} />
+                <div>
+                  <p className="text-lg font-black uppercase tracking-wider" style={{ color: 'var(--success)' }}>
+                    Fully Paid
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                    Outstanding: ₹0.00
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 rounded-xl px-5 py-4"
+                style={{
+                  background: 'rgba(245,158,11,0.08)',
+                  border: '1px solid rgba(245,158,11,0.30)',
+                }}>
+                <AlertCircle className="w-8 h-8 shrink-0" style={{ color: 'var(--warning)' }} />
+                <div>
+                  <p className="text-lg font-black uppercase tracking-wider" style={{ color: 'var(--warning)' }}>
+                    Outstanding
+                  </p>
+                  <p className="text-xs mt-0.5 font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Outstanding: {inr(outstanding)}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Payment Ledger — chronological */}
+          <div className="mt-4 rounded-xl overflow-hidden"
+            style={{ border: '1px solid var(--border)' }}>
+            <div className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-between"
+              style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>
+              <span>Payment Ledger</span>
+              <span style={{ color: 'var(--text-muted)' }}>
+                {ledger.length} {ledger.length === 1 ? 'entry' : 'entries'}
               </span>
             </div>
+            {ledger.length === 0 ? (
+              <div className="p-6 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+                No payments recorded.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ background: 'var(--bg-base)', color: 'var(--text-muted)' }}>
+                      <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wider">Payment No.</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wider">Payment Date</th>
+                      <th className="px-4 py-2 text-right text-xs font-bold uppercase tracking-wider">Payment Amount</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wider">Payment Mode</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wider">Transaction No. / UTR / Ref</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ledger.map(p => {
+                      const ref = p.utr_number || p.cheque_number || p.transaction_reference || '—';
+                      return (
+                        <tr key={p.id} style={{ borderTop: '1px solid var(--border)' }}>
+                          <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap"
+                            style={{ color: 'var(--accent)' }}>
+                            {p.payment_number}
+                          </td>
+                          <td className="px-4 py-2.5 whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>
+                            {fmtDate(p.payment_date)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-semibold whitespace-nowrap"
+                            style={{ color: 'var(--text-primary)' }}>
+                            {inr(p.amount_inr)}
+                          </td>
+                          <td className="px-4 py-2.5 whitespace-nowrap"
+                            style={{ color: 'var(--text-primary)' }}>
+                            {MODE_LABEL[p.payment_mode] ?? p.payment_mode}
+                          </td>
+                          <td className="px-4 py-2.5 font-mono text-xs">
+                            {ref}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
+        </Section>
 
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-            <SummaryTile label="Transfer Reference"     value="— pending —" mono />
-            <SummaryTile label="Deal Number"            value={preview.confirmation_number} mono />
-            <SummaryTile label="Client"                 value={preview.snap_client_name} />
-            <SummaryTile label="Relationship Manager"   value={rmName || '—'} />
-            <SummaryTile label="Overall Stage"          value={<OverallStagePill stage={previewStage} />} />
-            <SummaryTile label="Transfer Status"        value="Awaiting Approval" tone="warning" />
-          </div>
-        </div>
-
-        {/* Payment Summary card */}
-        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
-          <h2 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2"
-            style={{ color: 'var(--accent)' }}>
-            <IndianRupee className="w-4 h-4" /> Payment Summary
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <SummaryTile label="Settlement Amount"   value={inr(preview.settlement_amount)} strong />
-            <SummaryTile label="Total Paid"          value={inr(preview.total_paid_amount)} tone="success" strong />
-            <SummaryTile label="Outstanding"         value={inr(preview.outstanding_amount)}
-              tone={preview.outstanding_amount > 0 ? 'warning' : 'success'} />
-            <SummaryTile label="Number of Payments"  value={String(preview.payment_count)} />
-            <SummaryTile label="Payment Status"      value="Fully Paid" tone="success" strong />
-          </div>
-        </div>
-
-        {/* Read-only preview groups */}
-        {groups.map(g => (
-          <PreviewGroupBlock key={g.key} group={g} />
-        ))}
-
-        {/* Approve action */}
+        {/* --- Approve action bar (sticky) --- */}
+        {/* Defence-in-depth: the eligibility view already restricts this list
+             to fully_paid deals, but the ledger could change between list load
+             and click. Never allow approval while outstanding > 0. */}
         <div className="sticky bottom-0 z-10 rounded-2xl px-5 py-4 flex items-center justify-between gap-3 flex-wrap"
           style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', backdropFilter: 'blur(6px)' }}>
-          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-            <Info className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-            All fields above are read-only. Approval creates the official transaction and closes the deal.
+          <div className="flex items-center gap-2 text-xs" style={{ color: isFullyPaid ? 'var(--text-secondary)' : 'var(--warning)' }}>
+            {isFullyPaid ? (
+              <>
+                <Info className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                Verification only. Approval creates the official transaction and sends the closure email.
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-4 h-4" style={{ color: 'var(--warning)' }} />
+                Transfer is available only after full payment is received.
+              </>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={closePreview}
@@ -551,15 +635,23 @@ export default function TransferQueue({ employee }: Props) {
               style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
               Cancel
             </button>
-            <button onClick={() => setShowConfirm(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent"
-              style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+            <button
+              onClick={() => setShowConfirm(true)}
+              disabled={!isFullyPaid}
+              title={isFullyPaid ? undefined : 'Transfer is available only after full payment is received.'}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold disabled:cursor-not-allowed"
+              style={
+                isFullyPaid
+                  ? { background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', color: 'var(--on-accent, #000)' }
+                  : { background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)', opacity: 0.6 }
+              }
+            >
               <Send className="w-4 h-4" /> Approve Transfer
             </button>
           </div>
         </div>
 
-        {/* Confirmation dialog */}
+        {/* --- Confirmation dialog (unchanged 6-item checklist) --- */}
         {showConfirm && (
           <ConfirmDialog
             deal={preview}
@@ -754,28 +846,45 @@ function SummaryTile({
   );
 }
 
-function PreviewGroupBlock({ group }: { group: PreviewGroup }) {
-  const [open, setOpen] = useState(true);
+// ---------------------------------------------------------------------------
+// Simplified read-only section — used by the Transfer Preview.
+// ---------------------------------------------------------------------------
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl overflow-hidden"
       style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
-      <button onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-5 py-3 text-left">
+      <div className="px-5 py-3"
+        style={{ borderBottom: '1px solid var(--border)' }}>
         <h3 className="text-sm font-bold uppercase tracking-wider"
-          style={{ color: 'var(--text-secondary)' }}>{group.title}</h3>
-        {open ? <ChevronUp className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-              : <ChevronDown className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />}
-      </button>
-      {open && (
-        <div className="px-5 pb-5 grid grid-cols-1 md:grid-cols-3 gap-3">
-          {group.fields.map(f => (
-            <div key={f.label} className={f.span === 2 ? 'md:col-span-2' : f.span === 3 ? 'md:col-span-3' : ''}>
-              <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{f.label}</p>
-              <p className="text-sm font-medium text-text-primary">{f.value ?? '—'}</p>
-            </div>
-          ))}
-        </div>
-      )}
+          style={{ color: 'var(--text-secondary)' }}>{title}</h3>
+      </div>
+      <div className="px-5 py-4 space-y-3">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FieldRow({
+  label, value, mono, strong, emphasis,
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+  strong?: boolean;
+  emphasis?: boolean;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
+      <p className="text-xs uppercase tracking-wider sm:w-56 sm:shrink-0"
+        style={{ color: 'var(--text-muted)' }}>{label}</p>
+      <p
+        className={`${mono ? 'font-mono' : ''} ${strong || emphasis ? 'font-bold' : 'font-medium'} ${emphasis ? 'text-lg' : 'text-sm'}`}
+        style={{ color: emphasis ? 'var(--accent)' : 'var(--text-primary)' }}
+      >
+        {value ?? '—'}
+      </p>
     </div>
   );
 }
