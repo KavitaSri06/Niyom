@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: deal } = await db
       .from("nw_deal_confirmations")
-      .select("id, confirmation_number, snap_email, snap_client_name, employee_id, acceptance_status, token_expires_at")
+      .select("id, confirmation_number, client_id, snap_email, snap_client_name, employee_id, acceptance_status, token_expires_at")
       .eq("secure_token", token)
       .maybeSingle();
 
@@ -150,6 +150,21 @@ Deno.serve(async (req: Request) => {
         employeeDesignation = emp?.designation ?? null;
         employeePhone = emp?.phone ?? null;
       }
+
+      // Resolve the DSA email via the EXISTING client→DSA relationship
+      // (nw_clients.dsa_id). Only clients that belong to a DSA are CC'd; this
+      // reuses the same linkage MIS and DSA Payout already rely on — no new logic.
+      let dsaEmail: string | null = null;
+      if (deal.client_id) {
+        const { data: client } = await db.from("nw_clients")
+          .select("dsa_id").eq("id", deal.client_id).maybeSingle();
+        if (client?.dsa_id) {
+          const { data: dsa } = await db.from("nw_dsa")
+            .select("email").eq("id", client.dsa_id).maybeSingle();
+          dsaEmail = dsa?.email ?? null;
+        }
+      }
+
       // Client-facing job title — display-only `designation`, never the internal `role`.
       const formatDesignation = (designation: string | null): string =>
         (designation && designation.trim()) || "Relationship Manager";
@@ -158,13 +173,13 @@ Deno.serve(async (req: Request) => {
 
       // One email, shared communication trail:
       //   To  -> client (primary)
-      //   CC  -> creating/owning employee + admin/designated recipient
+      //   CC  -> creating/owning employee + admin/designated recipient + DSA (if any)
       // CC is de-duplicated against the To address and within itself.
       const clientTo = valid(deal.snap_email) ? deal.snap_email.trim() : null;
       const seen = new Set<string>();
       if (clientTo) seen.add(clientTo.toLowerCase());
       const cc: string[] = [];
-      for (const e of [employeeEmail, adminEmail]) {
+      for (const e of [employeeEmail, adminEmail, dsaEmail]) {
         if (!valid(e)) continue;
         const norm = e.trim().toLowerCase();
         if (seen.has(norm)) continue;
@@ -196,13 +211,16 @@ Deno.serve(async (req: Request) => {
         });
         await logEmail("failed", { note: "no_recipients" });
       } else {
-        const filename = `Deal_Confirmation_${deal.confirmation_number}.pdf`;
         const subject = `Deal Confirmation completed – Ref ${deal.confirmation_number}`;
         const year = new Date().getFullYear();
         const designation = formatDesignation(employeeDesignation);
-        // Normalize: Resend expects pure base64 in attachment content. Strip any
-        // data-URI prefix defensively (the client already sends bare base64).
-        const pdfBase64 = signedPdfBase64.includes(",") ? signedPdfBase64.split(",")[1] : signedPdfBase64;
+        // Secure download link to the already-stored signed PDF (private
+        // deal-documents bucket) in place of an attachment. Long-lived signed URL;
+        // if it later expires, the RM can always re-share from the CRM.
+        const DOWNLOAD_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+        const { data: signedLink } = await db.storage.from("deal-documents")
+          .createSignedUrl(pdfPath, DOWNLOAD_TTL_SECONDS);
+        const downloadUrl = signedLink?.signedUrl ?? null;
 
         const rmBlockText = employeeName
           ? `\n\nWarm regards,\n\n${employeeName}\n${designation} | Niyom Wealth Distribution LLP\nM: ${employeePhone ?? "-"}   E: ${employeeEmail ?? "-"}`
@@ -223,7 +241,9 @@ Deno.serve(async (req: Request) => {
 
 The confirmation process for Deal Confirmation Note Ref ${deal.confirmation_number} has been successfully completed.
 
-Please find the signed copy attached for your records. We have retained an identical copy on our side, which your Relationship Manager can share again at any time, should you need it.
+${downloadUrl
+  ? `You can download your signed copy using the secure link below. For your security this link remains active for 30 days:\n\n${downloadUrl}\n\nWe have retained an identical copy on our side, which your Relationship Manager can share again at any time, should you need it.`
+  : `We have retained a signed copy on our side. Your Relationship Manager can share it with you at any time, should you need it.`}
 
 For any clarification on this transaction, please feel free to reach out to your Relationship Manager.${rmBlockText}
 
@@ -234,13 +254,13 @@ No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095
 
 Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.
 
-This message and attachment are intended for the named recipient only.
+This message is intended for the named recipient only.
 © ${year} Niyom Wealth Distribution LLP.   Ref: ${deal.confirmation_number}`;
 
         const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
 <body style="font-family:Arial,Helvetica,sans-serif;color:#222;line-height:1.7;margin:0;padding:0;background:#f6f6f6;">
   <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f6f6f6;">
-    The confirmation process has been successfully completed. Your signed copy is attached.
+    The confirmation process has been successfully completed. Your signed copy is ready to download.
   </div>
   <div style="max-width:620px;margin:0 auto;padding:32px 24px;background:#ffffff;">
     <div style="border-bottom:2px solid #D4AF37;padding-bottom:16px;margin-bottom:24px;">
@@ -248,7 +268,18 @@ This message and attachment are intended for the named recipient only.
     </div>
     <p style="font-size:15px;font-weight:600;color:#111;margin:0 0 16px;">Dear ${deal.snap_client_name || "Client"},</p>
     <p style="margin:0 0 14px;">The confirmation process for Deal Confirmation Note <strong>Ref ${deal.confirmation_number}</strong> has been successfully completed.</p>
-    <p style="margin:0 0 14px;">Please find the signed copy attached for your records. We have retained an identical copy on our side, which your Relationship Manager can share again at any time, should you need it.</p>
+    ${downloadUrl
+      ? `<p style="margin:0 0 14px;">Your signed copy is ready. Please use the secure link below to download it for your records.</p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${downloadUrl}" style="background:linear-gradient(135deg,#D4AF37,#B8961E);color:#000;
+         text-decoration:none;font-weight:700;padding:14px 28px;border-radius:8px;display:inline-block;">
+         Download Signed Copy
+      </a>
+    </div>
+    <p style="font-size:13px;color:#777;margin:0 0 14px;">For your security this link remains active for 30 days. If the button does not open, copy this link into your browser:<br/>
+       <a href="${downloadUrl}" style="color:#B8961E;word-break:break-all;">${downloadUrl}</a></p>
+    <p style="margin:0 0 14px;">We have retained an identical copy on our side, which your Relationship Manager can share again at any time, should you need it.</p>`
+      : `<p style="margin:0 0 14px;">We have retained a signed copy on our side, which your Relationship Manager can share with you at any time, should you need it.</p>`}
     <p style="margin:0 0 14px;">For any clarification on this transaction, please feel free to reach out to your Relationship Manager.</p>
     ${rmBlockHtml}
     <div style="margin-top:28px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#666;line-height:1.7;">
@@ -256,7 +287,7 @@ This message and attachment are intended for the named recipient only.
       <p style="margin:0 0 6px;">ARN-362707 (Valid till 11-JUN-2029)</p>
       <p style="margin:0 0 12px;">No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095</p>
       <p style="margin:0 0 12px;font-size:11px;color:#888;">Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.</p>
-      <p style="margin:0;font-size:11px;color:#888;">This message and attachment are intended for the named recipient only.<br/>
+      <p style="margin:0;font-size:11px;color:#888;">This message is intended for the named recipient only.<br/>
          © ${year} Niyom Wealth Distribution LLP. &nbsp; Ref: ${deal.confirmation_number}</p>
     </div>
   </div></body></html>`;
@@ -274,7 +305,6 @@ This message and attachment are intended for the named recipient only.
               subject,
               text,
               html,
-              attachments: [{ filename, content: pdfBase64 }],
             }),
           });
           ok = resp.ok;
@@ -287,9 +317,9 @@ This message and attachment are intended for the named recipient only.
 
         await db.from("nw_deal_confirmation_events").insert({
           deal_id: deal.id, event_type: "signed_pdf_emailed", actor: "system",
-          metadata: { status: ok ? "sent" : "failed", to: primaryTo, cc, emailId: msgId },
+          metadata: { status: ok ? "sent" : "failed", to: primaryTo, cc, emailId: msgId, delivery: "link", hasDownloadLink: !!downloadUrl },
         });
-        await logEmail(ok ? "sent" : "failed", { to: primaryTo, cc }, msgId);
+        await logEmail(ok ? "sent" : "failed", { to: primaryTo, cc, delivery: "link", hasDownloadLink: !!downloadUrl }, msgId);
       }
     } catch (mailErr: any) {
       console.error("signed-pdf distribution error:", mailErr?.message);

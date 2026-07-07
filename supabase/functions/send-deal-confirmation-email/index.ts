@@ -36,20 +36,6 @@ function formatDesignation(designation: string | null | undefined): string {
 const isValidEmail = (e: unknown): e is string =>
   typeof e === "string" && /^\S+@\S+\.\S+$/.test(e.trim());
 
-// Build a de-duplicated CC list (lowercased) that never repeats the To address.
-function buildCc(candidates: (string | null | undefined)[], to: string): string[] {
-  const seen = new Set<string>([to.trim().toLowerCase()]);
-  const cc: string[] = [];
-  for (const c of candidates) {
-    if (!isValidEmail(c)) continue;
-    const norm = c.trim().toLowerCase();
-    if (seen.has(norm)) continue;
-    seen.add(norm);
-    cc.push(norm);
-  }
-  return cc;
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -110,16 +96,11 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: "The client email on record is not a valid address." }, 400);
     }
 
-    // --- Resolve CC recipients: creating/owning employee + admin/designated ---
-    let ownerEmail: string | null = null;
-    if (deal.employee_id) {
-      const { data: owner } = await db
-        .from("nw_employees").select("email").eq("id", deal.employee_id).maybeSingle();
-      ownerEmail = owner?.email ?? null;
-    }
-    const adminEmail = Deno.env.get("NIYOM_ADMIN_EMAIL") ?? "purushothaman@niyomwealth.com";
+    // --- Recipients: the initial Deal Confirmation link goes to the CLIENT ONLY.
+    // No CC. Admin/employee retain full visibility via the CRM and the append-only
+    // nw_deal_email_log. (Resend uses this same path, so it inherits the rule.)
     const clientTo = deal.snap_email.trim();
-    const ccRecipients = buildCc([ownerEmail, adminEmail], clientTo);
+    const ccRecipients: string[] = [];
     const isResend = deal.email_status === "sent";
 
     // --- Mint / rotate token (resets to pending for a fresh review) ---
