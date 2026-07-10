@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { NWEmployee, NWClient } from './types';
 import { fmt, fmtDate, VERIFICATION_LABELS, VERIFICATION_COLORS } from './utils';
-import { Search, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Download, X, CheckCircle2, AlertCircle, Filter, FolderOpen, KeyRound, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Search, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Download, X, CheckCircle2, AlertCircle, Filter, FolderOpen, KeyRound, ShieldCheck, ShieldOff, Handshake, ArrowRight } from 'lucide-react';
 
 interface Props { employee: NWEmployee; onNavigate: (page: any, params?: any) => void; }
 
@@ -42,6 +42,12 @@ export default function ManageClients({ employee }: Props) {
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [editDupWarnings, setEditDupWarnings] = useState<Record<'pan' | 'phone' | 'email', string | null>>({ pan: null, phone: null, email: null });
   const dupTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  // Admin-only "Modify Mapping" (Direct -> DSA) correction
+  const [mapClient, setMapClient] = useState<NWClient | null>(null);
+  const [dsaList, setDsaList] = useState<{ id: string; dsa_code: string; full_name: string }[]>([]);
+  const [selectedDsaId, setSelectedDsaId] = useState('');
+  const [mapCounts, setMapCounts] = useState<{ deals: number; txns: number; holdings: number } | null>(null);
+  const [mapSaving, setMapSaving] = useState(false);
 
   const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
 
@@ -135,6 +141,47 @@ export default function ManageClients({ employee }: Props) {
     if (error) { showToast(error.message, false); return; }
     setDeleteClient(null);
     showToast('Client deleted.');
+    load();
+  };
+
+  // --- Modify Mapping: correct a Direct client to a DSA client (admin only) ---
+  // Reuses the existing nw_clients update path. Only sourced_via + dsa_id change;
+  // the client id and every existing relationship are preserved. No new records.
+  const openModifyMapping = async (c: NWClient) => {
+    setMapClient(c);
+    setSelectedDsaId('');
+    setMapCounts(null);
+    // Active DSAs for the picker (admin sees all).
+    const { data: dsaData } = await supabase.from('nw_dsa')
+      .select('id, dsa_code, full_name').eq('status', 'active').order('full_name');
+    setDsaList((dsaData as { id: string; dsa_code: string; full_name: string }[]) || []);
+    // Existing business records — drives the warning (payments live under deals).
+    const [dcRes, txRes, hldRes] = await Promise.all([
+      supabase.from('nw_deal_confirmations').select('id', { count: 'exact', head: true }).eq('client_id', c.id),
+      supabase.from('nw_transactions').select('id', { count: 'exact', head: true }).eq('client_id', c.id),
+      supabase.from('nw_holdings').select('id', { count: 'exact', head: true }).eq('client_id', c.id),
+    ]);
+    setMapCounts({ deals: dcRes.count ?? 0, txns: txRes.count ?? 0, holdings: hldRes.count ?? 0 });
+  };
+
+  const confirmModifyMapping = async () => {
+    if (!mapClient || !selectedDsaId) return;
+    setMapSaving(true);
+    const { error } = await supabase.from('nw_clients')
+      .update({ sourced_via: 'dsa', dsa_id: selectedDsaId, updated_at: new Date().toISOString() })
+      .eq('id', mapClient.id);
+    if (error) { setMapSaving(false); showToast(error.message, false); return; }
+    const dsa = dsaList.find(d => d.id === selectedDsaId);
+    // Audit trail — records the correction without altering any existing history.
+    await supabase.from('nw_activity_logs').insert({
+      employee_id: employee.id,
+      client_id: mapClient.id,
+      action: 'client_mapping_corrected',
+      description: `Client mapping corrected: Direct → DSA (${dsa?.full_name ?? ''}${dsa?.dsa_code ? ` / ${dsa.dsa_code}` : ''}) by ${employee.full_name}`,
+    });
+    setMapSaving(false);
+    setMapClient(null);
+    showToast('Client mapping updated to DSA.');
     load();
   };
 
@@ -298,6 +345,7 @@ export default function ManageClients({ employee }: Props) {
                         ? <button onClick={() => handleResetClientPassword(c)} className="p-1.5 rounded-lg transition-colors" title="Send Password Reset Email" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--success)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><ShieldCheck className="w-4 h-4" /></button>
                         : <button onClick={() => { setLoginClient(c); setLoginPassword(''); setShowLoginPw(false); }} className="p-1.5 rounded-lg transition-colors" title="Enable Client Login" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--warning)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><KeyRound className="w-4 h-4" /></button>
                       }
+                      {isAdmin && c.sourced_via === 'direct' && <button onClick={() => openModifyMapping(c)} className="p-1.5 rounded-lg transition-colors" title="Modify Mapping (Direct → DSA)" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Handshake className="w-4 h-4" /></button>}
                       {isAdmin && <button onClick={() => setDeleteClient(c)} className="p-1.5 rounded-lg transition-colors" title="Delete" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Trash2 className="w-4 h-4" /></button>}
                     </div>
                   </td>
@@ -483,6 +531,56 @@ export default function ManageClients({ employee }: Props) {
               <button onClick={() => setDeleteClient(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
               <button onClick={handleDelete} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-text-primary disabled:opacity-50" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)' }}>
                 {saving ? 'Deleting...' : 'Delete Client'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modify Mapping Modal — Direct → DSA correction (admin only) */}
+      {mapClient && (
+        <Modal title={`Modify Mapping — ${mapClient.full_name}`} onClose={() => setMapClient(null)}>
+          <div className="p-6 space-y-5">
+            <div className="p-4 rounded-xl" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
+              <div className="flex items-center gap-2 text-xs flex-wrap" style={{ color: 'var(--text-secondary)' }}>
+                <span className="font-semibold text-text-primary">Current mapping:</span>
+                <span className="px-2 py-0.5 rounded-lg" style={{ background: 'var(--bg-surface)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Direct Client</span>
+                <ArrowRight className="w-3.5 h-3.5" style={{ color: 'var(--text-faint)' }} />
+                <span className="px-2 py-0.5 rounded-lg" style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.25)' }}>DSA Client</span>
+              </div>
+              <p className="text-xs mt-2" style={{ color: 'var(--text-faint)' }}>
+                Only the client's source mapping changes. The client ID and all existing records (deals, transactions, portfolio, documents, payments, audit history) are preserved.
+              </p>
+            </div>
+
+            <InlineField label="Select DSA">
+              {dsaList.length === 0 ? (
+                <p className="text-xs" style={{ color: 'var(--text-faint)' }}>No active DSAs found. Create one in DSA Management first.</p>
+              ) : (
+                <select value={selectedDsaId} onChange={e => setSelectedDsaId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none" style={inputStyle}>
+                  <option value="">— Select a DSA —</option>
+                  {dsaList.map(d => <option key={d.id} value={d.id}>{d.full_name} ({d.dsa_code})</option>)}
+                </select>
+              )}
+            </InlineField>
+
+            {mapCounts === null ? (
+              <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Checking existing business records…</p>
+            ) : (mapCounts.deals + mapCounts.txns + mapCounts.holdings) > 0 ? (
+              <div className="flex items-start gap-2 px-4 py-3 rounded-xl" style={{ background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.25)' }}>
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'rgb(var(--warning-soft-rgb))' }} />
+                <p className="text-xs" style={{ color: 'rgb(var(--warning-soft-rgb))' }}>
+                  This client already contains business records created as a Direct Client. Converting to a DSA Client may affect future MIS calculations, DSA payouts, and related business reports. Existing records will not be modified automatically.
+                </p>
+              </div>
+            ) : null}
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button onClick={() => setMapClient(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
+              <button onClick={confirmModifyMapping} disabled={mapSaving || !selectedDsaId}
+                className="px-5 py-2 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+                {mapSaving ? 'Updating...' : 'Confirm & Convert to DSA'}
               </button>
             </div>
           </div>
