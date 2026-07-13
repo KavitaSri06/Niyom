@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { NWEmployee, NWClient } from './types';
+import { NWEmployee, NWClient, NWClientBankAccount } from './types';
 import { fmt, fmtDate, VERIFICATION_LABELS, VERIFICATION_COLORS } from './utils';
-import { Search, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Download, X, CheckCircle2, AlertCircle, Filter, FolderOpen, KeyRound, ShieldCheck, ShieldOff, Handshake, ArrowRight } from 'lucide-react';
+import { Search, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Download, X, CheckCircle2, AlertCircle, Filter, FolderOpen, KeyRound, ShieldCheck, ShieldOff, Handshake, ArrowRight, Landmark, Star, Plus } from 'lucide-react';
 
 interface Props { employee: NWEmployee; onNavigate: (page: any, params?: any) => void; }
 
@@ -18,6 +18,18 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
         </div>
         <div className="overflow-y-auto flex-1">{children}</div>
       </div>
+    </div>
+  );
+}
+
+// Presentational field wrapper — defined at MODULE scope so its identity stays
+// stable across renders. Defining it inside the component recreated it on every
+// render, remounting the inputs and dropping focus after each keystroke.
+function InlineField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>{label}</label>
+      {children}
     </div>
   );
 }
@@ -48,6 +60,12 @@ export default function ManageClients({ employee }: Props) {
   const [selectedDsaId, setSelectedDsaId] = useState('');
   const [mapCounts, setMapCounts] = useState<{ deals: number; txns: number; holdings: number } | null>(null);
   const [mapSaving, setMapSaving] = useState(false);
+  // Bank Accounts manager (Sprint 5): up to 5 accounts, exactly one primary
+  const [bankClient, setBankClient] = useState<NWClient | null>(null);
+  const [bankAccounts, setBankAccounts] = useState<NWClientBankAccount[]>([]);
+  const [bankBusy, setBankBusy] = useState(false);
+  const [bankFormOpen, setBankFormOpen] = useState<'new' | string | null>(null); // 'new' | account id | null
+  const [bankForm, setBankForm] = useState<{ account_number: string; ifsc: string; bank_name: string; holder_name: string; label: string }>({ account_number: '', ifsc: '', bank_name: '', holder_name: '', label: '' });
 
   const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
 
@@ -117,7 +135,6 @@ export default function ManageClients({ employee }: Props) {
       full_name: c.full_name, email: c.email, phone: c.phone, pan: c.pan,
       address: c.address, city: c.city, state: c.state,
       demat_account: c.demat_account, dp_name: c.dp_name,
-      bank_account: c.bank_account, bank_ifsc: c.bank_ifsc, bank_name: c.bank_name,
       verification_status: c.verification_status, notes: c.notes,
     });
   };
@@ -185,6 +202,123 @@ export default function ManageClients({ employee }: Props) {
     load();
   };
 
+  // --- Bank Accounts manager (Sprint 5) -------------------------------------
+  // nw_clients.bank_* is the explicit primary mirror; updated here (no trigger).
+  const mirrorPrimary = async (clientId: string, acct: { account_number: string; ifsc: string; bank_name: string } | null) => {
+    await supabase.from('nw_clients').update({
+      bank_account: acct?.account_number ?? '',
+      bank_ifsc: acct?.ifsc ?? '',
+      bank_name: acct?.bank_name ?? '',
+      updated_at: new Date().toISOString(),
+    }).eq('id', clientId);
+  };
+
+  const loadBankAccounts = async (clientId: string) => {
+    const { data } = await supabase.from('nw_client_bank_accounts')
+      .select('*').eq('client_id', clientId)
+      .order('is_primary', { ascending: false }).order('created_at', { ascending: true });
+    setBankAccounts((data as NWClientBankAccount[]) || []);
+  };
+
+  const openBankManager = async (c: NWClient) => {
+    setBankClient(c);
+    setBankFormOpen(null);
+    setBankAccounts([]);
+    await loadBankAccounts(c.id);
+  };
+  const closeBankManager = () => { setBankClient(null); setBankFormOpen(null); load(); };
+
+  const startAddBank = () => {
+    setBankForm({ account_number: '', ifsc: '', bank_name: '', holder_name: '', label: '' });
+    setBankFormOpen('new');
+  };
+  const startEditBank = (a: NWClientBankAccount) => {
+    setBankForm({ account_number: a.account_number, ifsc: a.ifsc, bank_name: a.bank_name, holder_name: a.holder_name, label: a.label });
+    setBankFormOpen(a.id);
+  };
+
+  const saveBankAccount = async () => {
+    if (!bankClient) return;
+    const acct = {
+      account_number: bankForm.account_number.trim(),
+      ifsc: bankForm.ifsc.trim().toUpperCase(),
+      bank_name: bankForm.bank_name.trim(),
+      holder_name: bankForm.holder_name.trim(),
+      label: bankForm.label.trim(),
+    };
+    if (!acct.account_number) { showToast('Account number is required.', false); return; }
+    setBankBusy(true);
+    try {
+      if (bankFormOpen === 'new') {
+        // First account for the client automatically becomes the primary.
+        const isFirst = bankAccounts.length === 0;
+        const { error } = await supabase.from('nw_client_bank_accounts').insert({ client_id: bankClient.id, ...acct, is_primary: isFirst });
+        if (error) throw error;
+        if (isFirst) await mirrorPrimary(bankClient.id, acct);
+        showToast('Bank account added.');
+      } else {
+        const existing = bankAccounts.find(a => a.id === bankFormOpen);
+        const { error } = await supabase.from('nw_client_bank_accounts')
+          .update({ ...acct, updated_at: new Date().toISOString() }).eq('id', bankFormOpen);
+        if (error) throw error;
+        if (existing?.is_primary) await mirrorPrimary(bankClient.id, acct);
+        showToast('Bank account updated.');
+      }
+      setBankFormOpen(null);
+      await loadBankAccounts(bankClient.id);
+    } catch (e: any) {
+      showToast(e?.message || 'Could not save bank account.', false);
+    } finally {
+      setBankBusy(false);
+    }
+  };
+
+  const makePrimary = async (a: NWClientBankAccount) => {
+    if (!bankClient || a.is_primary) return;
+    setBankBusy(true);
+    try {
+      // Unset the current primary FIRST to satisfy the one-primary unique index.
+      const { error: e1 } = await supabase.from('nw_client_bank_accounts')
+        .update({ is_primary: false, updated_at: new Date().toISOString() })
+        .eq('client_id', bankClient.id).eq('is_primary', true);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from('nw_client_bank_accounts')
+        .update({ is_primary: true, updated_at: new Date().toISOString() }).eq('id', a.id);
+      if (e2) throw e2;
+      await mirrorPrimary(bankClient.id, a);
+      showToast('Primary account updated.');
+      await loadBankAccounts(bankClient.id);
+    } catch (e: any) {
+      showToast(e?.message || 'Could not change primary.', false);
+    } finally {
+      setBankBusy(false);
+    }
+  };
+
+  const deleteBankAccount = async (a: NWClientBankAccount) => {
+    if (!bankClient) return;
+    // Never leave a client with accounts but no primary: block deleting the
+    // primary while other accounts exist — admin must pick a new primary first.
+    if (a.is_primary && bankAccounts.length > 1) {
+      showToast('Set another account as Primary before deleting this one.', false);
+      return;
+    }
+    setBankBusy(true);
+    try {
+      const wasLast = bankAccounts.length === 1;
+      const { error } = await supabase.from('nw_client_bank_accounts').delete().eq('id', a.id);
+      if (error) throw error;
+      // Only auto-clear the mirror when the deleted account was the last one.
+      if (a.is_primary && wasLast) await mirrorPrimary(bankClient.id, null);
+      showToast('Bank account deleted.');
+      await loadBankAccounts(bankClient.id);
+    } catch (e: any) {
+      showToast(e?.message || 'Could not delete bank account.', false);
+    } finally {
+      setBankBusy(false);
+    }
+  };
+
   const handleEnableLogin = async () => {
     if (!loginClient || loginPassword.length < 8) return;
     setLoginSaving(true);
@@ -243,12 +377,6 @@ export default function ManageClients({ employee }: Props) {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const inputStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-primary)' };
-  const InlineField = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>{label}</label>
-      {children}
-    </div>
-  );
   const EditDupWarn = ({ msg }: { msg: string | null }) => !msg ? null : (
     <div className="mt-1.5 flex items-start gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.25)' }}>
       <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: 'rgb(var(--warning-soft-rgb))' }} />
@@ -341,6 +469,7 @@ export default function ManageClients({ employee }: Props) {
                       <button onClick={() => setViewClient(c)} className="p-1.5 rounded-lg transition-colors" title="View Details" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Eye className="w-4 h-4" /></button>
                       <button onClick={() => onNavigate('documents', { clientId: c.id })} className="p-1.5 rounded-lg transition-colors" title="View Documents" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--success)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><FolderOpen className="w-4 h-4" /></button>
                       <button onClick={() => handleEdit(c)} className="p-1.5 rounded-lg transition-colors" title="Edit" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'rgb(var(--info-soft-rgb))')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => openBankManager(c)} className="p-1.5 rounded-lg transition-colors" title="Bank Accounts" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Landmark className="w-4 h-4" /></button>
                       {c.client_login_enabled
                         ? <button onClick={() => handleResetClientPassword(c)} className="p-1.5 rounded-lg transition-colors" title="Send Password Reset Email" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--success)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><ShieldCheck className="w-4 h-4" /></button>
                         : <button onClick={() => { setLoginClient(c); setLoginPassword(''); setShowLoginPw(false); }} className="p-1.5 rounded-lg transition-colors" title="Enable Client Login" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--warning)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><KeyRound className="w-4 h-4" /></button>
@@ -413,7 +542,6 @@ export default function ManageClients({ employee }: Props) {
               {[
                 ['Full Name', 'full_name', 'text'], ['City', 'city', 'text'], ['State', 'state', 'text'],
                 ['Demat A/C', 'demat_account', 'text'], ['DP Name', 'dp_name', 'text'],
-                ['Bank A/C', 'bank_account', 'text'], ['IFSC', 'bank_ifsc', 'text'], ['Bank Name', 'bank_name', 'text'],
               ].map(([label, key, type]) => (
                 <InlineField key={key} label={label}>
                   <input type={type} value={(editForm as any)[key] || ''} onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))}
@@ -583,6 +711,95 @@ export default function ManageClients({ employee }: Props) {
                 {mapSaving ? 'Updating...' : 'Confirm & Convert to DSA'}
               </button>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Bank Accounts Manager (Sprint 5) */}
+      {bankClient && (
+        <Modal title={`Bank Accounts — ${bankClient.full_name}`} onClose={closeBankManager}>
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+                Up to 5 accounts. Exactly one is Primary and is used across the CRM.
+              </p>
+              <button onClick={startAddBank} disabled={bankAccounts.length >= 5 || bankFormOpen === 'new'}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40"
+                style={{ background: 'var(--bg-raised)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+                <Plus className="w-3.5 h-3.5" /> Add Account{bankAccounts.length >= 5 ? ' (max 5)' : ''}
+              </button>
+            </div>
+
+            {bankFormOpen && (
+              <div className="rounded-xl p-4 space-y-3" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
+                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>
+                  {bankFormOpen === 'new' ? 'Add Bank Account' : 'Edit Bank Account'}
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <InlineField label="Account Number *">
+                    <input value={bankForm.account_number} onChange={e => setBankForm(f => ({ ...f, account_number: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none" style={inputStyle} />
+                  </InlineField>
+                  <InlineField label="IFSC">
+                    <input value={bankForm.ifsc} onChange={e => setBankForm(f => ({ ...f, ifsc: e.target.value.toUpperCase() }))}
+                      className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none" style={inputStyle} />
+                  </InlineField>
+                  <InlineField label="Bank Name">
+                    <input value={bankForm.bank_name} onChange={e => setBankForm(f => ({ ...f, bank_name: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none" style={inputStyle} />
+                  </InlineField>
+                  <InlineField label="Account Holder">
+                    <input value={bankForm.holder_name} onChange={e => setBankForm(f => ({ ...f, holder_name: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none" style={inputStyle} />
+                  </InlineField>
+                  <InlineField label="Label (optional)">
+                    <input value={bankForm.label} onChange={e => setBankForm(f => ({ ...f, label: e.target.value }))}
+                      placeholder="e.g. Salary, Savings"
+                      className="w-full px-3 py-2 rounded-xl text-sm text-text-primary outline-none" style={inputStyle} />
+                  </InlineField>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => setBankFormOpen(null)} className="px-3 py-1.5 rounded-lg text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
+                  <button onClick={saveBankAccount} disabled={bankBusy || !bankForm.account_number.trim()}
+                    className="px-4 py-1.5 rounded-lg text-xs font-bold text-on-accent disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+                    {bankBusy ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {bankAccounts.length === 0 && !bankFormOpen ? (
+              <p className="text-sm text-center py-6" style={{ color: 'var(--text-faint)' }}>No bank accounts yet. Add the first account (it becomes Primary).</p>
+            ) : (
+              <div className="space-y-2">
+                {bankAccounts.map(a => (
+                  <div key={a.id} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-text-primary truncate">{a.bank_name || '—'}</p>
+                        {a.is_primary && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold" style={{ background: 'rgba(var(--accent-rgb),0.12)', color: 'var(--accent)' }}>
+                            <Star className="w-3 h-3" /> Primary
+                          </span>
+                        )}
+                        {a.label && <span className="text-xs px-2 py-0.5 rounded-lg" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)' }}>{a.label}</span>}
+                      </div>
+                      <p className="text-xs font-mono mt-0.5" style={{ color: 'var(--text-faint)' }}>{a.account_number}{a.ifsc ? ` · ${a.ifsc}` : ''}</p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {!a.is_primary && (
+                        <button onClick={() => makePrimary(a)} disabled={bankBusy} title="Make Primary"
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50" style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+                          Make Primary
+                        </button>
+                      )}
+                      <button onClick={() => startEditBank(a)} disabled={bankBusy} title="Edit" className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }}><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => deleteBankAccount(a)} disabled={bankBusy} title="Delete" className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }}><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </Modal>
       )}

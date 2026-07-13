@@ -81,6 +81,20 @@ Deno.serve(async (req: Request) => {
 
     if (clientErr) throw clientErr;
 
+    // Sprint 5: seed the client's PRIMARY bank account (mirror already on nw_clients).
+    const acctNo = bank_account?.trim();
+    const acctIfsc = bank_ifsc?.toUpperCase()?.trim();
+    const acctBank = bank_name?.trim();
+    if (acctNo || acctIfsc || acctBank) {
+      await supabase.from("nw_client_bank_accounts").insert([{
+        client_id: client.id,
+        account_number: acctNo || "",
+        ifsc: acctIfsc || "",
+        bank_name: acctBank || "",
+        is_primary: true,
+      }]);
+    }
+
     // Log the activity
     await supabase.from("nw_activity_logs").insert([{
       employee_id: DEFAULT_EMPLOYEE_ID,

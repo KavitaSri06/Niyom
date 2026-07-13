@@ -306,6 +306,18 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
 
       if (clientErr) throw clientErr;
 
+      // Sprint 5: seed the client's PRIMARY bank account. nw_clients.bank_* was
+      // already written above (the mirror); this creates the matching primary row.
+      if (form.bank_account.trim() || form.bank_ifsc.trim() || form.bank_name.trim()) {
+        await supabase.from('nw_client_bank_accounts').insert([{
+          client_id: client.id,
+          account_number: form.bank_account.trim(),
+          ifsc: form.bank_ifsc.trim().toUpperCase(),
+          bank_name: form.bank_name.trim(),
+          is_primary: true,
+        }]);
+      }
+
       // Document type → folder key mapping
       const DOC_FOLDER_MAP: Record<string, string> = {
         'PAN Card': 'PAN', 'CML': 'CML', 'Bank Document': 'BANK',

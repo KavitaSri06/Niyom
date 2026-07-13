@@ -123,6 +123,21 @@ export interface NWClientDocument {
   created_at: string;
 }
 
+// Sprint 5: a client may hold up to 5 bank accounts (1 primary + 4 secondary).
+// nw_clients.bank_* is the explicit application-maintained mirror of the primary.
+export interface NWClientBankAccount {
+  id: string;
+  client_id: string;
+  account_number: string;
+  ifsc: string;
+  bank_name: string;
+  holder_name: string;
+  label: string;
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export type PayoutFrequency = 'annual' | 'halfyearly' | 'quarterly' | 'monthly';
 export type SchemeType = 'equity' | 'debt' | 'hybrid' | 'index' | 'elss' | 'liquid' | 'others';
 export type InsuranceType = 'term' | 'ulip' | 'traditional' | 'medical' | 'vehicle';

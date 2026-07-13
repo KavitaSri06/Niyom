@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { NWEmployee, NWClient } from './types';
+import { NWEmployee, NWClient, NWClientBankAccount } from './types';
 import {
   Folder, FolderOpen, Upload, Download, Trash2, Eye, Search,
   FileText, FileImage, File, X, CheckCircle2, AlertCircle,
@@ -36,6 +36,7 @@ interface NWDocument {
   mime_type: string;
   uploaded_by_name: string;
   uploaded_at: string;
+  bank_account_id?: string | null;
   client?: { full_name: string; client_code: string };
 }
 
@@ -105,6 +106,9 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Sprint 5: per-account bank documents
+  const [bankAccounts, setBankAccounts] = useState<NWClientBankAccount[]>([]);
+  const [uploadBankAccountId, setUploadBankAccountId] = useState<string>('');
 
   // Preview/download
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -149,6 +153,20 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
   }, [selectedClientId, selectedFolder]);
 
   useEffect(() => { loadDocuments(); }, [loadDocuments]);
+
+  // Load the selected client's bank accounts (for per-account bank documents).
+  useEffect(() => {
+    if (!selectedClientId) { setBankAccounts([]); setUploadBankAccountId(''); return; }
+    supabase.from('nw_client_bank_accounts').select('*')
+      .eq('client_id', selectedClientId)
+      .order('is_primary', { ascending: false }).order('created_at', { ascending: true })
+      .then(({ data }) => {
+        const list = (data as NWClientBankAccount[]) || [];
+        setBankAccounts(list);
+        const primary = list.find(a => a.is_primary);
+        setUploadBankAccountId(primary ? primary.id : '');
+      });
+  }, [selectedClientId]);
 
   const selectedClient = clients.find(c => c.id === selectedClientId);
 
@@ -216,6 +234,7 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
         file_size: item.file.size,
         mime_type: item.file.type,
         uploaded_by_name: employee.full_name,
+        bank_account_id: uploadFolder === 'BANK' ? (uploadBankAccountId || null) : null,
       }]);
 
       if (dbErr) {
@@ -469,6 +488,10 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
                         <p className="text-sm font-semibold text-text-primary truncate">{doc.file_name}</p>
                         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                           <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: `color-mix(in srgb, ${folder?.color || 'var(--text-muted)'} 8%, transparent)`, color: folder?.color || 'var(--text-muted)' }}>{folder?.label}</span>
+                          {doc.document_type === 'BANK' && doc.bank_account_id && (() => {
+                            const acct = bankAccounts.find(a => a.id === doc.bank_account_id);
+                            return acct ? <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)' }}>{acct.bank_name || acct.label || 'Account'}{acct.is_primary ? ' · Primary' : ''}</span> : null;
+                          })()}
                           <span className="text-xs" style={{ color: 'var(--text-faint)' }}>{fmtSize(doc.file_size)}</span>
                           <span className="text-xs" style={{ color: 'var(--text-faint)' }}>{fmtDate(doc.uploaded_at)}</span>
                           <span className="text-xs" style={{ color: 'var(--text-faint)' }}>by {doc.uploaded_by_name}</span>
@@ -530,6 +553,20 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
                   {DOC_FOLDERS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                 </select>
               </div>
+
+              {/* Bank account picker — only for Bank Documents (Sprint 5) */}
+              {uploadFolder === 'BANK' && (
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Bank Account</label>
+                  <select value={uploadBankAccountId} onChange={e => setUploadBankAccountId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+                    style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
+                    <option value="">Unassigned</option>
+                    {bankAccounts.map(a => <option key={a.id} value={a.id}>{(a.bank_name || 'Account')} · {a.account_number}{a.is_primary ? ' (Primary)' : ''}</option>)}
+                  </select>
+                  {bankAccounts.length === 0 && <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>No bank accounts on file. Add them in Manage Clients.</p>}
+                </div>
+              )}
 
               {/* Drop zone */}
               <div
