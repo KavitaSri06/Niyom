@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { NWEmployee } from './types';
 import {
   ChevronLeft, Plus, X, Loader2, CheckCircle2, AlertCircle,
-  Wallet, IndianRupee, Receipt, Info, FileText, RefreshCw, Eye, Mail, Bell,
+  Wallet, IndianRupee, Receipt, Info, FileText, RefreshCw, Eye, Mail, Bell, CreditCard,
 } from 'lucide-react';
 import { renderPaymentReceiptPdf } from './paymentReceipt';
 
@@ -88,7 +88,7 @@ interface PaymentRow {
 interface EmailLogRow {
   id: string;
   payment_id: string | null;
-  email_type: 'payment_reminder' | 'payment_partial' | 'payment_final' | 'secure_link' | 'signed_pdf';
+  email_type: 'payment_reminder' | 'payment_partial' | 'payment_final' | 'secure_link' | 'signed_pdf' | 'payment_link';
   status: 'sent' | 'failed' | 'partial';
   sent_at: string;
   metadata: Record<string, unknown> | null;
@@ -261,7 +261,7 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
       supabase.from('nw_deal_email_log')
         .select('id, payment_id, email_type, status, sent_at, metadata')
         .eq('deal_confirmation_id', deal.id)
-        .in('email_type', ['payment_reminder','payment_partial','payment_final'])
+        .in('email_type', ['payment_reminder','payment_partial','payment_final','payment_link'])
         .order('sent_at', { ascending: false }),
     ]);
     // If no payments yet, the view returns a row with zeros. Fall back to a
@@ -456,6 +456,24 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
     }
   };
 
+  const sendPaymentLink = async () => {
+    setEmailBusy('payment_link');
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('send-payment-link', {
+        body: { dealId: deal.id },
+      });
+      if (fnErr || !data?.success) {
+        throw new Error(data?.error || fnErr?.message || 'Could not send payment link.');
+      }
+      showToast('Payment link sent to client.');
+      await load();
+    } catch (err: any) {
+      showToast(err?.message || 'Could not send payment link.', false);
+    } finally {
+      setEmailBusy(null);
+    }
+  };
+
   const sendReceipt = async (p: PaymentRow) => {
     setEmailBusy(p.id);
     try {
@@ -580,6 +598,16 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
           lastSentAt={emailLog.find(e => e.email_type === 'payment_reminder' && e.status === 'sent')?.sent_at ?? null}
           busy={emailBusy === 'reminder'}
           onSend={() => sendReminder()}
+        />
+      )}
+
+      {/* Send Payment Link — available while any balance is outstanding */}
+      {summary && summary.outstanding_amount > 0 && (
+        <PaymentLinkCard
+          amount={summary.outstanding_amount}
+          lastSentAt={emailLog.find(e => e.email_type === 'payment_link' && e.status === 'sent')?.sent_at ?? null}
+          busy={emailBusy === 'payment_link'}
+          onSend={() => sendPaymentLink()}
         />
       )}
 
@@ -916,6 +944,53 @@ function ReminderCard({ lastSentAt, busy, onSend }: {
         {busy
           ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
           : <><Mail className="w-4 h-4" /> {lastSentAt ? 'Resend Reminder' : 'Send Payment Reminder'}</>}
+      </button>
+    </div>
+  );
+}
+
+function PaymentLinkCard({ amount, lastSentAt, busy, onSend }: {
+  amount: number;
+  lastSentAt: string | null;
+  busy: boolean;
+  onSend: () => void;
+}) {
+  const fmt = (d: string) => new Date(d).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+  const inrFmt = (n: number) => '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (
+    <div
+      className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap"
+      style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}
+    >
+      <div className="flex items-start gap-2">
+        <CreditCard className="w-4 h-4 mt-0.5" style={{ color: 'var(--accent)' }} />
+        <div>
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            Send a payment link for {inrFmt(amount)}
+          </p>
+          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+            {lastSentAt
+              ? `Payment link last sent to the client on ${fmt(lastSentAt)}.`
+              : 'Email the client a secure Cashfree payment link (UPI / Debit Card) plus bank-transfer details.'}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={onSend}
+        disabled={busy}
+        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold"
+        style={{
+          background: 'var(--bg-base)',
+          color: 'var(--text-primary)',
+          border: '1px solid var(--border)',
+          opacity: busy ? 0.6 : 1,
+        }}
+      >
+        {busy
+          ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
+          : <><CreditCard className="w-4 h-4" /> {lastSentAt ? 'Resend Payment Link' : 'Send Payment Link'}</>}
       </button>
     </div>
   );

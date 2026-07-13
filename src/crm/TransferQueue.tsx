@@ -141,7 +141,7 @@ function parseDemat(
 
 const CHECKLIST_ITEMS = [
   { key: 'kyc',        label: 'Client KYC verified' },
-  { key: 'payment',    label: 'Payment fully received' },
+  { key: 'payment',    label: 'Payment received (settled within ₹50 tolerance)' },
   { key: 'ledger',     label: 'Ledger verified' },
   { key: 'docs',       label: 'Documents verified' },
   { key: 'investment', label: 'Investment details verified' },
@@ -151,6 +151,14 @@ const CHECKLIST_ITEMS = [
 type ChecklistKey = typeof CHECKLIST_ITEMS[number]['key'];
 
 const PAGE_SIZE = 10;
+
+// Sprint 4: a deal is settled for transfer when |outstanding| <= this (INR).
+// Must stay in sync with the nw_deal_transfer_eligible view + nw_transfer_deal
+// RPC (migration 20260713120000_transfer_outstanding_tolerance).
+const SETTLEMENT_TOLERANCE = 50;
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const YEARS = (() => { const y = new Date().getFullYear(); return [y, y - 1, y - 2, y - 3]; })();
 
 // ===========================================================================
 // Main component
@@ -165,8 +173,8 @@ export default function TransferQueue({ employee }: Props) {
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [filterMonth, setFilterMonth] = useState<string>(''); // '' = all, else '0'..'11'
+  const [filterYear, setFilterYear] = useState<string>('');   // '' = all, else e.g. '2026'
 
   const [preview, setPreview] = useState<EligibleDeal | null>(null);
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
@@ -230,14 +238,25 @@ export default function TransferQueue({ employee }: Props) {
         `isin.ilike.${s}`,
       ].join(','));
     }
-    if (dateFrom) q = q.gte('accepted_at', dateFrom);
-    if (dateTo)   q = q.lte('accepted_at', `${dateTo}T23:59:59`);
+    // Month + Year filter on accepted_at. Year alone = whole year; Year+Month = that month.
+    if (filterYear) {
+      const y = Number(filterYear);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      if (filterMonth !== '') {
+        const m = Number(filterMonth); // 0-11
+        const lastDay = new Date(y, m + 1, 0).getDate();
+        q = q.gte('accepted_at', `${y}-${pad(m + 1)}-01`)
+             .lte('accepted_at', `${y}-${pad(m + 1)}-${pad(lastDay)}T23:59:59`);
+      } else {
+        q = q.gte('accepted_at', `${y}-01-01`).lte('accepted_at', `${y}-12-31T23:59:59`);
+      }
+    }
 
     const { data, count: c } = await q;
     setDeals((data as EligibleDeal[]) ?? []);
     setCount(c ?? 0);
     setLoading(false);
-  }, [page, search, dateFrom, dateTo]);
+  }, [page, search, filterMonth, filterYear]);
 
   useEffect(() => { loadList(); }, [loadList]);
 
@@ -434,7 +453,8 @@ export default function TransferQueue({ employee }: Props) {
   if (view === 'preview' && preview) {
     const demat        = parseDemat(preview.snap_demat_account, depository);
     const outstanding  = Number(preview.outstanding_amount);
-    const isFullyPaid  = outstanding === 0;
+    const isSettled    = Math.abs(outstanding) <= SETTLEMENT_TOLERANCE;
+    const isExact      = outstanding === 0;
 
     return (
       <div className="space-y-5 pb-24">
@@ -463,8 +483,11 @@ export default function TransferQueue({ employee }: Props) {
           <FieldRow label="PAN Number"  value={preview.snap_pan || '—'} mono />
         </Section>
 
-        {/* --- Section 2: Consideration --- */}
-        <Section title="Consideration">
+        {/* --- Section 2: Product Details --- */}
+        <Section title="Product Details">
+          <FieldRow label="Product Name" value={preview.security_name || '—'} />
+          <FieldRow label="Quantity"     value={preview.quantity ?? '—'} mono />
+          <FieldRow label="ISIN Number"  value={preview.isin || '—'} mono />
           <FieldRow
             label="Total Settlement Amount"
             value={inr(preview.settlement_amount)}
@@ -498,25 +521,26 @@ export default function TransferQueue({ employee }: Props) {
 
         {/* --- Section 4: Bank Details --- */}
         <Section title="Bank Details">
-          <FieldRow label="Bank Name" value={preview.snap_bank_name || '—'} />
-          <FieldRow label="IFSC Code" value={preview.snap_bank_ifsc || '—'} mono />
+          <FieldRow label="Bank Name"           value={preview.snap_bank_name || '—'} />
+          <FieldRow label="Bank Account Number" value={preview.snap_bank_account || '—'} mono />
+          <FieldRow label="IFSC Code"           value={preview.snap_bank_ifsc || '—'} mono />
         </Section>
 
-        {/* --- Section 5: Payment Verification --- */}
-        <Section title="Payment Verification">
+        {/* --- Section 5: Payment Details --- */}
+        <Section title="Payment Details">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <SummaryTile label="Total Settlement Amount" value={inr(preview.settlement_amount)}   strong />
             <SummaryTile label="Total Amount Paid"        value={inr(preview.total_paid_amount)}  strong tone="success" />
             <SummaryTile
               label="Outstanding Amount"
-              value={isFullyPaid ? '₹0.00' : inr(outstanding)}
+              value={isExact ? '₹0.00' : inr(outstanding)}
               strong
-              tone={isFullyPaid ? 'success' : 'warning'}
+              tone={isSettled ? 'success' : 'warning'}
             />
           </div>
 
           <div className="mt-4">
-            {isFullyPaid ? (
+            {isSettled ? (
               <div className="flex items-center gap-3 rounded-xl px-5 py-4"
                 style={{
                   background: 'rgba(16,185,129,0.08)',
@@ -525,10 +549,12 @@ export default function TransferQueue({ employee }: Props) {
                 <CheckCircle2 className="w-8 h-8 shrink-0" style={{ color: 'var(--success)' }} />
                 <div>
                   <p className="text-lg font-black uppercase tracking-wider" style={{ color: 'var(--success)' }}>
-                    Fully Paid
+                    {isExact ? 'Fully Paid' : 'Settled'}
                   </p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                    Outstanding: ₹0.00
+                    {isExact
+                      ? 'Outstanding: ₹0.00'
+                      : `Within ₹${SETTLEMENT_TOLERANCE} tolerance · Outstanding: ${inr(outstanding)}`}
                   </p>
                 </div>
               </div>
@@ -611,13 +637,14 @@ export default function TransferQueue({ employee }: Props) {
         </Section>
 
         {/* --- Approve action bar (sticky) --- */}
-        {/* Defence-in-depth: the eligibility view already restricts this list
-             to fully_paid deals, but the ledger could change between list load
-             and click. Never allow approval while outstanding > 0. */}
+        {/* Defence-in-depth: the eligibility view already restricts this list to
+             settled deals (|outstanding| <= ₹50), but the ledger could change
+             between list load and click, so we re-check the same tolerance here.
+             The RPC re-checks it again authoritatively inside the lock. */}
         <div className="sticky bottom-0 z-10 rounded-2xl px-5 py-4 flex items-center justify-between gap-3 flex-wrap"
           style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', backdropFilter: 'blur(6px)' }}>
-          <div className="flex items-center gap-2 text-xs" style={{ color: isFullyPaid ? 'var(--text-secondary)' : 'var(--warning)' }}>
-            {isFullyPaid ? (
+          <div className="flex items-center gap-2 text-xs" style={{ color: isSettled ? 'var(--text-secondary)' : 'var(--warning)' }}>
+            {isSettled ? (
               <>
                 <Info className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
                 Verification only. Approval creates the official transaction and sends the closure email.
@@ -625,7 +652,7 @@ export default function TransferQueue({ employee }: Props) {
             ) : (
               <>
                 <AlertCircle className="w-4 h-4" style={{ color: 'var(--warning)' }} />
-                Transfer is available only after full payment is received.
+                Transfer is available only once the balance is settled (within ₹{SETTLEMENT_TOLERANCE}).
               </>
             )}
           </div>
@@ -637,11 +664,11 @@ export default function TransferQueue({ employee }: Props) {
             </button>
             <button
               onClick={() => setShowConfirm(true)}
-              disabled={!isFullyPaid}
-              title={isFullyPaid ? undefined : 'Transfer is available only after full payment is received.'}
+              disabled={!isSettled}
+              title={isSettled ? undefined : `Transfer is available only once the balance is settled (within ₹${SETTLEMENT_TOLERANCE}).`}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold disabled:cursor-not-allowed"
               style={
-                isFullyPaid
+                isSettled
                   ? { background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', color: 'var(--on-accent, #000)' }
                   : { background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)', opacity: 0.6 }
               }
@@ -678,7 +705,7 @@ export default function TransferQueue({ employee }: Props) {
         <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Operations</p>
         <h1 className="text-2xl font-bold text-text-primary">Transfer Queue</h1>
         <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-          Accepted deals with fully-received payments, awaiting operations approval to close.
+          Accepted deals whose payment is settled (within ₹{SETTLEMENT_TOLERANCE}), awaiting operations approval to close.
         </p>
       </div>
 
@@ -694,17 +721,23 @@ export default function TransferQueue({ employee }: Props) {
         </div>
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider mb-1"
-            style={{ color: 'var(--text-secondary)' }}>Accepted From</label>
-          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }}
-            className="w-full px-3.5 py-2 rounded-xl text-sm text-text-primary outline-none"
-            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }} />
+            style={{ color: 'var(--text-secondary)' }}>Accepted Month</label>
+          <select value={filterMonth} onChange={e => { setFilterMonth(e.target.value); setPage(0); }}
+            className="w-full px-3.5 py-2 rounded-xl text-sm text-text-primary outline-none appearance-none"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <option value="">All Months</option>
+            {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
+          </select>
         </div>
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider mb-1"
-            style={{ color: 'var(--text-secondary)' }}>Accepted To</label>
-          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }}
-            className="w-full px-3.5 py-2 rounded-xl text-sm text-text-primary outline-none"
-            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }} />
+            style={{ color: 'var(--text-secondary)' }}>Accepted Year</label>
+          <select value={filterYear} onChange={e => { setFilterYear(e.target.value); setPage(0); }}
+            className="w-full px-3.5 py-2 rounded-xl text-sm text-text-primary outline-none appearance-none"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <option value="">All Years</option>
+            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
         </div>
       </div>
 
@@ -722,7 +755,7 @@ export default function TransferQueue({ employee }: Props) {
               No deals awaiting transfer
             </p>
             <p className="text-xs mt-1" style={{ color: 'var(--border-strong)' }}>
-              Deals appear here once accepted by the client and fully paid.
+              Deals appear here once accepted by the client and settled (within ₹{SETTLEMENT_TOLERANCE}).
             </p>
           </div>
         ) : (
@@ -730,7 +763,7 @@ export default function TransferQueue({ employee }: Props) {
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  {['Deal Number', 'Client', 'Security', 'Type', 'Settlement', 'Accepted', 'Fully Paid', ''].map(h => (
+                  {['Deal Number', 'Client', 'Security', 'Type', 'Settlement', 'Accepted', 'Last Payment', ''].map(h => (
                     <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider"
                       style={{ color: 'var(--text-faint)' }}>{h}</th>
                   ))}

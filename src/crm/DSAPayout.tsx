@@ -214,6 +214,9 @@ export default function DSAPayout({ employee }: Props) {
   const [cancelTarget, setCancelTarget] = useState<NWDSADebitNote | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelError, setCancelError] = useState('');
+  const [payTarget, setPayTarget] = useState<NWDSADebitNote | null>(null);
+  const [payDate, setPayDate] = useState('');
+  const [payError, setPayError] = useState('');
 
   const loadDebitNotes = useCallback(async () => {
     const { data } = await supabase
@@ -511,18 +514,31 @@ export default function DSAPayout({ employee }: Props) {
     }
   };
 
-  const markAsPaid = async (note: NWDSADebitNote) => {
+  // Local calendar date (YYYY-MM-DD) — avoids locale/timezone ambiguity for
+  // both the date-picker default/max and the stored payment date.
+  const localDateStr = (d = new Date()) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const confirmMarkPaid = async () => {
+    if (!payTarget) return;
+    if (!payDate) { setPayError('Please select the payment date.'); return; }
+    if (payDate > localDateStr()) { setPayError('Payment date cannot be in the future.'); return; }
+    const note = payTarget;
     setStatusBusyId(note.id);
     setGenStatus('');
     try {
+      // paid_at carries the BUSINESS payment date chosen by the admin.
+      // The system audit timestamp is preserved by the marked_paid event's created_at.
+      const paidAtIso = new Date(`${payDate}T00:00:00`).toISOString();
       const { error } = await supabase.from('dsa_debit_notes')
-        .update({ status: 'paid', paid_at: new Date().toISOString(), paid_by: employee.id })
+        .update({ status: 'paid', paid_at: paidAtIso, paid_by: employee.id })
         .eq('id', note.id);
       if (error) throw error;
       await supabase.from('dsa_debit_note_events').insert({
         debit_note_id: note.id, event_type: 'marked_paid', actor: 'employee',
-        metadata: { net_payable: note.net_payable_amount ?? note.payout_amount },
+        metadata: { net_payable: note.net_payable_amount ?? note.payout_amount, payment_date: payDate },
       });
+      setPayTarget(null);
       await loadDebitNotes();
       setGenStatus(`${note.debit_note_number} marked as Paid`);
     } catch (e) {
@@ -706,7 +722,7 @@ export default function DSAPayout({ employee }: Props) {
                     { label: 'Sent', at: fmtDateTime(note.sent_at), color: 'rgb(var(--c-violet-rgb))' },
                     { label: 'Viewed', at: fmtDateTime(note.viewed_at), color: 'rgb(var(--info-soft-rgb))' },
                     { label: 'Signed', at: fmtDateTime(note.signed_at), color: 'rgb(var(--success-soft-rgb))' },
-                    { label: 'Paid', at: note.paid_at ? fmtDateTime(note.paid_at) : null, color: 'var(--success)' },
+                    { label: 'Paid', at: note.paid_at ? new Date(note.paid_at).toLocaleDateString('en-GB') : null, color: 'var(--success)' },
                   ].filter(s => s.at);
                   return (
                   <tr key={note.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}>
@@ -796,7 +812,7 @@ export default function DSAPayout({ employee }: Props) {
                         )}
                         {/* Mark as Paid — admin; available for generated notes (incl. after signing) */}
                         {isAdmin && note.status === 'generated' && (
-                          <button onClick={() => markAsPaid(note)} disabled={busy}
+                          <button onClick={() => { setPayTarget(note); setPayDate(localDateStr()); setPayError(''); }} disabled={busy}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
                             style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.3)' }}>
                             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -964,6 +980,60 @@ export default function DSAPayout({ employee }: Props) {
                 style={{ background: 'rgba(239,68,68,0.12)', color: 'rgb(var(--danger-soft-rgb))', border: '1px solid rgba(239,68,68,0.4)' }}>
                 {statusBusyId === cancelTarget.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                 Confirm Cancellation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mark as Paid — choose the actual business payment date */}
+      {payTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.7)' }}
+          onClick={() => { if (statusBusyId !== payTarget.id) setPayTarget(null); }}>
+          <div className="w-full max-w-md rounded-2xl overflow-hidden"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+            onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
+              <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--success)' }} />
+              <p className="text-sm font-bold text-text-primary">Mark as Paid</p>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                <p style={{ color: 'var(--success)' }} className="font-mono font-semibold">{payTarget.debit_note_number}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                  {payTarget.dsa?.full_name || 'DSA'} · {fmt(payTarget.net_payable_amount ?? payTarget.payout_amount)} net payable
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Payment Date <span style={{ color: 'var(--success)' }}>*</span>
+                </label>
+                <input
+                  type="date"
+                  value={payDate}
+                  max={localDateStr()}
+                  onChange={e => { setPayDate(e.target.value); if (payError) setPayError(''); }}
+                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+                  style={{ background: 'var(--bg-base)', border: `1px solid ${payError ? 'rgb(var(--danger-soft-rgb))' : 'var(--border)'}` }}
+                />
+                {payError && <p className="text-xs mt-1.5" style={{ color: 'rgb(var(--danger-soft-rgb))' }}>{payError}</p>}
+                <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                  Select the actual date the DSA was paid. The system audit time is recorded separately.
+                </p>
+              </div>
+            </div>
+            <div className="px-5 py-4 flex items-center justify-end gap-2" style={{ borderTop: '1px solid var(--border)' }}>
+              <button onClick={() => setPayTarget(null)} disabled={statusBusyId === payTarget.id}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
+                style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                Cancel
+              </button>
+              <button onClick={confirmMarkPaid} disabled={statusBusyId === payTarget.id || !payDate}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
+                style={{ background: 'rgba(16,185,129,0.12)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.4)' }}>
+                {statusBusyId === payTarget.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                Confirm Payment
               </button>
             </div>
           </div>
