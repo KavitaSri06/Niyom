@@ -18,9 +18,7 @@ export const DOC_FOLDERS = [
   { key: 'CML',              label: 'CML',                color: 'var(--info)' },
   { key: 'BANK',             label: 'Bank Documents',     color: 'var(--success)' },
   { key: 'DEAL_CONFIRMATION',label: 'Deal Confirmation',  color: '#8B5CF6' },
-  { key: 'MANDATE',          label: 'Mandate',            color: 'var(--danger)' },
   { key: 'DSA_DOCUMENTS',    label: 'DSA Documents',      color: 'var(--accent)' },
-  { key: 'OTHER_DOCUMENTS',  label: 'Other Documents',    color: 'var(--text-muted)' },
 ] as const;
 
 export type DocFolderKey = typeof DOC_FOLDERS[number]['key'];
@@ -101,7 +99,7 @@ export default function Documents({ employee, initialClientId, onBack }: Props) 
 
   // Upload state
   const [showUpload, setShowUpload] = useState(false);
-  const [uploadFolder, setUploadFolder] = useState<DocFolderKey>('OTHER_DOCUMENTS');
+  const [uploadFolder, setUploadFolder] = useState<DocFolderKey>('PAN');
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);

@@ -318,13 +318,14 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
         }]);
       }
 
-      // Document type → folder key mapping
+      // Document type → folder key mapping. Onboarding only ever collects the
+      // three KYC docs below (CLIENT_DOC_TYPES), all mapped here; the fallback is
+      // defensive/unreachable (the 'Other Documents' folder was removed in 6A).
       const DOC_FOLDER_MAP: Record<string, string> = {
         'PAN Card': 'PAN', 'CML': 'CML', 'Bank Document': 'BANK',
-        'Photo': 'OTHER_DOCUMENTS',
       };
       for (const doc of docFiles) {
-        const folderKey = DOC_FOLDER_MAP[doc.type] || 'OTHER_DOCUMENTS';
+        const folderKey = DOC_FOLDER_MAP[doc.type] || 'PAN';
         const ext = doc.file.name.substring(doc.file.name.lastIndexOf('.'));
         const now = new Date();
         const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}${now.getHours()<12?'AM':'PM'}`;

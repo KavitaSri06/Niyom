@@ -129,6 +129,45 @@ Deno.serve(async (req: Request) => {
       },
     ]);
 
+    // --- Best-effort: auto-file the signed PDF into the client's Documents vault
+    // (Sprint 6A, Approach A). The deal-documents copy stored above remains the
+    // legal source of truth; this is a convenience copy in crm-documents so it
+    // appears under the client's "Deal Confirmation" folder. Deterministic path +
+    // idempotency guard prevent duplicates; failure here must NEVER roll back
+    // acceptance. The signed PDF bytes are already in memory.
+    try {
+      const { data: clientRow } = await db.from("nw_clients")
+        .select("client_code").eq("id", deal.client_id).maybeSingle();
+      const clientCode = clientRow?.client_code;
+      if (clientCode) {
+        const fileName = `Signed_Deal_Confirmation_${deal.confirmation_number}.pdf`;
+        const vaultPath = `clients/${clientCode}/DEAL_CONFIRMATION/${fileName}`;
+        const { data: existingDoc } = await db.from("nw_documents")
+          .select("id").eq("file_path", vaultPath).maybeSingle();
+        if (!existingDoc) {
+          const pdfBytes = base64ToBytes(signedPdfBase64);
+          const up = await db.storage.from("crm-documents")
+            .upload(vaultPath, pdfBytes, { contentType: "application/pdf", upsert: true });
+          if (up.error) {
+            console.error("vault copy upload error:", up.error);
+          } else {
+            await db.from("nw_documents").insert({
+              client_id: deal.client_id,
+              employee_id: deal.employee_id,
+              document_type: "DEAL_CONFIRMATION",
+              file_name: fileName,
+              file_path: vaultPath,
+              file_size: pdfBytes.length,
+              mime_type: "application/pdf",
+              uploaded_by_name: "Auto (client e-signature)",
+            });
+          }
+        }
+      }
+    } catch (vaultErr: any) {
+      console.error("auto-file signed deal error:", vaultErr?.message);
+    }
+
     // --- Best-effort signed-PDF distribution -----------------------------------
     // Runs AFTER the deal is committed + locked. Email delivery must NEVER roll
     // back acceptance, so the entire block is guarded and any failure is recorded
