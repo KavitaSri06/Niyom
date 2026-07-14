@@ -456,11 +456,11 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
     }
   };
 
-  const sendPaymentLink = async () => {
+  const sendPaymentLink = async (amount: number) => {
     setEmailBusy('payment_link');
     try {
       const { data, error: fnErr } = await supabase.functions.invoke('send-payment-link', {
-        body: { dealId: deal.id },
+        body: { dealId: deal.id, amount },
       });
       if (fnErr || !data?.success) {
         throw new Error(data?.error || fnErr?.message || 'Could not send payment link.');
@@ -607,7 +607,7 @@ export default function DealPayments({ deal, employee, onBack }: Props) {
           amount={summary.outstanding_amount}
           lastSentAt={emailLog.find(e => e.email_type === 'payment_link' && e.status === 'sent')?.sent_at ?? null}
           busy={emailBusy === 'payment_link'}
-          onSend={() => sendPaymentLink()}
+          onSend={(amt) => sendPaymentLink(amt)}
         />
       )}
 
@@ -950,48 +950,69 @@ function ReminderCard({ lastSentAt, busy, onSend }: {
 }
 
 function PaymentLinkCard({ amount, lastSentAt, busy, onSend }: {
-  amount: number;
+  amount: number;                       // current outstanding — the single ceiling
   lastSentAt: string | null;
   busy: boolean;
-  onSend: () => void;
+  onSend: (amount: number) => void;
 }) {
   const fmt = (d: string) => new Date(d).toLocaleString('en-IN', {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
   const inrFmt = (n: number) => '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Sprint 9: employee enters the amount to collect (prefilled with the current
+  // outstanding, editable, 2 dp). Outstanding is the single ceiling. The server
+  // re-validates authoritatively.
+  const [value, setValue] = useState<string>(amount.toFixed(2));
+  const parsed = Math.round(Number(value) * 100) / 100;
+  const valid = Number.isFinite(parsed) && parsed > 0 && parsed <= amount;
+  const liveError =
+    value.trim() === '' ? 'Enter an amount to collect.'
+      : (!Number.isFinite(parsed) || parsed <= 0) ? 'Enter an amount greater than 0.'
+      : parsed > amount ? `Amount cannot exceed the outstanding balance of ${inrFmt(amount)}.`
+      : '';
   return (
     <div
-      className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap"
+      className="rounded-xl px-4 py-3 flex flex-col gap-3"
       style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}
     >
       <div className="flex items-start gap-2">
         <CreditCard className="w-4 h-4 mt-0.5" style={{ color: 'var(--accent)' }} />
         <div>
           <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Send a payment link for {inrFmt(amount)}
+            Send a payment link
           </p>
           <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
             {lastSentAt
               ? `Payment link last sent to the client on ${fmt(lastSentAt)}.`
-              : 'Email the client a secure Cashfree payment link (UPI / Debit Card) plus bank-transfer details.'}
+              : 'Enter the amount to collect, then email the client a secure Cashfree link (UPI / Debit Card) plus bank-transfer details.'}
           </p>
         </div>
       </div>
-      <button
-        onClick={onSend}
-        disabled={busy}
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold"
-        style={{
-          background: 'var(--bg-base)',
-          color: 'var(--text-primary)',
-          border: '1px solid var(--border)',
-          opacity: busy ? 0.6 : 1,
-        }}
-      >
-        {busy
-          ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
-          : <><CreditCard className="w-4 h-4" /> {lastSentAt ? 'Resend Payment Link' : 'Send Payment Link'}</>}
-      </button>
+      <div className="flex items-end gap-3 flex-wrap">
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-secondary)' }}>
+            Amount to collect (max {inrFmt(amount)})
+          </label>
+          <input
+            type="number" step="0.01" min="0.01" max={amount}
+            value={value}
+            onChange={e => setValue(e.target.value)}
+            className="w-44 px-3 py-2 rounded-lg text-sm text-text-primary outline-none"
+            style={{ background: 'var(--bg-base)', border: `1px solid ${liveError ? 'var(--danger)' : 'var(--border)'}` }}
+          />
+        </div>
+        <button
+          onClick={() => onSend(parsed)}
+          disabled={busy || !valid}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
+          style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+        >
+          {busy
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
+            : <><CreditCard className="w-4 h-4" /> {lastSentAt ? 'Resend Payment Link' : 'Send Payment Link'}</>}
+        </button>
+      </div>
+      {liveError && !busy && <p className="text-xs" style={{ color: 'var(--danger)' }}>{liveError}</p>}
     </div>
   );
 }

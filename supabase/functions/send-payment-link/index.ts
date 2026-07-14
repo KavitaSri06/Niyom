@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: "Unauthorized" }, 401);
     }
 
-    const { dealId } = await req.json().catch(() => ({}));
+    const { dealId, amount: rawAmount } = await req.json().catch(() => ({}));
     if (!dealId) return json({ success: false, error: "dealId is required." }, 400);
 
     // --- Load the deal (server-side source of truth) ---
@@ -160,6 +160,21 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: "This deal is already fully paid." }, 409);
     }
 
+    // --- Sprint 9: employee-entered amount (optional). The CURRENT outstanding is
+    // the single business ceiling. If amount is omitted, preserve the prior
+    // behaviour (charge the full outstanding). Validated server-side (authoritative).
+    let chargeAmount = outstanding;
+    if (rawAmount !== undefined && rawAmount !== null && rawAmount !== "") {
+      const amt = Math.round(Number(rawAmount) * 100) / 100;
+      if (!Number.isFinite(amt) || amt <= 0) {
+        return json({ success: false, error: "Enter a valid payment amount greater than 0." }, 400);
+      }
+      if (amt > outstanding) {
+        return json({ success: false, error: `Amount cannot exceed the outstanding balance of ${inr(outstanding)}.` }, 400);
+      }
+      chargeAmount = amt;
+    }
+
     // --- Create the Cashfree Payment Link -------------------------------
     // link_id must be unique per account; the confirmation number + a short
     // time suffix keeps it human-traceable and prevents "already exists" on
@@ -183,7 +198,7 @@ Deno.serve(async (req: Request) => {
         },
         body: JSON.stringify({
           link_id: linkId,
-          link_amount: outstanding,
+          link_amount: chargeAmount,
           link_currency: "INR",
           link_purpose: `Payment for Deal Confirmation ${deal.confirmation_number}`,
           customer_details: {
@@ -221,7 +236,7 @@ Deno.serve(async (req: Request) => {
     const cc = buildCc([ownerEmail, adminEmail], clientTo);
 
     const year = new Date().getFullYear();
-    const amountLabel = inr(outstanding);
+    const amountLabel = inr(chargeAmount);
     const subject = `Payment Link – Deal Confirmation ${deal.confirmation_number}`;
 
     const upiNote = "UPI transactions are generally limited to ₹1,00,000 per day by most banks. If you have already made UPI transactions today, your available limit may be lower.";
@@ -364,7 +379,7 @@ This message is intended for the named recipient only.
           cashfree_link_id: linkId,
           cashfree_link_status: cfLinkStatus,
           link_url: linkUrl,
-          amount: outstanding,
+          amount: chargeAmount,
           ...(resendResp.ok ? {} : { error: respBody?.message ?? "send failed" }),
         },
       });
