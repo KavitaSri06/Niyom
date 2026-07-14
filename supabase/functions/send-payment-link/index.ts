@@ -86,10 +86,14 @@ Deno.serve(async (req: Request) => {
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     // --- Cashfree config (secrets live only here, never client-side) ---
-    const cfAppId   = Deno.env.get("CASHFREE_APP_ID");
-    const cfSecret  = Deno.env.get("CASHFREE_SECRET_KEY");
+    // Env-switch hardening (Sprint 8): trim credentials (pasted secrets often carry
+    // a trailing newline) and compare CASHFREE_ENV trimmed + case-insensitively, so
+    // a formatting slip ("Production", "prod ", stray whitespace) can't silently
+    // route production keys to the sandbox base and fail auth.
+    const cfAppId   = Deno.env.get("CASHFREE_APP_ID")?.trim();
+    const cfSecret  = Deno.env.get("CASHFREE_SECRET_KEY")?.trim();
     const cfVersion = Deno.env.get("CASHFREE_API_VERSION") ?? "2022-09-01";
-    const cfBase    = (Deno.env.get("CASHFREE_ENV") === "production")
+    const cfBase    = ((Deno.env.get("CASHFREE_ENV") ?? "").trim().toLowerCase() === "production")
       ? "https://api.cashfree.com"
       : "https://sandbox.cashfree.com";
     if (!cfAppId || !cfSecret) {

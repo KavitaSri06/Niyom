@@ -29,7 +29,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: note } = await db
       .from("dsa_debit_notes")
-      .select("id, debit_note_number, month, year, signature_status, status, token_expires_at, dsa:nw_dsa(email)")
+      .select("id, debit_note_number, month, year, dsa_id, signature_status, status, token_expires_at, dsa:nw_dsa(email)")
       .eq("secure_token", token)
       .maybeSingle();
 
@@ -116,6 +116,49 @@ Deno.serve(async (req: Request) => {
         metadata: { signed_pdf_url: signedPdfPath, signature_image_path: sigPath },
       },
     ]);
+
+    // --- Best-effort: auto-file the signed debit note into the Documents vault of
+    // EACH client belonging to this DSA (Sprint 6B — same Approach A as Sprint 6A).
+    // The dsa-debit-notes copy above stays the authoritative document; these are
+    // convenience copies under each client's "DSA Documents" folder. Deterministic
+    // path + idempotency guard prevent duplicates; per-client try/catch and the
+    // outer guard ensure this can NEVER block successful signing. The signed PDF
+    // bytes are already in memory.
+    try {
+      const pdfBytes = base64ToBytes(signedPdfBase64);
+      const dsaId = (note as any).dsa_id as string | null;
+      if (dsaId) {
+        const { data: clients } = await db.from("nw_clients")
+          .select("id, client_code, employee_id").eq("dsa_id", dsaId);
+        for (const client of (clients ?? [])) {
+          try {
+            if (!client.client_code) continue;
+            const fileName = `Signed_DSA_Debit_Note_${note.debit_note_number}.pdf`;
+            const vaultPath = `clients/${client.client_code}/DSA_DOCUMENTS/${fileName}`;
+            const { data: existingDoc } = await db.from("nw_documents")
+              .select("id").eq("file_path", vaultPath).maybeSingle();
+            if (existingDoc) continue; // idempotent: already filed for this client
+            const up = await db.storage.from("crm-documents")
+              .upload(vaultPath, pdfBytes, { contentType: "application/pdf", upsert: true });
+            if (up.error) { console.error("DSA doc vault upload error:", up.error); continue; }
+            await db.from("nw_documents").insert({
+              client_id: client.id,
+              employee_id: client.employee_id,
+              document_type: "DSA_DOCUMENTS",
+              file_name: fileName,
+              file_path: vaultPath,
+              file_size: pdfBytes.length,
+              mime_type: "application/pdf",
+              uploaded_by_name: "Auto (DSA debit note signed)",
+            });
+          } catch (perClientErr: any) {
+            console.error("DSA doc auto-file (client) error:", perClientErr?.message);
+          }
+        }
+      }
+    } catch (vaultErr: any) {
+      console.error("DSA doc auto-file error:", vaultErr?.message);
+    }
 
     return json({ success: true });
   } catch (err: any) {
