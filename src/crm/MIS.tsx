@@ -1,15 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { NWEmployee, NWClient, ProductType } from './types';
+import { NWEmployee, NWTransaction, NWClient, ProductType } from './types';
 import { fmt, PRODUCT_LABELS } from './utils';
 import { BarChart3, Download, ChevronDown } from 'lucide-react';
 
 interface Props { employee: NWEmployee; }
-
-// Sprint 7: MIS reuses the SAME eligibility rule as Transfer Queue — a deal is
-// eligible when accepted AND settled within ±₹50. Keep in sync with Sprint 4
-// (TransferQueue.tsx SETTLEMENT_TOLERANCE + nw_deal_transfer_eligible view + RPC).
-const SETTLEMENT_TOLERANCE = 50;
 
 interface MISRow {
   client_id: string;
@@ -81,73 +76,41 @@ export default function MIS({ employee }: Props) {
 
     if (clientIds.length === 0) { setRows([]); setLoading(false); setHasLoaded(true); return; }
 
-    // Sprint 7: MIS is generated from ELIGIBLE DEAL CONFIRMATIONS — the single
-    // source of truth shared with Transfer Queue: acceptance_status='accepted'
-    // AND ABS(nw_deal_payment_summary.outstanding_amount) <= ₹50. Transfer is an
-    // operational step performed later by an admin and does NOT gate MIS, so this
-    // includes accepted+settled deals that are not yet transferred. Manual
-    // transactions (no deal) are naturally excluded. Revenue FORMULAS below are
-    // unchanged — only the field sources are remapped from transaction → deal
-    // (per_unit_price→rate_per_unit, consolidated_amount→settlement_amount,
-    // product_name→security_name). DSA dsa_price is NOT on the deal → see the
-    // dsa_price tech-debt item; NOT solved in Sprint 7.
-    const { data: dealData } = await supabase
-      .from('nw_deal_confirmations')
-      .select('id, client_id, deal_date, transaction_type, product_type, security_name, quantity, rate_per_unit, settlement_amount, landing_cost, insurance_revenue, trail_percent, trail_start_date')
+    // Fetch transactions within the selected period.
+    const { data: txnData } = await supabase
+      .from('nw_transactions')
+      .select('*')
       .in('client_id', clientIds)
-      .eq('acceptance_status', 'accepted')
-      .gte('deal_date', startDate)
-      .lte('deal_date', endDate);
-    const deals = (dealData as any[]) || [];
+      .gte('txn_date', startDate)
+      .lte('txn_date', endDate);
 
-    // Settlement gate (±₹50) from the payment summary — the shared rule.
-    const settledDealIds = new Set<string>();
-    if (deals.length > 0) {
-      const { data: sumData } = await supabase
-        .from('nw_deal_payment_summary')
-        .select('deal_id, outstanding_amount')
-        .in('deal_id', deals.map(d => d.id));
-      for (const s of ((sumData ?? []) as any[])) {
-        if (Math.abs(Number(s.outstanding_amount)) <= SETTLEMENT_TOLERANCE) settledDealIds.add(s.deal_id);
-      }
-    }
-    const eligibleDeals = deals.filter(d => settledDealIds.has(d.id));
-
-    // Deal product_type is a DISPLAY string ("Unlisted Share"); the revenue
-    // formulas branch on the enum. Map display → enum (mirrors nw_transfer_deal).
-    const PRODUCT_ENUM: Record<string, ProductType> = {
-      'Unlisted Share': 'unlisted_share', 'Secondary Bond': 'secondary_bond',
-      'Primary Bond': 'primary_bond', 'Fixed Deposit': 'fixed_deposit',
-      'Mutual Fund': 'mutual_fund', 'Insurance': 'insurance',
-    };
+    const txns = (txnData as NWTransaction[]) || [];
 
     const computed: MISRow[] = [];
 
-    for (const d of eligibleDeals) {
-      const client = clientList.find(c => c.id === d.client_id);
+    for (const t of txns) {
+      const client = clientList.find(c => c.id === t.client_id);
       if (!client) continue;
 
-      const productType = (PRODUCT_ENUM[d.product_type as string] ?? d.product_type) as ProductType;
-
       const baseRow = {
-        client_id: d.client_id,
+        client_id: t.client_id,
         client_name: client.full_name,
         client_code: client.client_code,
-        product_type: productType,
-        product_name: d.security_name,
+        product_type: t.product_type,
+        product_name: t.product_name,
       };
 
       // Unlisted shares / secondary bonds / primary bonds → profit vs landing cost.
-      // BUY:  (Price − Landing Cost) × qty ; SELL: reversed. Formula unchanged;
-      // price = rate_per_unit (client). DSA dsa_price absent on deal (tech debt).
-      if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(productType)) {
-        const landingCost = d.landing_cost || 0;
-        const qty = d.quantity || 0;
+      // BUY:  (Client Price − Landing Cost) × qty
+      // SELL: (Landing Cost − Client Price) × qty  (direction reversed)
+      if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(t.product_type)) {
+        const landingCost = (t as any).landing_cost || 0;
+        const qty = t.quantity || 0;
         const price =
           client?.sourced_via === 'dsa'
-            ? ((d as any).dsa_price || 0)
-            : (d.rate_per_unit || 0);
-        const revenue = d.transaction_type === 'Sell'
+            ? ((t as any).dsa_price || 0)
+            : ((t as any).per_unit_price || 0);
+        const revenue = t.txn_type === 'sell'
           ? (landingCost - price) * qty
           : (price - landingCost) * qty;
         if (revenue !== 0) {
@@ -161,27 +124,26 @@ export default function MIS({ employee }: Props) {
       }
 
       // Insurance → flat insurance_revenue
-      if (productType === 'insurance') {
-        const rev = d.insurance_revenue || 0;
+      if (t.product_type === 'insurance') {
+        const rev = (t as any).insurance_revenue || 0;
         if (rev > 0) {
           computed.push({
             ...baseRow,
             revenue_type: 'insurance',
             revenue: rev,
-            notes: `${d.security_name || '—'}`,
+            notes: `Policy: ${t.policy_number || '—'} | ${t.insurer_name || '—'}`,
           });
         }
       }
 
-      // Mutual fund → trail commission at anniversary month (formula unchanged;
-      // invested base = settlement_amount).
-      if (productType === 'mutual_fund' && d.trail_percent && d.trail_start_date) {
-        if (isTrailAnniversaryInMonth(d.trail_start_date, selectedYear, selectedMonth)) {
-          const invested = d.settlement_amount || 0;
-          const trail = d.trail_percent || 0;
+      // Mutual fund → trail commission at anniversary month of txn_date
+      if (t.product_type === 'mutual_fund' && (t as any).trail_percent && (t as any).trail_start_date) {
+        if (isTrailAnniversaryInMonth((t as any).trail_start_date, selectedYear, selectedMonth)) {
+          const invested = t.consolidated_amount || 0;
+          const trail = (t as any).trail_percent || 0;
           const revenue = (invested * trail) / 100;
           if (revenue > 0) {
-            const yrs = selectedYear - new Date(d.trail_start_date).getFullYear();
+            const yrs = selectedYear - new Date((t as any).trail_start_date).getFullYear();
             computed.push({
               ...baseRow,
               revenue_type: 'trail',
