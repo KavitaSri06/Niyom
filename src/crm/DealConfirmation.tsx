@@ -99,10 +99,25 @@ const emptyForm = (): DealForm => ({
   notes: '',
 });
 
+// The rate the RM enters is the BASE — what the client agreed to pay per unit.
+// Stamp duty is carved OUT of that base, so:
+//     net (adjusted) rate + stamp duty  ==  base rate
+// and therefore the settlement must always come back to qty × base rate.
+//
+// This must NOT round to 2dp. The adjusted rate is a per-unit figure that then
+// gets multiplied by quantity, so any rounding here is multiplied too: 2050
+// adjusts to 2049.6925, and rounding that to 2049.69 loses 0.0025/unit — which
+// is ₹0.25 over 100 units, and ₹37 over 50,000. The error also flips sign,
+// since some rates round up (4.95 → 4.95), which is why it looked random.
+//
+// Full precision is kept here; every display path already rounds to 2dp for
+// presentation (the deal note included), and the settlement is rounded once at
+// the end. 8dp is far beyond any rate this desk trades and keeps the value
+// free of float artefacts like 2049.6924999999999.
 function adjustRate(base: string): string {
   const n = parseFloat(base);
   if (!base || isNaN(n) || n <= 0) return '';
-  return (Math.round((n - n * 0.015 / 100) * 100) / 100).toFixed(2);
+  return String(Math.round((n - n * 0.015 / 100) * 1e8) / 1e8);
 }
 
 function fmt(n: number) {
@@ -237,11 +252,26 @@ export default function DealConfirmation({ employee }: Props) {
   const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
   const clientDropRef = useRef<HTMLDivElement>(null);
 
+  // These MUST mirror the generated columns on nw_deal_confirmations, which are
+  // the source of truth — this component never sends stamp_duty or
+  // settlement_amount, the database computes both:
+  //
+  //   stamp_duty        = ROUND(base_rate * quantity * 0.015 / 100, 2)
+  //   settlement_amount = ROUND(base_rate * quantity, 2)
+  //
+  // Settlement is therefore ALWAYS qty × the rate the RM entered. Stamp duty is
+  // carved out of that total, not added to it.
+  //
+  // This preview previously derived the total from the ADJUSTED rate instead
+  // (qty × adjRate, then added duty back on), which disagreed with the database
+  // and under/over-stated the total on screen — ₹0.25 on 2050×100, and up to
+  // ₹37 on large-quantity trades. The stored figure was always correct; only
+  // this on-screen preview was wrong.
   const qty = parseFloat(form.quantity) || 0;
+  const baseRate = parseFloat(form.base_rate) || 0;
   const adjRate = parseFloat(form.rate_per_unit) || 0;
-  const baseAmount = Math.round(qty * adjRate * 100) / 100;
-  const stampDuty = Math.round(baseAmount * 0.015 / 100 * 100) / 100;
-  const settlementAmount = Math.round((baseAmount + stampDuty) * 100) / 100;
+  const settlementAmount = Math.round(qty * baseRate * 100) / 100;
+  const stampDuty = Math.round(qty * baseRate * 0.015 / 100 * 100) / 100;
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });

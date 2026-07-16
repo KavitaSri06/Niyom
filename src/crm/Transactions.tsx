@@ -8,6 +8,39 @@ interface Props { employee: NWEmployee; }
 
 const PRODUCTS: ProductType[] = ['unlisted_share', 'secondary_bond', 'primary_bond', 'mutual_fund', 'fixed_deposit', 'insurance'];
 const TXN_TYPES = ['buy', 'sell'];
+
+// ---------------------------------------------------------------------------
+// Book-from-deal
+// ---------------------------------------------------------------------------
+// A confirmed deal already carries the client, instrument, quantity and rate.
+// Picking one here pre-fills those and links the saved transaction back to the
+// deal (deal_confirmation_id + transfer_stage), which is the same link the
+// Transfer Queue uses — so a deal booked here drops out of that queue and can
+// never be booked twice. Only the revenue basis (landing cost / DSA landing)
+// is left for the operator to type.
+
+interface EligibleDeal {
+  deal_id: string;
+  confirmation_number: string;
+  client_id: string;
+  snap_client_name: string;
+  product_type: string;      // deal-side label, e.g. 'Unlisted Share'
+  transaction_type: string;  // 'Buy' | 'Sell'
+  security_name: string;
+  isin: string | null;
+  deal_date: string;
+  quantity: number | null;
+  settlement_amount: number | null;
+  landing_cost: number | null;
+  base_rate?: number | null; // merged in — not exposed by the view
+}
+
+// Deal product labels are the exact values of PRODUCT_LABELS, so invert it
+// rather than maintaining a second mapping. 'Other' has no transaction
+// equivalent and is intentionally unmapped.
+const DEAL_PRODUCT_TO_TYPE: Record<string, ProductType> = Object.fromEntries(
+  (Object.entries(PRODUCT_LABELS) as [ProductType, string][]).map(([k, v]) => [v.toLowerCase(), k])
+) as Record<string, ProductType>;
 const BOND_TYPES: ProductType[] = ['secondary_bond', 'primary_bond', 'fixed_deposit'];
 const PAYOUT_FREQ: Record<string, string> = { annual: 'Annual', halfyearly: 'Half-Yearly', quarterly: 'Quarterly', monthly: 'Monthly' };
 const PAYOUT_DIVISORS: Record<string, number> = { annual: 1, halfyearly: 2, quarterly: 4, monthly: 12 };
@@ -110,8 +143,13 @@ function Field({ label, children, span2 }: { label: string; children: React.Reac
 function I(p: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...p} className={iC} style={{ ...iS, ...(p.style || {}) }} />;
 }
-function S({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) {
-  return <select value={value} onChange={e => onChange(e.target.value)} className={iC} style={iS}>{children}</select>;
+function S({ value, onChange, children, disabled }: { value: string; onChange: (v: string) => void; children: React.ReactNode; disabled?: boolean }) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} disabled={disabled}
+      className={iC} style={{ ...iS, ...(disabled ? { opacity: 0.65, cursor: 'not-allowed' } : null) }}>
+      {children}
+    </select>
+  );
 }
 function SecHead({ icon: Icon, label, color }: { icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; label: string; color: string }) {
   return (
@@ -263,6 +301,12 @@ export default function Transactions({ employee }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  // Book-from-deal picker
+  const [eligibleDeals, setEligibleDeals] = useState<EligibleDeal[]>([]);
+  const [dealSearch, setDealSearch] = useState('');
+  const [showDealDrop, setShowDealDrop] = useState(false);
+  const [pickedDeal, setPickedDeal] = useState<EligibleDeal | null>(null);
+
   const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
 
   const loadTxns = useCallback(async () => {
@@ -293,6 +337,26 @@ export default function Transactions({ employee }: Props) {
   }, [isAdmin]);
   useEffect(() => { loadTxns(); }, [loadTxns]);
 
+  // Deals ready to be booked: accepted + fully paid + not already booked.
+  // nw_deal_transfer_eligible already encodes exactly that predicate, so reuse
+  // it rather than restating the rule here. It does not expose base_rate, so
+  // that is merged in from the deals table in a second read.
+  const loadEligibleDeals = useCallback(async () => {
+    const { data, error: e } = await supabase
+      .from('nw_deal_transfer_eligible')
+      .select('deal_id, confirmation_number, client_id, snap_client_name, product_type, transaction_type, security_name, isin, deal_date, quantity, settlement_amount, landing_cost');
+    if (e || !data?.length) { setEligibleDeals([]); return; }
+    const deals = data as EligibleDeal[];
+    const { data: rates } = await supabase
+      .from('nw_deal_confirmations')
+      .select('id, base_rate')
+      .in('id', deals.map(d => d.deal_id));
+    const rateById = new Map((rates ?? []).map((r: any) => [r.id, r.base_rate]));
+    setEligibleDeals(deals.map(d => ({ ...d, base_rate: rateById.get(d.deal_id) ?? null })));
+  }, []);
+
+  useEffect(() => { if (showAdd) loadEligibleDeals(); }, [showAdd, loadEligibleDeals]);
+
   const isBond = BOND_TYPES.includes(form.product_type);
   const isMF = form.product_type === 'mutual_fund';
   const isIns = form.product_type === 'insurance';
@@ -315,6 +379,53 @@ export default function Transactions({ employee }: Props) {
     });
   };
 
+  // Pre-fill the form from a confirmed deal. Everything the deal already
+  // states is copied and then locked; the operator only supplies the revenue
+  // basis. per_unit_price takes the deal's BASE rate (the raw rate the RM
+  // entered) — that matches how this desk actually books business.
+  const selectDeal = (d: EligibleDeal) => {
+    const mapped = DEAL_PRODUCT_TO_TYPE[(d.product_type || '').trim().toLowerCase()];
+    if (!mapped) {
+      setError(`Deal ${d.confirmation_number} is product type "${d.product_type}", which has no matching business product. Book it manually.`);
+      return;
+    }
+    const qty = d.quantity != null ? String(d.quantity) : '';
+    const rate = d.base_rate != null ? String(d.base_rate) : '';
+    setPickedDeal(d);
+    setDealSearch(`${d.confirmation_number} — ${d.snap_client_name}`);
+    setShowDealDrop(false);
+    setError('');
+    setForm(prev => ({
+      ...prev,
+      client_id: d.client_id,
+      txn_type: (d.transaction_type || 'Buy').toLowerCase() === 'sell' ? 'sell' : 'buy',
+      product_type: mapped,
+      product_name: d.security_name || '',
+      isin: d.isin || '',
+      quantity: qty,
+      per_unit_price: rate,
+      txn_date: d.deal_date || prev.txn_date,
+      // Trust the deal's settlement figure rather than recomputing qty × rate:
+      // the signed note is the source of truth for what the client owed.
+      consolidated_amount: d.settlement_amount != null ? String(d.settlement_amount) : '',
+      landing_cost: d.landing_cost != null ? String(d.landing_cost) : prev.landing_cost,
+    }));
+  };
+
+  const clearPickedDeal = () => {
+    setPickedDeal(null);
+    setDealSearch('');
+    setForm(emptyForm());
+    setError('');
+  };
+
+  const dealOptions = eligibleDeals.filter(d => {
+    const q = dealSearch.trim().toLowerCase();
+    if (!q || pickedDeal) return true;
+    return [d.confirmation_number, d.snap_client_name, d.security_name, d.isin]
+      .some(v => (v || '').toString().toLowerCase().includes(q));
+  });
+
   const interest = (() => {
     if (!isBond) return null;
     const fv = parseFloat(form.face_value) || 0;
@@ -324,7 +435,11 @@ export default function Transactions({ employee }: Props) {
     return { perPeriod: calcPayout(fv, rate, qty, form.payout_frequency), annual: fv * (rate / 100) * qty };
   })();
 
-  const openAdd = () => { setForm(emptyForm()); setError(''); setShowAdd(true); };
+  const openAdd = () => {
+    setForm(emptyForm()); setError('');
+    setPickedDeal(null); setDealSearch(''); setShowDealDrop(false);
+    setShowAdd(true);
+  };
   const openEdit = (t: NWTransaction) => {
     setForm({
       client_id: t.client_id, txn_type: t.txn_type, product_type: t.product_type,
@@ -405,6 +520,20 @@ export default function Transactions({ employee }: Props) {
       premium_frequency: form.premium_frequency,
     });
 
+    // Booked from a confirmed deal: carry the same link the Transfer Queue
+    // writes. This is what removes the deal from that queue, and the existing
+    // uq_nw_transactions_deal unique index makes booking the same deal twice
+    // impossible from either path.
+    if (!editTxn && pickedDeal) {
+      Object.assign(payload, {
+        deal_confirmation_id: pickedDeal.deal_id,
+        transfer_stage: 'transferred',
+        transferred_at: new Date().toISOString(),
+        transferred_by: employee.id,
+        transfer_remarks: 'Booked via Add New Business',
+      });
+    }
+
     let txnId: string;
     if (editTxn) {
       const { error: err } = await supabase.from('nw_transactions').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editTxn.id);
@@ -412,7 +541,16 @@ export default function Transactions({ employee }: Props) {
       txnId = editTxn.id;
     } else {
       const { data, error: err } = await supabase.from('nw_transactions').insert([payload]).select().single();
-      if (err) { setError(err.message); setSaving(false); return; }
+      if (err) {
+        // 23505 = unique violation on uq_nw_transactions_one_transferred_per_deal:
+        // someone booked this deal first. Say so plainly instead of leaking the
+        // constraint name.
+        setError(err.code === '23505' && pickedDeal
+          ? `Deal ${pickedDeal.confirmation_number} has already been booked as business. Refresh the deal list.`
+          : err.message);
+        setSaving(false);
+        return;
+      }
       txnId = data.id;
       await supabase.from('nw_activity_logs').insert([{
         employee_id: employee.id, client_id: form.client_id, action: 'Transaction Added',
@@ -445,40 +583,123 @@ export default function Transactions({ employee }: Props) {
   const selectedClientForForm = clients.find(c => c.id === form.client_id);
   const showDsaPrice = !!(selectedClientForForm?.sourced_via === 'dsa' && DSA_PRICE_TYPES.includes(form.product_type));
 
+  // Fields the deal already states are locked once a deal is picked — the
+  // signed note is the source of truth, so they must not drift here.
+  const locked = !!pickedDeal;
+
   const txnFormJsx = (
     <div className="p-6 space-y-5">
       {error && <div className="p-3 rounded-xl text-sm text-c-red" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
+
+      {/* Book from a confirmed deal. Open to every employee who can already
+          add business here — this grants no new authority, it just removes the
+          re-typing. Visibility is scoped by the database, not by this form:
+          nw_deal_transfer_eligible is security_invoker, so an RM only ever
+          sees deals belonging to their own clients.
+          Only shown when creating, never when editing an existing row. */}
+      {!editTxn && (
+        <div className="rounded-xl p-4" style={{ background: 'rgba(var(--accent-rgb),0.04)', border: '1px solid rgba(var(--accent-rgb),0.15)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Book from a Confirmed Deal</p>
+            {pickedDeal && (
+              <button type="button" onClick={clearPickedDeal}
+                className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg"
+                style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                <X className="w-3 h-3" /> Clear
+              </button>
+            )}
+          </div>
+
+          {!pickedDeal && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
+              <input
+                value={dealSearch}
+                onChange={e => { setDealSearch(e.target.value); setShowDealDrop(true); }}
+                onFocus={() => setShowDealDrop(true)}
+                placeholder="Search deal reference, client, security or ISIN…"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+                style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}
+                autoComplete="off"
+              />
+              {showDealDrop && (
+                <div className="absolute z-30 w-full mt-1 rounded-xl overflow-hidden shadow-2xl"
+                  style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', maxHeight: 260, overflowY: 'auto' }}>
+                  {dealOptions.length === 0 ? (
+                    <div className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      No deals awaiting booking. Deals appear here once they are accepted and fully paid.
+                    </div>
+                  ) : dealOptions.map(d => (
+                    <button key={d.deal_id} type="button" onClick={() => selectDeal(d)}
+                      className="w-full text-left px-4 py-3 transition-colors"
+                      style={{ borderBottom: '1px solid var(--bg-raised)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(var(--accent-rgb),0.08)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-mono text-xs" style={{ color: 'var(--accent)' }}>{d.confirmation_number}</span>
+                        <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {d.settlement_amount != null ? fmt(Number(d.settlement_amount)) : '—'}
+                        </span>
+                      </div>
+                      <p className="text-sm mt-0.5 truncate" style={{ color: 'var(--text-primary)' }}>{d.snap_client_name}</p>
+                      <p className="text-xs truncate" style={{ color: 'var(--text-faint)' }}>
+                        {d.security_name}{d.quantity != null ? ` · Qty ${d.quantity}` : ''}{d.isin ? ` · ${d.isin}` : ''}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs mt-2" style={{ color: 'var(--text-faint)' }}>
+                Optional — pick a deal to pre-fill and link it, or leave blank and enter the business manually.
+              </p>
+            </div>
+          )}
+
+          {pickedDeal && (
+            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <span className="font-mono text-xs mr-2" style={{ color: 'var(--accent)' }}>{pickedDeal.confirmation_number}</span>
+              {pickedDeal.snap_client_name} · {pickedDeal.security_name}
+              <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>
+                Deal details are locked below. Add the landing cost{showDsaPrice ? ' and DSA landing' : ''} to finish.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Client *"><S value={form.client_id} onChange={v => setF('client_id', v)}>
+        <Field label="Client *"><S value={form.client_id} onChange={v => setF('client_id', v)} disabled={locked}>
           <option value="">Select client...</option>
           {clients.map(c => <option key={c.id} value={c.id}>{c.full_name} ({c.client_code})</option>)}
         </S></Field>
-        <Field label="Transaction Type"><S value={form.txn_type} onChange={v => setF('txn_type', v)}>
+        <Field label="Transaction Type"><S value={form.txn_type} onChange={v => setF('txn_type', v)} disabled={locked}>
           {TXN_TYPES.map(t => <option key={t} value={t}>{TXN_LABELS[t]}</option>)}
         </S></Field>
-        <Field label="Product Type"><S value={form.product_type} onChange={v => setF('product_type', v as ProductType)}>
+        <Field label="Product Type"><S value={form.product_type} onChange={v => setF('product_type', v as ProductType)} disabled={locked}>
           {PRODUCTS.map(p => <option key={p} value={p}>{PRODUCT_LABELS[p]}</option>)}
         </S></Field>
         <Field label="Product Name *">
-          <I value={form.product_name} onChange={e => setF('product_name', e.target.value)}
+          <I value={form.product_name} onChange={e => setF('product_name', e.target.value)} readOnly={locked}
+            style={locked ? { opacity: 0.65 } : undefined}
             placeholder={isBond ? 'e.g. HDFC NCD 2024' : isMF ? 'e.g. HDFC Flexi Cap Fund' : isIns ? 'e.g. LIC Jeevan Anand' : 'e.g. Reliance Industries'} />
         </Field>
         {(form.product_type === 'unlisted_share' || isBond) && (
           <Field label="ISIN" span2={false}>
-            <I value={form.isin} onChange={e => setF('isin', e.target.value.toUpperCase())}
-              placeholder="e.g. INE001A01036" style={{ fontFamily: 'monospace', letterSpacing: '0.05em', textTransform: 'uppercase' }} />
+            <I value={form.isin} onChange={e => setF('isin', e.target.value.toUpperCase())} readOnly={locked}
+              placeholder="e.g. INE001A01036" style={{ fontFamily: 'monospace', letterSpacing: '0.05em', textTransform: 'uppercase', ...(locked ? { opacity: 0.65 } : null) }} />
           </Field>
         )}
-        <Field label="Transaction Date"><I type="date" value={form.txn_date} onChange={e => setF('txn_date', e.target.value)} /></Field>
-        {!isIns && <Field label={isMF ? 'Units' : 'Quantity'}><I type="number" value={form.quantity} onChange={e => setF('quantity', e.target.value)} placeholder="0" /></Field>}
+        <Field label="Transaction Date"><I type="date" value={form.txn_date} onChange={e => setF('txn_date', e.target.value)} readOnly={locked} style={locked ? { opacity: 0.65 } : undefined} /></Field>
+        {!isIns && <Field label={isMF ? 'Units' : 'Quantity'}><I type="number" value={form.quantity} onChange={e => setF('quantity', e.target.value)} readOnly={locked} style={locked ? { opacity: 0.65 } : undefined} placeholder="0" /></Field>}
         {!isIns && <Field label={isMF ? 'Purchase NAV (₹)' : isBond ? 'Purchase Price / Unit (₹)' : 'Per Unit Price (₹)'}>
           <I type="number" value={isMF ? form.purchase_nav : form.per_unit_price}
-            onChange={e => setF(isMF ? 'purchase_nav' : 'per_unit_price', e.target.value)} placeholder="0.00" />
+            onChange={e => setF(isMF ? 'purchase_nav' : 'per_unit_price', e.target.value)}
+            readOnly={locked && !isMF} style={locked && !isMF ? { opacity: 0.65 } : undefined} placeholder="0.00" />
         </Field>}
         <Field label="Total Amount (₹) *">
           <I type="number" value={form.consolidated_amount} onChange={e => setF('consolidated_amount', e.target.value)}
-            readOnly={form.product_type === 'unlisted_share' || isMF || isBond}
-            style={{ opacity: (form.product_type === 'unlisted_share' || isMF || isBond) ? 0.65 : 1 }}
+            readOnly={locked || form.product_type === 'unlisted_share' || isMF || isBond}
+            style={{ opacity: (locked || form.product_type === 'unlisted_share' || isMF || isBond) ? 0.65 : 1 }}
             placeholder={isIns ? 'Total premium paid' : 'Auto-calculated'} />
         </Field>
       </div>
