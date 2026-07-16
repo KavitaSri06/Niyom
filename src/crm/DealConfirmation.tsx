@@ -8,6 +8,7 @@ import {
 import html2pdf from 'html2pdf.js';
 import DealDocument from './DealDocument';
 import DealPayments from './DealPayments';
+import SecuritySearch from './SecuritySearch';
 
 type AcceptanceStatus = 'pending' | 'viewed' | 'accepted' | 'rejected' | 'expired';
 
@@ -727,13 +728,21 @@ export default function DealConfirmation({ employee }: Props) {
         {/* Security Details */}
         <div className="rounded-2xl p-6 space-y-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
           <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Step 3 — Security / Instrument Details</p>
+          {/* NSDL-backed security lookup — auto-fills Security Name + ISIN.
+              Product Type (Step 2) stays a manual choice; manual entry remains
+              available as a fallback inside the component. */}
+          <SecuritySearch
+            key={editDeal?.id ?? 'new'}
+            valueName={form.security_name}
+            valueIsin={form.isin}
+            onSelect={sec => setForm(f => ({ ...f, security_name: sec.name, isin: sec.isin }))}
+            onManualChange={patch => setForm(f => ({
+              ...f,
+              ...(patch.security_name !== undefined ? { security_name: patch.security_name } : {}),
+              ...(patch.isin !== undefined ? { isin: patch.isin } : {}),
+            }))}
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Security / Company Name" required>
-              <Input value={form.security_name} onChange={e => setForm(f => ({ ...f, security_name: e.target.value }))} placeholder="e.g. Tata Motors Ltd" />
-            </Field>
-            <Field label="ISIN Number" required>
-              <Input value={form.isin} onChange={e => setForm(f => ({ ...f, isin: e.target.value.toUpperCase() }))} placeholder="INE001A01036" maxLength={12} />
-            </Field>
             <Field label="Quantity" required>
               <Input type="number" min="0" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} placeholder="0" />
             </Field>

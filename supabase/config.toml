@@ -415,6 +415,12 @@ verify_jwt = false
 [functions.reset-password-with-otp]
 verify_jwt = false
 
+# --- NSDL security cache daily refresh. Public verify_jwt: invoked by pg_cron
+#     via pg_net with the service-role bearer (no end-user session). The
+#     employee-facing nsdl-search keeps the default verify_jwt = true. ---
+[functions.nsdl-refresh-cache]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
