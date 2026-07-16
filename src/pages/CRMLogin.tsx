@@ -45,25 +45,25 @@ export default function CRMLogin() {
       {/* Left Panel */}
       <div className="hidden lg:flex flex-col justify-between w-[45%] bg-gray-950 p-12 border-r border-white/5 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-20 left-20 w-64 h-64 bg-[#c9b896] rounded-full filter blur-3xl" />
+          <div className="absolute top-20 left-20 w-64 h-64 bg-accent-soft rounded-full filter blur-3xl" />
           <div className="absolute bottom-32 right-10 w-48 h-48 bg-bg-elevated rounded-full filter blur-3xl" />
         </div>
 
         <div className="relative flex items-center gap-3">
-          <div className="w-9 h-9 bg-[#c9b896] rounded-xl flex items-center justify-center">
+          <div className="w-9 h-9 bg-accent-soft rounded-xl flex items-center justify-center">
             <BarChart3 className="w-4 h-4 text-text-primary" />
           </div>
           <div>
-            <p className="text-white font-bold tracking-widest text-sm" style={{ fontFamily: 'Georgia, serif' }}>NIYOM WEALTH</p>
-            <p className="text-[#c9b896]/60 text-xs tracking-widest">DISTRIBUTION LLP</p>
+            <p className="text-white font-bold tracking-widest text-sm" style={{ fontFamily: 'var(--font-display)' }}>NIYOM WEALTH</p>
+            <p className="text-accent-soft/60 text-xs tracking-widest">DISTRIBUTION LLP</p>
           </div>
         </div>
 
         <div className="relative">
-          <p className="text-xs font-semibold text-[#c9b896] uppercase tracking-widest mb-4">Employee CRM</p>
-          <h2 className="text-4xl font-bold text-white leading-tight mb-4" style={{ fontFamily: 'Georgia, serif' }}>
+          <p className="text-xs font-semibold text-accent-soft uppercase tracking-widest mb-4">Employee CRM</p>
+          <h2 className="text-4xl font-bold text-white leading-tight mb-4" style={{ fontFamily: 'var(--font-display)' }}>
             Track. Grow.<br />
-            <span className="text-[#c9b896]">Earn more.</span>
+            <span className="text-accent-soft">Earn more.</span>
           </h2>
           <p className="text-white/40 text-sm leading-relaxed max-w-xs">
             Manage your deals, track client relationships, and monitor your incentive performance — all in one place.
@@ -78,7 +78,7 @@ export default function CRMLogin() {
             { icon: <BarChart3 className="w-4 h-4" />, label: 'Products', value: '7 Types' },
           ].map((stat, i) => (
             <div key={i} className="bg-bg-elevated/5 border border-white/10 rounded-2xl p-4 hover:bg-bg-elevated/[0.08] transition-colors">
-              <div className="text-[#c9b896] mb-2">{stat.icon}</div>
+              <div className="text-accent-soft mb-2">{stat.icon}</div>
               <p className="text-white text-sm font-bold">{stat.value}</p>
               <p className="text-white/30 text-xs mt-0.5">{stat.label}</p>
             </div>
@@ -91,12 +91,12 @@ export default function CRMLogin() {
         <div className="w-full max-w-sm">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
-            <div className="w-8 h-8 bg-[#c9b896] rounded-xl flex items-center justify-center">
+            <div className="w-8 h-8 bg-accent-soft rounded-xl flex items-center justify-center">
               <BarChart3 className="w-4 h-4 text-text-primary" />
             </div>
             <div>
-              <p className="text-white font-bold tracking-widest text-sm" style={{ fontFamily: 'Georgia, serif' }}>NIYOM WEALTH</p>
-              <p className="text-[#c9b896]/60 text-xs tracking-widest">DISTRIBUTION LLP</p>
+              <p className="text-white font-bold tracking-widest text-sm" style={{ fontFamily: 'var(--font-display)' }}>NIYOM WEALTH</p>
+              <p className="text-accent-soft/60 text-xs tracking-widest">DISTRIBUTION LLP</p>
             </div>
           </div>
 
@@ -118,7 +118,7 @@ export default function CRMLogin() {
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-bg-elevated/5 border border-white/10 text-white placeholder-white/15 pl-11 pr-4 py-3.5 rounded-2xl focus:ring-2 focus:ring-[#c9b896]/50 focus:border-[#c9b896]/30 transition-all text-sm outline-none"
+                  className="w-full bg-bg-elevated/5 border border-white/10 text-white placeholder-white/15 pl-11 pr-4 py-3.5 rounded-2xl focus:ring-2 focus:ring-accent-soft/50 focus:border-accent-soft/30 transition-all text-sm outline-none"
                   placeholder="you@niyomwealth.com" required />
               </div>
             </div>
@@ -128,13 +128,13 @@ export default function CRMLogin() {
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-bg-elevated/5 border border-white/10 text-white placeholder-white/15 pl-11 pr-4 py-3.5 rounded-2xl focus:ring-2 focus:ring-[#c9b896]/50 focus:border-[#c9b896]/30 transition-all text-sm outline-none"
+                  className="w-full bg-bg-elevated/5 border border-white/10 text-white placeholder-white/15 pl-11 pr-4 py-3.5 rounded-2xl focus:ring-2 focus:ring-accent-soft/50 focus:border-accent-soft/30 transition-all text-sm outline-none"
                   placeholder="••••••••" required />
               </div>
             </div>
 
             <button type="submit" disabled={loading}
-              className="w-full bg-[#c9b896] hover:bg-[#baa882] text-text-primary py-3.5 rounded-2xl font-bold transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-lg shadow-[#c9b896]/20">
+              className="w-full bg-accent-soft hover:bg-accent-soft-deep text-text-primary py-3.5 rounded-2xl font-bold transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-lg shadow-accent-soft/20">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-gray-950/30 border-t-gray-950 rounded-full animate-spin" />

@@ -70,7 +70,7 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
           >
             <Logo size="md" />
             <div className="text-left">
-              <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Client Portal</h1>
+              <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Client Portal</h1>
               <p className="text-accent text-xs tracking-wider">NIYOM WEALTH</p>
             </div>
           </button>
@@ -135,7 +135,7 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
               <User className="w-12 h-12 text-accent" />
               <div>
                 <p className="text-sm text-text-secondary font-medium">Account Status</p>
-                <p className="text-xl font-bold text-text-primary" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Active</p>
+                <p className="text-xl font-bold text-text-primary" style={{ fontFamily: 'var(--font-display)' }}>Active</p>
               </div>
             </div>
           </div>
@@ -160,7 +160,7 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
 
         <div className="grid md:grid-cols-2 gap-8">
           <div className="bg-bg-elevated rounded-xl shadow-md border-l-4 border-accent p-8 hover:shadow-lg transition-all duration-300">
-            <h2 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Profile Information</h2>
+            <h2 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'var(--font-display)' }}>Profile Information</h2>
             {profile ? (
               <div className="space-y-4">
                 <div>
@@ -190,7 +190,7 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
           </div>
 
           <div className="bg-bg-elevated rounded-xl shadow-md border-l-4 border-accent p-8 hover:shadow-lg transition-all duration-300">
-            <h2 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>KYC Verification</h2>
+            <h2 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'var(--font-display)' }}>KYC Verification</h2>
             {profile?.kyc_status === 'pending' && !kyc ? (
               <div className="text-center py-8">
                 <p className="text-text-secondary mb-4 font-medium">Complete your KYC to access all services</p>
@@ -251,7 +251,7 @@ export function Dashboard({ onNavigate, onClose }: DashboardProps) {
           </div>
 
           <div className="bg-gradient-to-r from-accent/10 to-accent/5 rounded-xl p-8 border-l-4 border-accent">
-            <h3 className="font-bold text-text-primary mb-4 text-xl" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Next Steps</h3>
+            <h3 className="font-bold text-text-primary mb-4 text-xl" style={{ fontFamily: 'var(--font-display)' }}>Next Steps</h3>
             <ul className="text-text-secondary space-y-3 text-base">
               {profile?.kyc_status === 'pending' && (
                 <li className="flex items-start gap-2"><span className="text-accent font-bold">•</span> Complete your KYC verification to access products and services</li>

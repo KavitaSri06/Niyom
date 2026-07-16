@@ -63,10 +63,10 @@ function LearningSection({ title, icon, children }: SectionProps) {
         className="w-full px-8 py-6 flex items-center justify-between bg-gradient-to-r from-black to-gray-900 text-white hover:from-gray-900 hover:to-black transition-all duration-300"
       >
         <div className="flex items-center gap-4">
-          <div className="bg-[#c9b896] p-3 rounded-full">
+          <div className="bg-accent-soft p-3 rounded-full">
             {icon}
           </div>
-          <h3 className="text-2xl font-bold" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+          <h3 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
             {title}
           </h3>
         </div>
@@ -288,35 +288,35 @@ export function Learning({ onBack }: LearningProps) {
           >
             <Logo size="md" />
             <div className="text-left">
-              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.1em' }}>NIYOM WEALTH</h1>
-              <p className="text-[#c9b896] text-xs tracking-widest">DISTRIBUTION LLP</p>
+              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-body)', letterSpacing: '0.1em' }}>NIYOM WEALTH</h1>
+              <p className="text-accent-soft text-xs tracking-widest">DISTRIBUTION LLP</p>
             </div>
           </button>
 
           <button
             onClick={onBack}
-            className="hidden md:flex bg-[#c9b896] hover:bg-[#b5a57d] text-black px-8 py-3 rounded-md font-semibold transition-all duration-300 shadow-md hover:shadow-lg items-center gap-2"
+            className="hidden md:flex bg-accent-soft hover:bg-accent-soft-deep text-black px-8 py-3 rounded-md font-semibold transition-all duration-300 shadow-md hover:shadow-lg items-center gap-2"
           >
             <ArrowLeft size={20} /> Back to Home
           </button>
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden text-white hover:text-[#c9b896] transition-colors"
+            className="md:hidden text-white hover:text-accent-soft transition-colors"
           >
             {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
 
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-[#c9b896]/20 shadow-lg z-50">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-accent-soft/20 shadow-lg z-50">
             <div className="flex flex-col p-4 space-y-3">
               <button
                 onClick={() => {
                   onBack();
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-2 bg-[#c9b896] hover:bg-[#b5a57d] text-black px-4 py-3 rounded-md font-semibold transition-all duration-300"
+                className="flex items-center gap-2 bg-accent-soft hover:bg-accent-soft-deep text-black px-4 py-3 rounded-md font-semibold transition-all duration-300"
               >
                 <ArrowLeft size={20} /> Back to Home
               </button>
@@ -328,7 +328,7 @@ export function Learning({ onBack }: LearningProps) {
       <section className="py-16 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold text-text-primary mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+            <h2 className="text-5xl font-bold text-text-primary mb-4" style={{ fontFamily: 'var(--font-display)' }}>
               Financial <span className="text-accent">Education Center</span>
             </h2>
             <div className="w-32 h-1 bg-accent mx-auto mb-6"></div>
@@ -539,7 +539,7 @@ export function Learning({ onBack }: LearningProps) {
               icon={<Building className="w-6 h-6 text-black" />}
             >
               <div className="space-y-6">
-                <div className="bg-gradient-to-r from-[#c9b896] to-[#b5a57d] p-6 rounded-lg shadow-lg text-black">
+                <div className="bg-gradient-to-r from-accent-soft to-accent-soft-deep p-6 rounded-lg shadow-lg text-black">
                   <h4 className="text-2xl font-bold mb-3">What Are Unlisted & Pre-IPO Shares?</h4>
                   <p className="text-lg leading-relaxed">
                     <strong>Unlisted Shares:</strong> Equity shares of companies not listed on stock exchanges. Traded privately through dealers or platforms.
@@ -763,7 +763,7 @@ export function Learning({ onBack }: LearningProps) {
                 </div>
 
                 <div className="bg-gradient-to-r from-black to-gray-900 p-8 rounded-lg shadow-xl text-white">
-                  <h4 className="text-2xl font-bold mb-4 text-[#c9b896]">Investment Recommendation</h4>
+                  <h4 className="text-2xl font-bold mb-4 text-accent-soft">Investment Recommendation</h4>
                   <div className="space-y-3 text-lg">
                     <p>✓ <strong>Allocation:</strong> Limit to 5-10% of total investment portfolio</p>
                     <p>✓ <strong>Research:</strong> Thoroughly evaluate company fundamentals, growth prospects, and valuation</p>
@@ -777,8 +777,8 @@ export function Learning({ onBack }: LearningProps) {
             </LearningSection>
           </div>
 
-          <div className="mt-16 bg-gradient-to-br from-[#c9b896] to-[#b5a57d] p-10 rounded-xl shadow-2xl text-center">
-            <h3 className="text-3xl font-bold text-black mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+          <div className="mt-16 bg-gradient-to-br from-accent-soft to-accent-soft-deep p-10 rounded-xl shadow-2xl text-center">
+            <h3 className="text-3xl font-bold text-black mb-4" style={{ fontFamily: 'var(--font-display)' }}>
               Need More Information?
             </h3>
             <p className="text-lg text-black/80 mb-6 max-w-2xl mx-auto">
@@ -794,7 +794,7 @@ export function Learning({ onBack }: LearningProps) {
         </div>
       </section>
 
-      <footer className="bg-black text-white py-8 px-6 border-t border-[#c9b896]/20">
+      <footer className="bg-black text-white py-8 px-6 border-t border-accent-soft/20">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-text-muted">&copy; 2025 Niyom Wealth Distribution LLP. All rights reserved.</p>
         </div>

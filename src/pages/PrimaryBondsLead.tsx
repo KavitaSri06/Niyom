@@ -77,7 +77,7 @@ export function PrimaryBondsLead({ onBack }: PrimaryBondsLeadProps) {
           <div className="mb-6">
             <CheckCircle className="w-20 h-20 text-green-500 mx-auto" />
           </div>
-          <h2 className="text-4xl font-bold text-text-primary mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+          <h2 className="text-4xl font-bold text-text-primary mb-4" style={{ fontFamily: 'var(--font-display)' }}>
             Thank You!
           </h2>
           <p className="text-xl text-text-secondary mb-6">
@@ -88,7 +88,7 @@ export function PrimaryBondsLead({ onBack }: PrimaryBondsLeadProps) {
           </p>
           <button
             onClick={onBack}
-            className="bg-[#c9b896] hover:bg-[#b5a57d] text-black px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
+            className="bg-accent-soft hover:bg-accent-soft-deep text-black px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
           >
             Back to Home
           </button>
@@ -107,35 +107,35 @@ export function PrimaryBondsLead({ onBack }: PrimaryBondsLeadProps) {
           >
             <Logo size="md" />
             <div className="text-left">
-              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.1em' }}>NIYOM WEALTH</h1>
-              <p className="text-[#c9b896] text-xs tracking-widest">PRIMARY BONDS</p>
+              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-body)', letterSpacing: '0.1em' }}>NIYOM WEALTH</h1>
+              <p className="text-accent-soft text-xs tracking-widest">PRIMARY BONDS</p>
             </div>
           </button>
 
           <button
             onClick={onBack}
-            className="hidden md:flex bg-[#c9b896] hover:bg-[#b5a57d] text-black px-8 py-3 rounded-md font-semibold transition-all duration-300 shadow-md hover:shadow-lg items-center gap-2"
+            className="hidden md:flex bg-accent-soft hover:bg-accent-soft-deep text-black px-8 py-3 rounded-md font-semibold transition-all duration-300 shadow-md hover:shadow-lg items-center gap-2"
           >
             <ArrowLeft size={20} /> Back to Home
           </button>
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden text-white hover:text-[#c9b896] transition-colors"
+            className="md:hidden text-white hover:text-accent-soft transition-colors"
           >
             {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
 
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-[#c9b896]/20 shadow-lg z-50">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-accent-soft/20 shadow-lg z-50">
             <div className="flex flex-col p-4 space-y-3">
               <button
                 onClick={() => {
                   onBack();
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-2 bg-[#c9b896] hover:bg-[#b5a57d] text-black px-4 py-3 rounded-md font-semibold transition-all duration-300"
+                className="flex items-center gap-2 bg-accent-soft hover:bg-accent-soft-deep text-black px-4 py-3 rounded-md font-semibold transition-all duration-300"
               >
                 <ArrowLeft size={20} /> Back to Home
               </button>
@@ -151,7 +151,7 @@ export function PrimaryBondsLead({ onBack }: PrimaryBondsLeadProps) {
               <Shield className="w-10 h-10" />
             </div>
             <div>
-              <h2 className="text-4xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+              <h2 className="text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
                 Invest in Primary Bonds
               </h2>
               <p className="text-text-faint text-lg">
@@ -176,7 +176,7 @@ export function PrimaryBondsLead({ onBack }: PrimaryBondsLeadProps) {
         </div>
 
         <div className="bg-bg-elevated rounded-2xl shadow-xl p-8">
-          <h3 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+          <h3 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'var(--font-display)' }}>
             Share Your Details
           </h3>
 

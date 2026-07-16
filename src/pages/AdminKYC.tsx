@@ -111,7 +111,7 @@ export function AdminKYC({ onClose }: AdminKYCProps) {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Logo size="lg" />
-            <h1 className="text-4xl font-bold text-text-primary" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>KYC Management</h1>
+            <h1 className="text-4xl font-bold text-text-primary" style={{ fontFamily: 'var(--font-display)' }}>KYC Management</h1>
           </div>
           <button
             onClick={onClose}
@@ -126,12 +126,12 @@ export function AdminKYC({ onClose }: AdminKYCProps) {
           <table className="w-full">
             <thead className="bg-black">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Client Name</th>
-                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Email</th>
-                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Status</th>
-                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>PAN</th>
-                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Submitted</th>
-                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Action</th>
+                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Client Name</th>
+                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Email</th>
+                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Status</th>
+                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>PAN</th>
+                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Submitted</th>
+                <th className="px-6 py-4 text-left text-sm font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -189,7 +189,7 @@ export function AdminKYC({ onClose }: AdminKYCProps) {
         {selectedId && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
             <div className="bg-bg-elevated rounded-2xl max-w-md w-full p-8 border-t-4 border-accent shadow-2xl">
-              <h3 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Review KYC Submission</h3>
+              <h3 className="text-2xl font-bold text-text-primary mb-6" style={{ fontFamily: 'var(--font-display)' }}>Review KYC Submission</h3>
               <div className="space-y-4 mb-6">
                 <textarea
                   value={notes}

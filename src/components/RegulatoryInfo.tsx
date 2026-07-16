@@ -1,8 +1,8 @@
 // Dedicated, compliance-focused "Regulatory Information" block for the site
 // footer. Single source of truth for the AMFI/ARN disclosures so the wording
 // stays consistent across the site and with the Risk Disclosure / Disclaimer
-// page. Styled to match the existing dark footer theme (gold #c9b896 heading,
-// muted gray body) without altering the surrounding footer layout.
+// page. Styled to match the existing dark footer theme (gold heading, muted
+// gray body) without altering the surrounding footer layout.
 
 export function RegulatoryInfo() {
   const items = [
@@ -13,7 +13,7 @@ export function RegulatoryInfo() {
 
   return (
     <div className="pt-8 mb-8 border-t border-gray-800">
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-[#c9b896] mb-5 text-center md:text-left">
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-accent-soft mb-5 text-center md:text-left">
         Regulatory Information
       </h3>
 

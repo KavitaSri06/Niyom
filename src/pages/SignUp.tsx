@@ -78,7 +78,7 @@ export function SignUp({ onSwitchToLogin, onClose }: SignUpProps) {
               className="inline-flex flex-col items-center hover:opacity-80 transition-opacity mb-4"
             >
               <Logo size="xl" className="mb-4 shadow-lg" />
-              <h1 className="text-4xl font-bold text-text-primary mb-1" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>NIYOM WEALTH</h1>
+              <h1 className="text-4xl font-bold text-text-primary mb-1" style={{ fontFamily: 'var(--font-display)' }}>NIYOM WEALTH</h1>
               <p className="text-accent text-sm font-semibold tracking-wider">CREATE ACCOUNT</p>
             </button>
           </div>

@@ -181,7 +181,7 @@ export function KYCForm({ onSubmitSuccess, onClose }: KYCFormProps) {
           <div className="flex items-center gap-4 mb-8">
             <Logo size="lg" />
             <div>
-              <h2 className="text-3xl font-bold text-text-primary" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>Know Your Customer (KYC)</h2>
+              <h2 className="text-3xl font-bold text-text-primary" style={{ fontFamily: 'var(--font-display)' }}>Know Your Customer (KYC)</h2>
               <p className="text-text-secondary font-medium">Complete your KYC profile to unlock full account access</p>
             </div>
           </div>

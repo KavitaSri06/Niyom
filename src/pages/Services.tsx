@@ -161,22 +161,22 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
           >
             <Logo size="md" />
             <div className="text-left">
-              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.1em' }}>NIYOM WEALTH</h1>
-              <p className="text-[#c9b896] text-xs tracking-widest">DISTRIBUTION LLP</p>
+              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-body)', letterSpacing: '0.1em' }}>NIYOM WEALTH</h1>
+              <p className="text-accent-soft text-xs tracking-widest">DISTRIBUTION LLP</p>
             </div>
           </button>
 
           <div className="hidden md:flex items-center gap-4">
             <button
               onClick={onBack}
-              className="text-white hover:text-[#c9b896] transition-colors flex items-center gap-2 font-medium"
+              className="text-white hover:text-accent-soft transition-colors flex items-center gap-2 font-medium"
             >
               <ArrowLeft size={20} />
               Back
             </button>
             <button
               onClick={onGetStarted}
-              className="bg-[#c9b896] hover:bg-[#b5a57d] text-black px-8 py-3 rounded-md font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
+              className="bg-accent-soft hover:bg-accent-soft-deep text-black px-8 py-3 rounded-md font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
             >
               Client Login
             </button>
@@ -184,21 +184,21 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden text-white hover:text-[#c9b896] transition-colors"
+            className="md:hidden text-white hover:text-accent-soft transition-colors"
           >
             {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
 
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-[#c9b896]/20 shadow-lg z-50">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-accent-soft/20 shadow-lg z-50">
             <div className="flex flex-col p-4 space-y-3">
               <button
                 onClick={() => {
                   onBack();
                   setIsMobileMenuOpen(false);
                 }}
-                className="text-white hover:text-[#c9b896] font-medium py-3 px-4 text-left hover:bg-bg-elevated/5 rounded transition-colors flex items-center gap-2"
+                className="text-white hover:text-accent-soft font-medium py-3 px-4 text-left hover:bg-bg-elevated/5 rounded transition-colors flex items-center gap-2"
               >
                 <ArrowLeft size={20} />
                 Back
@@ -208,7 +208,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
                   onGetStarted();
                   setIsMobileMenuOpen(false);
                 }}
-                className="bg-[#c9b896] hover:bg-[#b5a57d] text-black px-4 py-3 rounded-md font-semibold transition-all duration-300"
+                className="bg-accent-soft hover:bg-accent-soft-deep text-black px-4 py-3 rounded-md font-semibold transition-all duration-300"
               >
                 Client Login
               </button>
@@ -220,7 +220,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
       <section className="py-16 px-6 bg-gradient-to-b from-bg-raised to-bg-base">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-5xl font-bold text-text-primary mb-4" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+            <h2 className="text-5xl font-bold text-text-primary mb-4" style={{ fontFamily: 'var(--font-display)' }}>
               Our <span className="text-accent">Services</span>
             </h2>
             <p className="text-xl text-text-secondary max-w-3xl mx-auto">
@@ -263,12 +263,12 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
               <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
                 <div className="flex items-center gap-4 mb-3">
-                  <Icon className="w-12 h-12 text-[#c9b896]" />
+                  <Icon className="w-12 h-12 text-accent-soft" />
                   <div>
-                    <h3 className="text-4xl font-bold" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                    <h3 className="text-4xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
                       {activeService.title}
                     </h3>
-                    <p className="text-[#c9b896] text-lg font-medium">{activeService.subtitle}</p>
+                    <p className="text-accent-soft text-lg font-medium">{activeService.subtitle}</p>
                   </div>
                 </div>
               </div>
@@ -281,7 +281,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
 
               <div className="grid md:grid-cols-2 gap-10">
                 <div>
-                  <h4 className="text-2xl font-bold text-text-primary mb-6 flex items-center gap-2" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                  <h4 className="text-2xl font-bold text-text-primary mb-6 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
                     <div className="w-2 h-8 bg-accent"></div>
                     What It Is
                   </h4>
@@ -296,7 +296,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
                 </div>
 
                 <div>
-                  <h4 className="text-2xl font-bold text-text-primary mb-6 flex items-center gap-2" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+                  <h4 className="text-2xl font-bold text-text-primary mb-6 flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
                     <div className="w-2 h-8 bg-accent"></div>
                     How Niyom Wealth Helps
                   </h4>
@@ -324,12 +324,12 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
         </div>
       </section>
 
-      <footer className="bg-black text-white py-12 px-6 border-t border-[#c9b896]/20">
+      <footer className="bg-black text-white py-12 px-6 border-t border-accent-soft/20">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Logo size="sm" />
             <div>
-              <h2 className="text-xl font-bold" style={{ fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.1em' }}>NIYOM WEALTH</h2>
+              <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-body)', letterSpacing: '0.1em' }}>NIYOM WEALTH</h2>
             </div>
           </div>
           <p className="text-text-muted">&copy; 2025 Niyom Wealth Distribution LLP. All rights reserved.</p>

@@ -2,10 +2,16 @@
 
 // Build a Tailwind color that reads an "R, G, B" CSS-variable triplet and still
 // supports the `/opacity` modifier (e.g. `bg-success-soft/10`).
+//
+// The triplets are COMMA-separated ("201, 184, 150") because the app also
+// composites them inline as `rgba(var(--accent-rgb), 0.1)`. That means the
+// alpha form must use legacy `rgba(r, g, b, a)` syntax — emitting
+// `rgb(var(--x) / a)` expands to `rgb(201, 184, 150 / 1)`, which mixes comma
+// and slash syntax, is invalid CSS, and silently drops the color.
 const rgbVar = (name) => ({ opacityValue }) =>
   opacityValue === undefined
     ? `rgb(var(${name}))`
-    : `rgb(var(${name}) / ${opacityValue})`;
+    : `rgba(var(${name}), ${opacityValue})`;
 
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
@@ -13,6 +19,26 @@ export default {
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     extend: {
+      // Type families. Deliberately does NOT redefine `sans` or `mono` —
+      // `font-mono` has 55 existing usages and the sans default is the CRM's
+      // UI face; overriding either would restyle the app implicitly.
+      fontFamily: {
+        display: ['Playfair Display', 'Georgia', 'Times New Roman', 'serif'],
+        body: ['Cormorant Garamond', 'Georgia', 'Times New Roman', 'serif'],
+      },
+      // Target radius scale (see --radius-* in tokens.css). Exposed under a
+      // `token-` prefix so the stock rounded-* utilities keep working while
+      // call sites migrate onto the scale.
+      borderRadius: {
+        'token-sm': 'var(--radius-sm)',
+        'token-md': 'var(--radius-md)',
+        'token-lg': 'var(--radius-lg)',
+        'token-xl': 'var(--radius-xl)',
+      },
+      transitionTimingFunction: {
+        'token-out': 'var(--ease-out)',
+        'token-in-out': 'var(--ease-in-out)',
+      },
       colors: {
         // ---- Surfaces (solid) ----
         'bg-base': 'var(--bg-base)',
@@ -48,6 +74,7 @@ export default {
         accent: {
           DEFAULT: rgbVar('--accent-rgb'),
           soft: rgbVar('--accent-soft-rgb'),
+          'soft-deep': rgbVar('--accent-soft-deep-rgb'),
           strong: 'var(--accent-strong)',
         },
 

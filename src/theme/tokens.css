@@ -5,11 +5,17 @@
  * and Tailwind utilities (mapped in tailwind.config.js).
  *
  * THEME CONTRACT
- *   - The DARK token set reproduces the EXACT current production colors, so
- *     replacing a hardcoded literal with its matching token is a visual no-op
- *     in dark mode. Dark theme stays pixel-identical.
- *   - The LIGHT token set is the new enterprise light theme.
+ *   - Tokens are the SINGLE source of truth for color. Nothing should hardcode
+ *     a hex literal; the public pages were migrated onto these tokens and the
+ *     CRM already consumes them.
  *   - Themes switch via `data-theme="light" | "dark"` on <html>.
+ *
+ *   NOTE: this file previously promised that the DARK set reproduced the exact
+ *   production colors, so tokenizing a literal was a pixel no-op. That contract
+ *   has been intentionally retired: the dark surface ladder, borders and
+ *   elevation were refined as part of the site-wide visual refresh. Tokenizing
+ *   is still safe — but dark is now defined BY these tokens rather than
+ *   mirroring the old literals.
  *
  * ALPHA USAGE
  *   Tokens with a `-rgb` triplet can be composited with opacity:
@@ -23,16 +29,58 @@
  *   text stays AA-readable and `/10` `/20` tints render as soft pastel fills.
  * ========================================================================== */
 
+/* =============================================================================
+ * PRIMITIVES — theme-independent (identical in light and dark)
+ * -----------------------------------------------------------------------------
+ * Type, radius and motion scales. Colors live in the theme blocks below; these
+ * do not change with the theme, so they are declared once.
+ * ========================================================================== */
+:root {
+  /* ---- Type families ----
+   * `display`  — Playfair Display: headlines, hero, section titles.
+   * `body`     — Cormorant Garamond: editorial body copy on marketing pages.
+   * `ui`       — system sans: dense CRM UI, tables, forms (unchanged default).
+   * Georgia stays a FALLBACK only; it must never be an authored primary. */
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  /* ---- Radius scale ----
+   * A deliberate 4-step scale. The codebase currently mixes 7 ad-hoc radii
+   * (rounded-md/lg/xl/2xl/3xl/sm/full); these tokens are the target scale.
+   *   sm  — chips, badges, small controls
+   *   md  — inputs, buttons
+   *   lg  — cards, dropdowns
+   *   xl  — modals, hero panels */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* ---- Motion ----
+   * `ease-out` is the premium-feeling decelerate curve used for entrances. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 400ms;
+}
+
 /* ----------------------------- DARK (default) ----------------------------- */
 :root,
 [data-theme='dark'] {
   color-scheme: dark;
 
-  /* Surfaces */
-  --bg-base: #050505;        /* app shell background                    */
-  --bg-elevated: #0b0b0f;    /* cards, sidebar, header, panels, modals  */
-  --bg-surface: #0d0d0d;     /* inputs, badges, dropdowns, controls     */
-  --bg-raised: #111111;      /* nested surfaces, table-zebra, chips      */
+  /* Surfaces — a deliberate elevation ladder.
+   * Each step is a visible lift with a faint cool cast, so cards read as
+   * layered rather than as one flat black field. Base is lifted off pure
+   * #000 to soften the contrast against the gold and the serif display type. */
+  --bg-base: #08080a;        /* app shell background                    */
+  --bg-elevated: #101015;    /* cards, sidebar, header, panels, modals  */
+  --bg-surface: #16161c;     /* inputs, badges, dropdowns, controls     */
+  --bg-raised: #1d1d25;      /* nested surfaces, table-zebra, chips     */
   --bg-overlay: rgba(0, 0, 0, 0.7); /* modal / drawer scrim             */
 
   /* Semantic surface aliases (authoring clarity) */
@@ -55,11 +103,12 @@
   --disabled-text: #4a4a4a;
   --veil: rgba(255, 255, 255, 0.05); /* faint fill (avatar fallbacks)  */
 
-  /* Borders */
-  --border-subtle: #1a1a1a;  /* dividers, table rows                    */
-  --border: #1e1e24;         /* default hairline                        */
-  --border-strong: #2a2a2a;
-  --border-stronger: #3a3a3a;
+  /* Borders — lifted just enough to define an edge on the new surfaces
+   * without turning into visible boxes. */
+  --border-subtle: #1e1e26;  /* dividers, table rows                    */
+  --border: #26262f;         /* default hairline                        */
+  --border-strong: #33333e;
+  --border-stronger: #43434f;
   --divider: var(--border-subtle);
 
   /* Text */
@@ -77,6 +126,7 @@
   --accent-soft: #c9b896;
   --accent-soft-rgb: 201, 184, 150;
   --accent-soft-deep: #b5a57d;  /* darker companion of accent-soft (gold gradients) */
+  --accent-soft-deep-rgb: 181, 165, 125;
   --accent-strong: #b8961e;
   --accent-strong-deep: #9c7d18; /* darker stop for gold primary-button gradients */
 
@@ -130,11 +180,13 @@
   --scrollbar-thumb: #2a2a2a;
   --scrollbar-track: transparent;
 
-  /* Elevation */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
+  /* Elevation — layered, diffuse shadows. A tight contact shadow plus a wide
+   * ambient one reads as depth on dark surfaces; a single hard black drop
+   * just muddies them. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.4), 0 20px 48px rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* -------------------------------- LIGHT ----------------------------------- */
@@ -188,6 +240,7 @@
   --accent-soft: #8b7355;
   --accent-soft-rgb: 139, 115, 85;
   --accent-soft-deep: #6f5b3e;  /* darker companion of accent-soft (gold gradients) */
+  --accent-soft-deep-rgb: 111, 91, 62;
   --accent-strong: #b8961e;
 
   /* Brand sign-in panel — warm light neutral with subtle gold cast */

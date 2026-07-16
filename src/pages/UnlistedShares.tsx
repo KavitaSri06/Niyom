@@ -128,35 +128,35 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
           >
             <Logo size="md" />
             <div className="text-left">
-              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.1em' }}>NIYOM WEALTH</h1>
-              <p className="text-[#c9b896] text-xs tracking-widest">UNLISTED INVESTMENTS</p>
+              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-body)', letterSpacing: '0.1em' }}>NIYOM WEALTH</h1>
+              <p className="text-accent-soft text-xs tracking-widest">UNLISTED INVESTMENTS</p>
             </div>
           </button>
 
           <button
             onClick={onBack}
-            className="hidden md:flex bg-[#c9b896] hover:bg-[#b5a57d] text-black px-8 py-3 rounded-md font-semibold transition-all duration-300 shadow-md hover:shadow-lg items-center gap-2"
+            className="hidden md:flex bg-accent-soft hover:bg-accent-soft-deep text-black px-8 py-3 rounded-md font-semibold transition-all duration-300 shadow-md hover:shadow-lg items-center gap-2"
           >
             <ArrowLeft size={20} /> Back to Home
           </button>
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden text-white hover:text-[#c9b896] transition-colors"
+            className="md:hidden text-white hover:text-accent-soft transition-colors"
           >
             {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
 
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-[#c9b896]/20 shadow-lg z-50">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-accent-soft/20 shadow-lg z-50">
             <div className="flex flex-col p-4 space-y-3">
               <button
                 onClick={() => {
                   onBack();
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-2 bg-[#c9b896] hover:bg-[#b5a57d] text-black px-4 py-3 rounded-md font-semibold transition-all duration-300"
+                className="flex items-center gap-2 bg-accent-soft hover:bg-accent-soft-deep text-black px-4 py-3 rounded-md font-semibold transition-all duration-300"
               >
                 <ArrowLeft size={20} /> Back to Home
               </button>
@@ -167,7 +167,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="bg-gradient-to-r from-black to-gray-900 text-white p-6 rounded-xl shadow-lg mb-8">
-          <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>
+          <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
             Alternative Investment Products
           </h2>
           <p className="text-text-faint">
@@ -212,7 +212,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
 
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#c9b896]"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-soft"></div>
           </div>
         ) : activeTab === 'shares' ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -239,12 +239,12 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                               if (fallback) fallback.classList.remove('hidden');
                             }}
                           />
-                          <div className="hidden w-10 h-10 bg-gradient-to-br from-[#c9b896] to-[#b5a57d] rounded-lg flex items-center justify-center">
+                          <div className="hidden w-10 h-10 bg-gradient-to-br from-accent-soft to-accent-soft-deep rounded-lg flex items-center justify-center">
                             <Building2 size={20} className="text-black" />
                           </div>
                         </>
                       ) : (
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#c9b896] to-[#b5a57d] rounded-lg flex items-center justify-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-accent-soft to-accent-soft-deep rounded-lg flex items-center justify-center">
                           <Building2 size={20} className="text-black" />
                         </div>
                       )}
@@ -370,7 +370,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-[#c9b896] to-[#b5a57d] rounded-xl p-8 text-center shadow-lg">
+          <div className="bg-gradient-to-r from-accent-soft to-accent-soft-deep rounded-xl p-8 text-center shadow-lg">
             <h3 className="text-2xl font-bold text-black mb-3">Ready to Proceed?</h3>
             <p className="text-text-primary mb-6">Complete KYC to access product information and place orders</p>
             <div className="flex flex-wrap justify-center gap-4">
@@ -403,7 +403,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                         <img
                           src={selectedItem.logo_url}
                           alt={`${isShare(selectedItem) ? selectedItem.company_name : selectedItem.issuer} logo`}
-                          className="w-16 h-16 rounded-lg object-contain border-2 border-[#c9b896] bg-bg-elevated"
+                          className="w-16 h-16 rounded-lg object-contain border-2 border-accent-soft bg-bg-elevated"
                           crossOrigin="anonymous"
                           referrerPolicy="no-referrer"
                           onError={(e) => {
@@ -412,7 +412,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                             if (fallback) fallback.classList.remove('hidden');
                           }}
                         />
-                        <div className="hidden w-16 h-16 bg-gradient-to-br from-[#c9b896] to-[#b5a57d] rounded-lg flex items-center justify-center border-2 border-[#c9b896]">
+                        <div className="hidden w-16 h-16 bg-gradient-to-br from-accent-soft to-accent-soft-deep rounded-lg flex items-center justify-center border-2 border-accent-soft">
                           {isShare(selectedItem) ? (
                             <Building2 size={28} className="text-black" />
                           ) : (
@@ -421,7 +421,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                         </div>
                       </>
                     ) : (
-                      <div className="w-16 h-16 bg-gradient-to-br from-[#c9b896] to-[#b5a57d] rounded-lg flex items-center justify-center border-2 border-[#c9b896]">
+                      <div className="w-16 h-16 bg-gradient-to-br from-accent-soft to-accent-soft-deep rounded-lg flex items-center justify-center border-2 border-accent-soft">
                         {isShare(selectedItem) ? (
                           <Building2 size={28} className="text-black" />
                         ) : (
@@ -436,14 +436,14 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                     </h2>
                     {isShare(selectedItem) ? (
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="bg-[#c9b896] text-black px-3 py-1 rounded-full text-sm font-semibold">
+                        <span className="bg-accent-soft text-black px-3 py-1 rounded-full text-sm font-semibold">
                           {selectedItem.symbol}
                         </span>
                         <span className="text-sm text-text-faint">{selectedItem.sector}</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="bg-[#c9b896] text-black px-3 py-1 rounded-full text-sm font-semibold">
+                        <span className="bg-accent-soft text-black px-3 py-1 rounded-full text-sm font-semibold">
                           {selectedItem.rating}
                         </span>
                         <span className="text-sm text-text-faint">{selectedItem.issuer}</span>
@@ -453,7 +453,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                 </div>
                 <button
                   onClick={() => setSelectedItem(null)}
-                  className="text-white hover:text-[#c9b896] transition-colors flex-shrink-0"
+                  className="text-white hover:text-accent-soft transition-colors flex-shrink-0"
                 >
                   <X size={24} />
                 </button>
@@ -561,7 +561,7 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
                 </button>
                 <button
                   onClick={() => handleBuyClick('sell')}
-                  className="flex-1 bg-[#c9b896] text-black py-3 rounded-lg font-semibold hover:bg-[#b5a57d] transition-all duration-300"
+                  className="flex-1 bg-accent-soft text-black py-3 rounded-lg font-semibold hover:bg-accent-soft-deep transition-all duration-300"
                 >
                   Sell
                 </button>

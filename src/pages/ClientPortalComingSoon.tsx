@@ -26,16 +26,16 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#050505', fontFamily: 'inherit' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-base)', fontFamily: 'inherit' }}>
       {/* Top bar */}
-      <nav className="flex items-center justify-between px-6 md:px-12 py-5" style={{ borderBottom: '1px solid rgba(201,184,150,0.1)' }}>
+      <nav className="flex items-center justify-between px-6 md:px-12 py-5" style={{ borderBottom: '1px solid rgba(var(--accent-soft-rgb),0.1)' }}>
         <div className="flex items-center gap-3">
           <img src="/niyomlogo.png" alt="Niyom Wealth" className="h-9 w-auto object-contain" />
-          <span className="font-bold text-base" style={{ color: '#c9b896' }}>Niyom Wealth</span>
+          <span className="font-bold text-base" style={{ color: 'var(--accent-soft)' }}>Niyom Wealth</span>
         </div>
         <button onClick={onBack} className="flex items-center gap-2 text-sm font-medium transition-colors"
           style={{ color: 'var(--text-muted)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#c9b896')}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent-soft)')}
           onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
           <ArrowLeft className="w-4 h-4" /> Back to Home
         </button>
@@ -47,7 +47,7 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
         <div className={`transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
           style={{ transitionDelay: '0ms' }}>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-8"
-            style={{ background: 'rgba(201,184,150,0.08)', border: '1px solid rgba(201,184,150,0.2)', color: '#c9b896' }}>
+            style={{ background: 'rgba(var(--accent-soft-rgb),0.08)', border: '1px solid rgba(var(--accent-soft-rgb),0.2)', color: 'var(--accent-soft)' }}>
             <Clock className="w-3.5 h-3.5" />
             Coming Soon
           </div>
@@ -57,14 +57,14 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
         <div className={`relative mb-10 transition-all duration-700 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
           style={{ transitionDelay: '100ms' }}>
           {/* Outer glow rings */}
-          <div className="absolute inset-0 rounded-full animate-ping" style={{ background: 'rgba(201,184,150,0.04)', animationDuration: '3s' }} />
-          <div className="absolute inset-[-16px] rounded-full" style={{ background: 'rgba(201,184,150,0.04)', border: '1px solid rgba(201,184,150,0.08)' }} />
-          <div className="absolute inset-[-32px] rounded-full" style={{ background: 'rgba(201,184,150,0.02)', border: '1px solid rgba(201,184,150,0.05)' }} />
+          <div className="absolute inset-0 rounded-full animate-ping" style={{ background: 'rgba(var(--accent-soft-rgb),0.04)', animationDuration: '3s' }} />
+          <div className="absolute inset-[-16px] rounded-full" style={{ background: 'rgba(var(--accent-soft-rgb),0.04)', border: '1px solid rgba(var(--accent-soft-rgb),0.08)' }} />
+          <div className="absolute inset-[-32px] rounded-full" style={{ background: 'rgba(var(--accent-soft-rgb),0.02)', border: '1px solid rgba(var(--accent-soft-rgb),0.05)' }} />
 
           {/* Central icon */}
           <div className="relative w-28 h-28 rounded-3xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #1a1810 0%, #0f0e0b 100%)', border: '1px solid rgba(201,184,150,0.25)', boxShadow: '0 0 60px rgba(201,184,150,0.12)' }}>
-            <Sparkles className="w-12 h-12" style={{ color: '#c9b896' }} />
+            style={{ background: 'linear-gradient(135deg, #1a1810 0%, #0f0e0b 100%)', border: '1px solid rgba(var(--accent-soft-rgb),0.25)', boxShadow: '0 0 60px rgba(var(--accent-soft-rgb),0.12)' }}>
+            <Sparkles className="w-12 h-12" style={{ color: 'var(--accent-soft)' }} />
           </div>
         </div>
 
@@ -72,7 +72,7 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
           style={{ transitionDelay: '200ms' }}>
           <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-4">
             Client Portal<br />
-            <span style={{ color: '#c9b896' }}>In the Works</span>
+            <span style={{ color: 'var(--accent-soft)' }}>In the Works</span>
           </h1>
           <p className="text-base leading-relaxed" style={{ color: 'var(--text-muted)' }}>
             We're building a powerful, secure portal exclusively for our clients — where you can track your investments, access documents, and stay informed in real time.
@@ -84,7 +84,7 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
           style={{ transitionDelay: '300ms' }}>
           {submitted ? (
             <div className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl text-sm font-semibold"
-              style={{ background: 'rgba(201,184,150,0.08)', border: '1px solid rgba(201,184,150,0.2)', color: '#c9b896' }}>
+              style={{ background: 'rgba(var(--accent-soft-rgb),0.08)', border: '1px solid rgba(var(--accent-soft-rgb),0.2)', color: 'var(--accent-soft)' }}>
               <ShieldCheck className="w-4 h-4" />
               You're on the list! We'll notify you at launch.
             </div>
@@ -97,13 +97,13 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="Enter your email for early access"
                 className="flex-1 px-4 py-3 rounded-xl text-sm text-white outline-none"
-                style={{ background: '#0D0D0D', border: '1px solid rgba(201,184,150,0.15)' }}
-                onFocus={e => (e.target.style.borderColor = 'rgba(201,184,150,0.4)')}
-                onBlur={e => (e.target.style.borderColor = 'rgba(201,184,150,0.15)')}
+                style={{ background: 'var(--bg-surface)', border: '1px solid rgba(var(--accent-soft-rgb),0.15)' }}
+                onFocus={e => (e.target.style.borderColor = 'rgba(var(--accent-soft-rgb),0.4)')}
+                onBlur={e => (e.target.style.borderColor = 'rgba(var(--accent-soft-rgb),0.15)')}
               />
               <button type="submit"
                 className="px-5 py-3 rounded-xl text-sm font-bold text-black flex-shrink-0 transition-opacity hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg, #c9b896, #b5a57d)' }}>
+                style={{ background: 'linear-gradient(135deg, var(--accent-soft), var(--accent-soft-deep))' }}>
                 Notify Me
               </button>
             </form>
@@ -115,10 +115,10 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
           style={{ transitionDelay: '400ms' }}>
           {FEATURES.map(({ icon: Icon, title, desc }) => (
             <div key={title} className="flex items-start gap-4 p-5 rounded-2xl text-left"
-              style={{ background: '#0B0B0F', border: '1px solid rgba(201,184,150,0.08)' }}>
+              style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(var(--accent-soft-rgb),0.08)' }}>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(201,184,150,0.08)' }}>
-                <Icon className="w-4 h-4" style={{ color: '#c9b896' }} />
+                style={{ background: 'rgba(var(--accent-soft-rgb),0.08)' }}>
+                <Icon className="w-4 h-4" style={{ color: 'var(--accent-soft)' }} />
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">{title}</p>
@@ -130,7 +130,7 @@ export default function ClientPortalComingSoon({ onBack }: Props) {
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-6 text-xs" style={{ color: '#3A3A3A', borderTop: '1px solid rgba(201,184,150,0.06)' }}>
+      <footer className="text-center py-6 text-xs" style={{ color: 'var(--border-stronger)', borderTop: '1px solid rgba(var(--accent-soft-rgb),0.06)' }}>
         © 2026 Niyom Wealth Distribution. All rights reserved.
       </footer>
     </div>

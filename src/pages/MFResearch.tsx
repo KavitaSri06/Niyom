@@ -141,7 +141,7 @@ export default function MFResearch({ onBack }: MFResearchProps) {
 
   return (
     <div className="min-h-screen bg-bg-base">
-      <nav className="bg-black shadow-lg border-b border-[#c9b896]/20 sticky top-0 z-50 relative">
+      <nav className="bg-black shadow-lg border-b border-accent-soft/20 sticky top-0 z-50 relative">
         <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
           <button
             onClick={onBack}
@@ -149,14 +149,14 @@ export default function MFResearch({ onBack }: MFResearchProps) {
           >
             <Logo size="md" />
             <div className="text-left">
-              <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'Playfair Display, Georgia, serif' }}>MF Research</h1>
-              <p className="text-[#c9b896] text-xs tracking-wider">NIYOM WEALTH</p>
+              <h1 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>MF Research</h1>
+              <p className="text-accent-soft text-xs tracking-wider">NIYOM WEALTH</p>
             </div>
           </button>
 
           <button
             onClick={onBack}
-            className="hidden md:flex items-center gap-2 bg-[#c9b896] hover:bg-[#b5a57d] text-black px-5 py-2.5 rounded-lg transition-all duration-300 font-semibold shadow-md"
+            className="hidden md:flex items-center gap-2 bg-accent-soft hover:bg-accent-soft-deep text-black px-5 py-2.5 rounded-lg transition-all duration-300 font-semibold shadow-md"
           >
             <ArrowLeft size={18} />
             Back to Home
@@ -164,21 +164,21 @@ export default function MFResearch({ onBack }: MFResearchProps) {
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden text-white hover:text-[#c9b896] transition-colors"
+            className="md:hidden text-white hover:text-accent-soft transition-colors"
           >
             {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
 
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-[#c9b896]/20 shadow-lg z-50">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-black border-t border-accent-soft/20 shadow-lg z-50">
             <div className="flex flex-col p-4 space-y-3">
               <button
                 onClick={() => {
                   onBack();
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-2 bg-[#c9b896] hover:bg-[#b5a57d] text-black px-4 py-3 rounded-lg transition-all duration-300 font-semibold"
+                className="flex items-center gap-2 bg-accent-soft hover:bg-accent-soft-deep text-black px-4 py-3 rounded-lg transition-all duration-300 font-semibold"
               >
                 <ArrowLeft size={18} />
                 Back to Home

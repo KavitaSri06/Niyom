@@ -16,14 +16,14 @@ export function LegalDocumentLayout({ title, subtitle, icon, onClose, children }
         <div className="max-w-6xl mx-auto px-8 py-5 flex justify-between items-center">
           <button
             onClick={onClose}
-            className="flex items-center gap-3 hover:text-[#c9b896] transition-all duration-300 font-medium group"
+            className="flex items-center gap-3 hover:text-accent-soft transition-all duration-300 font-medium group"
           >
             <ArrowLeft size={22} className="group-hover:-translate-x-1 transition-transform" />
             <span className="tracking-wide text-sm uppercase">Back to Home</span>
           </button>
           <button
             onClick={onClose}
-            className="text-white hover:text-[#c9b896] transition-colors p-2 hover:bg-slate-700 rounded-lg"
+            className="text-white hover:text-accent-soft transition-colors p-2 hover:bg-slate-700 rounded-lg"
           >
             <X size={26} />
           </button>

@@ -29,7 +29,7 @@ function Field({ label, required, children, hint }: { label: string; required?: 
   return (
     <div>
       <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
-        {label}{required && <span className="ml-0.5" style={{ color: '#D4AF37' }}>*</span>}
+        {label}{required && <span className="ml-0.5" style={{ color: 'var(--accent)' }}>*</span>}
       </label>
       {children}
       {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>{hint}</p>}
@@ -43,7 +43,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none transition-all"
-      style={{ background: '#050505', border: `1px solid ${focused ? '#D4AF37' : '#1E1E24'}` }}
+      style={{ background: 'var(--bg-base)', border: `1px solid ${focused ? 'var(--accent)' : 'var(--border)'}` }}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
     />
@@ -57,7 +57,7 @@ function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
       {...props}
       rows={3}
       className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none transition-all resize-none"
-      style={{ background: '#050505', border: `1px solid ${focused ? '#D4AF37' : '#1E1E24'}` }}
+      style={{ background: 'var(--bg-base)', border: `1px solid ${focused ? 'var(--accent)' : 'var(--border)'}` }}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
     />
@@ -210,30 +210,30 @@ export default function PublicOnboarding({ onBack }: Props) {
   if (successData) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.92)' }}>
-        <div className="w-full max-w-lg rounded-3xl overflow-hidden" style={{ background: '#0B0B0F', border: '1px solid rgba(212,175,55,0.25)' }}>
+        <div className="w-full max-w-lg rounded-3xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid rgba(var(--accent-rgb),0.25)' }}>
           {/* Gold top bar */}
-          <div className="h-1.5 w-full" style={{ background: 'linear-gradient(90deg, #D4AF37, #B8961E, #D4AF37)' }} />
+          <div className="h-1.5 w-full" style={{ background: 'linear-gradient(90deg, var(--accent), var(--accent-strong), var(--accent))' }} />
           <div className="p-8 space-y-6 text-center">
             <div className="w-20 h-20 rounded-full mx-auto flex items-center justify-center"
               style={{ background: 'rgba(16,185,129,0.1)', border: '2px solid rgba(16,185,129,0.3)' }}>
-              <CheckCircle2 className="w-10 h-10" style={{ color: '#10B981' }} />
+              <CheckCircle2 className="w-10 h-10" style={{ color: 'var(--success)' }} />
             </div>
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: '#D4AF37' }}>Onboarding Complete</p>
+              <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: 'var(--accent)' }}>Onboarding Complete</p>
               <h2 className="text-2xl font-bold text-white">Welcome to Niyom Wealth!</h2>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                 Dear <span className="text-white font-semibold">{successData.client_name}</span>, your onboarding request has been successfully submitted.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl space-y-1" style={{ background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.15)' }}>
-              <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: '#D4AF37' }}>Your Reference Code</p>
-              <p className="text-2xl font-black font-mono" style={{ color: '#D4AF37' }}>{successData.client_code}</p>
+            <div className="p-4 rounded-2xl space-y-1" style={{ background: 'rgba(var(--accent-rgb),0.05)', border: '1px solid rgba(var(--accent-rgb),0.15)' }}>
+              <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: 'var(--accent)' }}>Your Reference Code</p>
+              <p className="text-2xl font-black font-mono" style={{ color: 'var(--accent)' }}>{successData.client_code}</p>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Please save this code for your records.</p>
             </div>
 
             <div className="p-4 rounded-2xl text-left space-y-3" style={{ background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.12)' }}>
-              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#10B981' }}>What Happens Next?</p>
+              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--success)' }}>What Happens Next?</p>
               {[
                 'Our team will review your submitted documents and details.',
                 'A dedicated Relationship Manager will be assigned to you within 24 hours.',
@@ -242,7 +242,7 @@ export default function PublicOnboarding({ onBack }: Props) {
               ].map((line, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold mt-0.5"
-                    style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981' }}>{i + 1}</div>
+                    style={{ background: 'rgba(16,185,129,0.15)', color: 'var(--success)' }}>{i + 1}</div>
                   <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{line}</p>
                 </div>
               ))}
@@ -254,7 +254,7 @@ export default function PublicOnboarding({ onBack }: Props) {
 
             <button onClick={onBack}
               className="w-full py-3.5 rounded-xl font-bold text-sm text-black"
-              style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+              style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
               Return to Login
             </button>
           </div>
@@ -265,11 +265,11 @@ export default function PublicOnboarding({ onBack }: Props) {
 
   // ── Main Onboarding Page ──────────────────────────────────────
   return (
-    <div className="min-h-screen" style={{ background: '#050505' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       {/* Top nav */}
-      <div className="sticky top-0 z-10 px-6 py-4 flex items-center gap-4" style={{ background: 'rgba(5,5,5,0.95)', borderBottom: '1px solid #111', backdropFilter: 'blur(8px)' }}>
+      <div className="sticky top-0 z-10 px-6 py-4 flex items-center gap-4" style={{ background: 'rgba(5,5,5,0.95)', borderBottom: '1px solid var(--border-subtle)', backdropFilter: 'blur(8px)' }}>
         <button onClick={onBack} className="flex items-center gap-2 text-sm transition-colors" style={{ color: 'var(--text-muted)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#D4AF37')}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
           onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
           <ArrowLeft className="w-4 h-4" /> Back to Login
         </button>
@@ -280,7 +280,7 @@ export default function PublicOnboarding({ onBack }: Props) {
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <div>
-          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: '#D4AF37' }}>Client Onboarding</p>
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Client Onboarding</p>
           <h1 className="text-2xl font-bold text-white">Begin Your Wealth Journey</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Complete all steps to register with Niyom Wealth Distribution.</p>
         </div>
@@ -292,16 +292,16 @@ export default function PublicOnboarding({ onBack }: Props) {
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
                   style={{
-                    background: i === step ? 'rgba(212,175,55,0.2)' : i < step ? 'rgba(16,185,129,0.15)' : '#111',
-                    border: `1px solid ${i === step ? '#D4AF37' : i < step ? '#10B981' : '#1E1E24'}`,
-                    color: i === step ? '#D4AF37' : i < step ? '#10B981' : '#3A3A3A',
+                    background: i === step ? 'rgba(var(--accent-rgb),0.2)' : i < step ? 'rgba(16,185,129,0.15)' : 'var(--bg-raised)',
+                    border: `1px solid ${i === step ? 'var(--accent)' : i < step ? 'var(--success)' : 'var(--border)'}`,
+                    color: i === step ? 'var(--accent)' : i < step ? 'var(--success)' : 'var(--border-stronger)',
                   }}>
                   {i < step ? '✓' : i + 1}
                 </div>
-                <span className="text-xs font-medium hidden sm:inline" style={{ color: i === step ? '#D4AF37' : i < step ? '#10B981' : '#3A3A3A' }}>{s}</span>
+                <span className="text-xs font-medium hidden sm:inline" style={{ color: i === step ? 'var(--accent)' : i < step ? 'var(--success)' : 'var(--border-stronger)' }}>{s}</span>
               </div>
               {i < STEPS.length - 1 && (
-                <div className="flex-1 h-px min-w-3" style={{ background: i < step ? '#10B981' : '#1A1A1A' }} />
+                <div className="flex-1 h-px min-w-3" style={{ background: i < step ? 'var(--success)' : 'var(--border-subtle)' }} />
               )}
             </React.Fragment>
           ))}
@@ -316,13 +316,13 @@ export default function PublicOnboarding({ onBack }: Props) {
         )}
 
         {/* Step card */}
-        <div className="rounded-2xl p-6 space-y-5" style={{ background: '#0B0B0F', border: '1px solid #1E1E24' }}>
+        <div className="rounded-2xl p-6 space-y-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
 
           {/* Personal Info */}
           {stepName === 'Personal Info' && (
             <>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <User className="w-4 h-4" style={{ color: '#D4AF37' }} /> Personal Information
+                <User className="w-4 h-4" style={{ color: 'var(--accent)' }} /> Personal Information
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Full Name" required>
@@ -348,7 +348,7 @@ export default function PublicOnboarding({ onBack }: Props) {
           {stepName === 'Address' && (
             <>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <MapPin className="w-4 h-4" style={{ color: '#D4AF37' }} /> Residential Address
+                <MapPin className="w-4 h-4" style={{ color: 'var(--accent)' }} /> Residential Address
               </h3>
               <Field label="Full Address" required>
                 <Textarea value={form.address} onChange={e => set('address', e.target.value)} placeholder="House/Flat No., Street, Area..." />
@@ -371,7 +371,7 @@ export default function PublicOnboarding({ onBack }: Props) {
           {stepName === 'Demat & Bank' && (
             <>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Building2 className="w-4 h-4" style={{ color: '#D4AF37' }} /> Demat & Bank Details
+                <Building2 className="w-4 h-4" style={{ color: 'var(--accent)' }} /> Demat & Bank Details
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Demat Account No." required>
@@ -400,10 +400,10 @@ export default function PublicOnboarding({ onBack }: Props) {
           {stepName === 'Documents' && (
             <>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Upload className="w-4 h-4" style={{ color: '#D4AF37' }} /> KYC Document Upload
+                <Upload className="w-4 h-4" style={{ color: 'var(--accent)' }} /> KYC Document Upload
               </h3>
               <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                All three documents are <span style={{ color: '#D4AF37' }}>mandatory</span> for KYC compliance. Accepted formats: PDF, JPG, PNG.
+                All three documents are <span style={{ color: 'var(--accent)' }}>mandatory</span> for KYC compliance. Accepted formats: PDF, JPG, PNG.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {CLIENT_DOC_TYPES.map(({ type, label }) => {
@@ -411,23 +411,23 @@ export default function PublicOnboarding({ onBack }: Props) {
                   return (
                     <label key={type} className="flex flex-col items-center gap-3 p-5 rounded-2xl cursor-pointer transition-all text-center"
                       style={{
-                        background: uploaded ? 'rgba(16,185,129,0.05)' : '#050505',
-                        border: `1px solid ${uploaded ? 'rgba(16,185,129,0.3)' : 'rgba(212,175,55,0.2)'}`,
+                        background: uploaded ? 'rgba(16,185,129,0.05)' : 'var(--bg-base)',
+                        border: `1px solid ${uploaded ? 'rgba(16,185,129,0.3)' : 'rgba(var(--accent-rgb),0.2)'}`,
                       }}>
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                        style={{ background: uploaded ? 'rgba(16,185,129,0.1)' : 'rgba(212,175,55,0.08)' }}>
+                        style={{ background: uploaded ? 'rgba(16,185,129,0.1)' : 'rgba(var(--accent-rgb),0.08)' }}>
                         {uploaded
-                          ? <CheckCircle2 className="w-5 h-5" style={{ color: '#10B981' }} />
-                          : <FileText className="w-5 h-5" style={{ color: '#D4AF37' }} />}
+                          ? <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--success)' }} />
+                          : <FileText className="w-5 h-5" style={{ color: 'var(--accent)' }} />}
                       </div>
                       <div>
-                        <p className="text-xs font-semibold" style={{ color: uploaded ? '#10B981' : 'var(--text-faint)' }}>{label}</p>
+                        <p className="text-xs font-semibold" style={{ color: uploaded ? 'var(--success)' : 'var(--text-faint)' }}>{label}</p>
                         <p className="text-xs mt-0.5 truncate max-w-full" style={{ color: 'var(--text-secondary)' }}>
                           {uploaded ? uploaded.file.name : 'Tap to upload'}
                         </p>
                       </div>
                       {!uploaded && (
-                        <span className="text-xs px-2 py-0.5 rounded-md font-semibold" style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }}>Required</span>
+                        <span className="text-xs px-2 py-0.5 rounded-md font-semibold" style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}>Required</span>
                       )}
                       <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png"
                         onChange={e => handleDocFile(type, e.target.files?.[0] || null)} />
@@ -442,7 +442,7 @@ export default function PublicOnboarding({ onBack }: Props) {
           {stepName === 'Review' && (
             <>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" style={{ color: '#D4AF37' }} /> Review Your Details
+                <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--accent)' }} /> Review Your Details
               </h3>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Please verify all details before submitting. You may go back to make corrections.</p>
 
@@ -453,12 +453,12 @@ export default function PublicOnboarding({ onBack }: Props) {
               ].map(section => (
                 <div key={section.title}>
                   <div className="flex items-center gap-2 mb-2">
-                    <section.icon className="w-3.5 h-3.5" style={{ color: '#D4AF37' }} />
-                    <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#D4AF37' }}>{section.title}</p>
+                    <section.icon className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
+                    <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>{section.title}</p>
                   </div>
-                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1A1A1A' }}>
+                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-subtle)' }}>
                     {section.rows.filter(r => r[1]).map(([k, v]) => (
-                      <div key={k} className="flex gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid #111' }}>
+                      <div key={k} className="flex gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                         <p className="text-xs w-28 flex-shrink-0 font-medium" style={{ color: 'var(--text-secondary)' }}>{k}</p>
                         <p className="text-xs text-white">{v}</p>
                       </div>
@@ -468,15 +468,15 @@ export default function PublicOnboarding({ onBack }: Props) {
               ))}
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#D4AF37' }}>Uploaded Documents</p>
+                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--accent)' }}>Uploaded Documents</p>
                 <div className="flex flex-wrap gap-2">
                   {CLIENT_DOC_TYPES.map(({ type, label }) => {
                     const uploaded = docFiles.find(d => d.type === type);
                     return (
                       <span key={type} className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg"
                         style={uploaded
-                          ? { background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.2)' }
-                          : { background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+                          ? { background: 'rgba(16,185,129,0.1)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.2)' }
+                          : { background: 'rgba(239,68,68,0.08)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)' }}>
                         {uploaded ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
                         {label}
                       </span>
@@ -485,7 +485,7 @@ export default function PublicOnboarding({ onBack }: Props) {
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl text-xs leading-relaxed" style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.12)', color: 'var(--text-muted)' }}>
+              <div className="p-4 rounded-xl text-xs leading-relaxed" style={{ background: 'rgba(var(--accent-rgb),0.04)', border: '1px solid rgba(var(--accent-rgb),0.12)', color: 'var(--text-muted)' }}>
                 By submitting this form, you confirm that all information provided is accurate and you consent to Niyom Wealth Distribution LLP processing your details for account creation and KYC verification purposes.
               </div>
             </>
@@ -496,19 +496,19 @@ export default function PublicOnboarding({ onBack }: Props) {
         <div className="flex justify-between">
           <button onClick={() => { setError(''); setStep(s => Math.max(0, s - 1)); }} disabled={step === 0}
             className="px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-30 transition-colors flex items-center gap-2"
-            style={{ background: '#111', color: 'var(--text-muted)', border: '1px solid #1E1E24' }}>
+            style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           {step < STEPS.length - 1 ? (
             <button onClick={handleNext}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-black"
-              style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+              style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
               Continue <ChevronRight className="w-4 h-4" />
             </button>
           ) : (
             <button onClick={handleSubmit} disabled={saving || missingDocs.length > 0}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-black disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #D4AF37, #B8961E)' }}>
+              style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
               {saving ? 'Submitting...' : <><CheckCircle2 className="w-4 h-4" /> Submit Onboarding</>}
             </button>
           )}
