@@ -99,6 +99,20 @@ const emptyForm = (): DealForm => ({
   notes: '',
 });
 
+// Stamp duty rate (percent) by product type.
+//
+// MUST stay in step with nw_stamp_duty_rate() in the database, which is the
+// source of truth — stamp_duty is a generated column and the rate that applied
+// is stored per deal (nw_deal_confirmations.stamp_duty_rate), so signed deals
+// keep the rate they were signed with. These values only drive this form's
+// live preview.
+const STAMP_DUTY_RATES: Record<string, number> = {
+  'Unlisted Share': 0.015,
+  'Secondary Bond': 0.0001,
+};
+const stampDutyRateFor = (productType: string): number =>
+  STAMP_DUTY_RATES[productType] ?? 0;
+
 // The rate the RM enters is the BASE — what the client agreed to pay per unit.
 // Stamp duty is carved OUT of that base, so:
 //     net (adjusted) rate + stamp duty  ==  base rate
@@ -114,10 +128,10 @@ const emptyForm = (): DealForm => ({
 // presentation (the deal note included), and the settlement is rounded once at
 // the end. 8dp is far beyond any rate this desk trades and keeps the value
 // free of float artefacts like 2049.6924999999999.
-function adjustRate(base: string): string {
+function adjustRate(base: string, dutyRatePercent: number): string {
   const n = parseFloat(base);
   if (!base || isNaN(n) || n <= 0) return '';
-  return String(Math.round((n - n * 0.015 / 100) * 1e8) / 1e8);
+  return String(Math.round((n - n * dutyRatePercent / 100) * 1e8) / 1e8);
 }
 
 function fmt(n: number) {
@@ -256,11 +270,12 @@ export default function DealConfirmation({ employee }: Props) {
   // the source of truth — this component never sends stamp_duty or
   // settlement_amount, the database computes both:
   //
-  //   stamp_duty        = ROUND(base_rate * quantity * 0.015 / 100, 2)
+  //   stamp_duty        = ROUND(base_rate * quantity * stamp_duty_rate / 100, 2)
   //   settlement_amount = ROUND(base_rate * quantity, 2)
   //
   // Settlement is therefore ALWAYS qty × the rate the RM entered. Stamp duty is
-  // carved out of that total, not added to it.
+  // carved out of that total, not added to it, and its rate depends on the
+  // product type.
   //
   // This preview previously derived the total from the ADJUSTED rate instead
   // (qty × adjRate, then added duty back on), which disagreed with the database
@@ -270,8 +285,9 @@ export default function DealConfirmation({ employee }: Props) {
   const qty = parseFloat(form.quantity) || 0;
   const baseRate = parseFloat(form.base_rate) || 0;
   const adjRate = parseFloat(form.rate_per_unit) || 0;
+  const dutyRate = stampDutyRateFor(form.product_type);
   const settlementAmount = Math.round(qty * baseRate * 100) / 100;
-  const stampDuty = Math.round(qty * baseRate * 0.015 / 100 * 100) / 100;
+  const stampDuty = Math.round(qty * baseRate * dutyRate / 100 * 100) / 100;
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -743,7 +759,13 @@ export default function DealConfirmation({ employee }: Props) {
             </Field>
             <Field label="Product Type" required>
               <div className="relative">
-                <select value={form.product_type} onChange={e => setForm(f => ({ ...f, product_type: e.target.value }))}
+                {/* Changing the product changes the duty rate, so the adjusted
+                    rate must be re-derived from the base the RM already typed. */}
+                <select value={form.product_type} onChange={e => setForm(f => ({
+                  ...f,
+                  product_type: e.target.value,
+                  rate_per_unit: adjustRate(f.base_rate, stampDutyRateFor(e.target.value)),
+                }))}
                   className="w-full pl-3 pr-8 py-2.5 rounded-xl text-sm text-text-primary outline-none appearance-none"
                   style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}>
                   <option value="">Select product</option>
@@ -781,7 +803,7 @@ export default function DealConfirmation({ employee }: Props) {
                 type="number" min="0" step="0.01"
                 value={form.base_rate}
                 onChange={e => {
-                  const adj = adjustRate(e.target.value);
+                  const adj = adjustRate(e.target.value, stampDutyRateFor(form.product_type));
                   setForm(f => ({ ...f, base_rate: e.target.value, rate_per_unit: adj }));
                 }}
                 placeholder="Enter base rate"
@@ -800,12 +822,15 @@ export default function DealConfirmation({ employee }: Props) {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-faint)' }}>Stamp Duty / Charges</p>
                 <p className="text-lg font-black" style={{ color: 'var(--accent)' }}>{fmt(stampDuty)}</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--border-stronger)' }}>(Rate × Qty) × 0.015%</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--border-stronger)' }}>
+                  {dutyRate > 0 ? `(Rate × Qty) × ${dutyRate}%` : `No stamp duty on ${form.product_type || 'this product'}`}
+                </p>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-faint)' }}>Settlement Amount</p>
                 <p className="text-lg font-black" style={{ color: 'var(--success)' }}>{fmt(settlementAmount)}</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--border-stronger)' }}>(Rate × Qty) + Stamp Duty</p>
+                {/* Duty is carved OUT of the entered rate, never added on top. */}
+                <p className="text-xs mt-0.5" style={{ color: 'var(--border-stronger)' }}>Rate × Qty (duty included)</p>
               </div>
             </div>
           )}
