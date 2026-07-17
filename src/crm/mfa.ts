@@ -19,6 +19,20 @@
 import { supabase } from '../lib/supabase';
 import { NWEmployee } from './types';
 
+// MASTER SWITCH — is a second factor REQUIRED to enter the CRM?
+//
+// false: MFA is OPTIONAL. Enrolment still works from the login screen for
+//        anyone who wants it, but no one is forced to set one up and an
+//        already-enrolled user is never challenged — a correct password goes
+//        straight in. This is the "less friction" setting.
+// true:  MFA is ENFORCED for privileged accounts (admin / super_admin): they
+//        must enrol, and every session must step up to aal2.
+//
+// This only governs the APPLICATION gate. It cannot forge assurance: a session
+// that skips the challenge stays aal1, so if aal2 is ever required in RLS the
+// database still refuses it. Flip this one line to re-enforce.
+export const MFA_REQUIRED = false;
+
 /** Roles required to carry a second factor. */
 export function isPrivileged(role: string | null | undefined): boolean {
   return role === 'admin' || role === 'super_admin';
@@ -32,6 +46,24 @@ export type MfaGate =
   | 'ok'          // nothing to do — proceed into the CRM
   | 'challenge'   // enrolled, but this session is still aal1 — ask for the code
   | 'enroll';     // privileged and no verified factor yet — must set one up
+
+/**
+ * Is a second factor MANDATORY for privileged accounts?
+ *
+ * false — enrolment is opt-in. A privileged account with no factor goes straight
+ * in; one that HAS enrolled is still challenged, because a factor that exists but
+ * is not asked for protects nobody. Members turn it on and off themselves from
+ * Settings → Security.
+ *
+ * Flip to true to make it mandatory again — evaluateMfaGate then returns 'enroll'
+ * and CRMLogin walks the user through setup on next sign-in. Nothing else needs
+ * to change; the enrolment flow is still here and still used.
+ *
+ * TRADE-OFF: with this false, a stolen or guessed admin password is the ONLY
+ * thing between an attacker and every client's PAN, Aadhaar, bank and demat
+ * details, the full portfolio book, and the ability to raise payment links.
+ */
+export const REQUIRE_MFA_FOR_PRIVILEGED = false;
 
 /**
  * True when the PROJECT has TOTP switched off (Supabase dashboard → Auth → MFA).
@@ -70,6 +102,8 @@ export function isMfaUnavailable(err: unknown): boolean {
  * two cases are distinguished by the factor list rather than by AAL alone.
  */
 export async function evaluateMfaGate(emp: Pick<NWEmployee, 'role'>): Promise<MfaGate> {
+  // MFA turned off at the app layer — never force enrolment, never challenge.
+  if (!MFA_REQUIRED) return 'ok';
   if (!employeeIsPrivileged(emp)) return 'ok';
 
   const { data: aal, error: aalErr } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -82,10 +116,31 @@ export async function evaluateMfaGate(emp: Pick<NWEmployee, 'role'>): Promise<Mf
   if (aal?.currentLevel === 'aal2') return 'ok';
 
   // A verified factor exists -> Supabase wants us at aal2 -> challenge.
+  // This holds regardless of REQUIRE_MFA_FOR_PRIVILEGED: someone who deliberately
+  // enrolled expects to be asked, and skipping it would leave the session at aal1
+  // while the account looks protected. To stop being challenged, remove the
+  // factor (Settings → Security), which is an explicit act rather than a silent
+  // downgrade.
   if (aal?.nextLevel === 'aal2') return 'challenge';
 
-  // No verified factor: a privileged account must create one before entering.
-  return 'enroll';
+  // No verified factor. Mandatory mode sends them through setup; otherwise
+  // enrolment is opt-in and they carry on.
+  return REQUIRE_MFA_FOR_PRIVILEGED ? 'enroll' : 'ok';
+}
+
+/**
+ * Remove every verified TOTP factor on the current user — i.e. turn 2FA off.
+ *
+ * Deliberately NOT called anywhere automatically. Dropping a second factor is a
+ * decision a person makes about their own account, so it is only reachable from
+ * Settings → Security behind an explicit confirmation.
+ */
+export async function disableTotp(): Promise<void> {
+  const factors = await listVerifiedTotpFactors();
+  for (const f of factors) {
+    const { error } = await supabase.auth.mfa.unenroll({ factorId: f.id });
+    if (error) throw error;
+  }
 }
 
 /** Verified TOTP factors on the current user, if any. */
