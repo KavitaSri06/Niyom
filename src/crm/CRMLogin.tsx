@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { NWEmployee } from './types';
-import { Shield, Users, BarChart3, Mail, Lock, Eye, EyeOff, ArrowRight, ChevronLeft, ArrowLeft, AlertTriangle, KeyRound, CheckCircle2, RotateCw } from 'lucide-react';
+import {
+  evaluateMfaGate, listVerifiedTotpFactors, startTotpEnrollment, verifyTotpCode,
+  cancelEnrollment, mfaErrorMessage, isMfaUnavailable, type TotpEnrollment,
+} from './mfa';
+import { Shield, Users, BarChart3, Mail, Lock, Eye, EyeOff, ArrowRight, ChevronLeft, ArrowLeft, AlertTriangle, KeyRound, CheckCircle2, RotateCw, Smartphone } from 'lucide-react';
 
 interface Props {
   onLogin: (emp: NWEmployee) => void;
@@ -9,7 +13,11 @@ interface Props {
 
 // Multi-step forgot-password (OTP) flow:
 //   fp_email -> fp_otp -> fp_password -> fp_done
-type View = 'login' | 'fp_email' | 'fp_otp' | 'fp_password' | 'fp_done';
+// Privileged accounts (admin / super_admin) carry a TOTP second factor:
+//   login -> mfa_challenge   (already enrolled — enter the current code)
+//   login -> mfa_enroll      (first sign-in after 2FA was turned on)
+type View = 'login' | 'fp_email' | 'fp_otp' | 'fp_password' | 'fp_done'
+  | 'mfa_challenge' | 'mfa_enroll';
 
 const FN_BASE = `${(import.meta as any).env?.VITE_SUPABASE_URL || ''}/functions/v1`;
 const FN_ANON = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
@@ -75,6 +83,16 @@ export default function CRMLogin({ onLogin }: Props) {
   const [error, setError] = useState('');
   const [lockoutMsg, setLockoutMsg] = useState('');
   const lockoutTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // --- Two-factor (TOTP) state ---
+  // The employee is held here, NOT handed to onLogin, until the second factor
+  // clears — otherwise a password alone would be enough to enter the CRM.
+  const [pendingEmp, setPendingEmp] = useState<NWEmployee | null>(null);
+  const [mfaFactorId, setMfaFactorId] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaError, setMfaError] = useState('');
+  const [enrollment, setEnrollment] = useState<TotpEnrollment | null>(null);
+  const [showSecret, setShowSecret] = useState(false);
 
   // --- Forgot-password (OTP) flow state ---
   const [otp, setOtp] = useState('');
@@ -175,10 +193,83 @@ export default function CRMLogin({ onLogin }: Props) {
       return;
     }
 
-    // Success — clear rate limit and proceed
+    // Password accepted. For a privileged account this is only the FIRST factor —
+    // the session exists but is still aal1, and the CRM is not handed over until
+    // the TOTP step clears.
     clearRateLimit();
+
+    try {
+      const gate = await evaluateMfaGate(emp as NWEmployee);
+
+      if (gate === 'challenge') {
+        const factors = await listVerifiedTotpFactors();
+        if (factors.length === 0) throw new Error('No verified authenticator found.');
+        setPendingEmp(emp as NWEmployee);
+        setMfaFactorId(factors[0].id);
+        setMfaCode('');
+        setMfaError('');
+        setView('mfa_challenge');
+        setLoading(false);
+        return;
+      }
+
+      if (gate === 'enroll') {
+        const e = await startTotpEnrollment();
+        setPendingEmp(emp as NWEmployee);
+        setEnrollment(e);
+        setMfaFactorId(e.factorId);
+        setMfaCode('');
+        setMfaError('');
+        setView('mfa_enroll');
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      // TOTP switched off for the project: nobody can enrol, so enforcing here
+      // would lock out every admin. Let them through — see isMfaUnavailable.
+      if (isMfaUnavailable(err)) {
+        setLoading(false);
+        onLogin(emp as NWEmployee);
+        return;
+      }
+      // Any other failure: do NOT fail open. End the session rather than let a
+      // password-only login through.
+      await supabase.auth.signOut();
+      setError(mfaErrorMessage(err));
+      setLoading(false);
+      return;
+    }
+
     setLoading(false);
     onLogin(emp as NWEmployee);
+  };
+
+  // Shared by both the challenge and the last step of enrolment — Supabase
+  // verifies them identically, and either one lifts the session to aal2.
+  const handleMfaVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (mfaCode.length !== 6 || !pendingEmp) return;
+    setMfaError('');
+    setLoading(true);
+    try {
+      await verifyTotpCode(mfaFactorId, mfaCode);
+      setLoading(false);
+      onLogin(pendingEmp);
+    } catch (err) {
+      setMfaError(mfaErrorMessage(err));
+      setMfaCode('');
+      setLoading(false);
+    }
+  };
+
+  // Backing out must terminate the half-authenticated session, or an aal1
+  // session would linger and CRM.tsx would find it on the next page load.
+  const abandonMfa = async () => {
+    if (view === 'mfa_enroll' && enrollment) await cancelEnrollment(enrollment.factorId);
+    await supabase.auth.signOut();
+    setPendingEmp(null); setEnrollment(null); setMfaFactorId('');
+    setMfaCode(''); setMfaError(''); setPassword('');
+    setView('login');
   };
 
   const callFn = async (path: string, payload: unknown) => {
@@ -443,6 +534,122 @@ export default function CRMLogin({ onLogin }: Props) {
                 </div>
               )}
             </>
+          )}
+
+          {/* ---------------- Two-factor: challenge (already enrolled) --------------- */}
+          {view === 'mfa_challenge' && (
+            <div className="space-y-8">
+              <div>
+                <button onClick={abandonMfa} className="flex items-center gap-1.5 text-xs mb-6" style={{ color: 'var(--text-secondary)' }}>
+                  <ChevronLeft className="w-3.5 h-3.5" /> Cancel and sign out
+                </button>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(var(--accent-soft-rgb),0.1)', border: '1px solid rgba(var(--accent-soft-rgb),0.2)' }}>
+                  <Shield className="w-7 h-7" style={{ color: 'var(--accent-soft)' }} />
+                </div>
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--accent-soft)' }}>Two-Factor Authentication</p>
+                <h2 className="text-3xl font-bold text-text-primary">Verify It's You</h2>
+                <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Enter the 6-digit code from your authenticator app.
+                </p>
+              </div>
+
+              {mfaError && (
+                <div className="p-4 rounded-xl flex items-start gap-3 text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'rgb(var(--danger-soft-rgb))' }}>
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{mfaError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleMfaVerify} className="space-y-5">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Authentication Code</label>
+                  <input
+                    type="text" inputMode="numeric" autoComplete="one-time-code" autoFocus required
+                    value={mfaCode}
+                    onChange={e => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full px-4 py-3.5 rounded-xl text-center text-2xl font-bold tracking-[0.5em] text-text-primary outline-none"
+                    style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}
+                  />
+                </div>
+                <button type="submit" disabled={loading || mfaCode.length !== 6}
+                  className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ background: 'var(--accent-soft)', color: 'var(--text-on-accent)' }}>
+                  {loading ? <RotateCw className="w-4 h-4 animate-spin" /> : <>Verify <ArrowRight className="w-4 h-4" /></>}
+                </button>
+              </form>
+
+              <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+                Lost access to your authenticator? Ask another administrator to reset your second factor.
+              </p>
+            </div>
+          )}
+
+          {/* ---------------- Two-factor: first-time enrolment ---------------------- */}
+          {view === 'mfa_enroll' && enrollment && (
+            <div className="space-y-7">
+              <div>
+                <button onClick={abandonMfa} className="flex items-center gap-1.5 text-xs mb-6" style={{ color: 'var(--text-secondary)' }}>
+                  <ChevronLeft className="w-3.5 h-3.5" /> Cancel and sign out
+                </button>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(var(--accent-soft-rgb),0.1)', border: '1px solid rgba(var(--accent-soft-rgb),0.2)' }}>
+                  <Smartphone className="w-7 h-7" style={{ color: 'var(--accent-soft)' }} />
+                </div>
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--accent-soft)' }}>Security Setup Required</p>
+                <h2 className="text-3xl font-bold text-text-primary">Set Up Two-Factor</h2>
+                <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Administrator accounts require a second factor. Scan this with Google Authenticator, Authy, or your password manager.
+                </p>
+              </div>
+
+              {mfaError && (
+                <div className="p-4 rounded-xl flex items-start gap-3 text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'rgb(var(--danger-soft-rgb))' }}>
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{mfaError}</span>
+                </div>
+              )}
+
+              {/* Supabase returns the QR as an SVG data-URI — rendered directly. */}
+              <div className="flex justify-center">
+                <div className="p-3 rounded-2xl" style={{ background: '#ffffff' }}>
+                  <img src={enrollment.qrCode} alt="Two-factor setup QR code" width={168} height={168} style={{ display: 'block' }} />
+                </div>
+              </div>
+
+              <div className="text-center">
+                <button type="button" onClick={() => setShowSecret(s => !s)} className="text-xs underline" style={{ color: 'var(--text-secondary)' }}>
+                  {showSecret ? 'Hide setup key' : "Can't scan? Enter the key manually"}
+                </button>
+                {showSecret && (
+                  <p className="mt-2 font-mono text-xs break-all px-4 py-2.5 rounded-lg" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--accent-soft)' }}>
+                    {enrollment.secret}
+                  </p>
+                )}
+              </div>
+
+              <form onSubmit={handleMfaVerify} className="space-y-5">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Enter the code shown in your app</label>
+                  <input
+                    type="text" inputMode="numeric" autoComplete="one-time-code" required
+                    value={mfaCode}
+                    onChange={e => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full px-4 py-3.5 rounded-xl text-center text-2xl font-bold tracking-[0.5em] text-text-primary outline-none"
+                    style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}
+                  />
+                </div>
+                <button type="submit" disabled={loading || mfaCode.length !== 6}
+                  className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ background: 'var(--accent-soft)', color: 'var(--text-on-accent)' }}>
+                  {loading ? <RotateCw className="w-4 h-4 animate-spin" /> : <>Activate <CheckCircle2 className="w-4 h-4" /></>}
+                </button>
+              </form>
+
+              <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+                Keep this authenticator safe. Losing it means another administrator must reset your access.
+              </p>
+            </div>
           )}
 
           {/* Step 1: enter email */}

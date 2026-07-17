@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { NWEmployee, CRMPage } from './types';
+import { evaluateMfaGate, isMfaUnavailable } from './mfa';
 import CRMLogin from './CRMLogin';
 import ChangePassword from './ChangePassword';
 import Layout from './Layout';
@@ -55,13 +56,41 @@ export default function CRM() {
 }, []);
 
   useEffect(() => {
+    const loadEmployee = async (userId: string) => {
+      const { data } = await supabase
+        .from('nw_employees').select('*')
+        .eq('auth_user_id', userId).eq('status', 'active').maybeSingle();
+      return (data as NWEmployee) || null;
+    };
+
+    // Restoring a session on page load must re-check the second factor. A
+    // privileged session that never completed (tab closed on the code screen)
+    // is still a valid aal1 session in storage, and without this it would sail
+    // straight into the CRM on the next visit.
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        const { data } = await supabase
-          .from('nw_employees').select('*')
-          .eq('auth_user_id', session.user.id).eq('status', 'active').maybeSingle();
-        setEmployee((data as NWEmployee) || null);
+        const emp = await loadEmployee(session.user.id);
+        if (emp) {
+          let gate: Awaited<ReturnType<typeof evaluateMfaGate>>;
+          try {
+            gate = await evaluateMfaGate(emp);
+          } catch (err) {
+            // TOTP off project-wide -> nobody can enrol, so enforcing would lock
+            // every admin out. Anything else -> do not fail open.
+            gate = isMfaUnavailable(err) ? 'ok' : 'challenge';
+          }
+          if (gate === 'ok') {
+            setEmployee(emp);
+          } else {
+            // No component is driving the MFA flow here, so end the session and
+            // make them sign in again — where the challenge is enforced.
+            await supabase.auth.signOut();
+            setEmployee(null);
+          }
+        } else {
+          setEmployee(null);
+        }
       }
       setLoading(false);
     };
@@ -73,11 +102,25 @@ export default function CRM() {
           localStorage.clear();
           sessionStorage.clear();
           window.location.replace('/crm');
-        } else if ((event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') && session) {
-          const { data } = await supabase
-            .from('nw_employees').select('*')
-            .eq('auth_user_id', session.user.id).eq('status', 'active').maybeSingle();
-          setEmployee((data as NWEmployee) || null);
+          return;
+        }
+
+        if (!session) return;
+
+        // SIGNED_IN fires as soon as the PASSWORD succeeds — before any second
+        // factor. Adopting the employee here would unmount CRMLogin and bypass
+        // MFA entirely, so a privileged account is only adopted once the session
+        // has actually reached aal2. CRMLogin owns the flow until then and calls
+        // onLogin itself. MFA_CHALLENGE_VERIFIED covers the step-up.
+        if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'MFA_CHALLENGE_VERIFIED') {
+          const emp = await loadEmployee(session.user.id);
+          if (!emp) { setEmployee(null); return; }
+          try {
+            if ((await evaluateMfaGate(emp)) !== 'ok') return; // leave CRMLogin in control
+          } catch (err) {
+            if (!isMfaUnavailable(err)) return; // only adopt when TOTP is simply off
+          }
+          setEmployee(emp);
         }
       })();
     });
