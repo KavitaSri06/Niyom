@@ -43,15 +43,24 @@ export type MfaGate =
  * project access, which is already a total compromise.
  */
 export function isMfaUnavailable(err: unknown): boolean {
-  const e = err as { message?: string; code?: string; status?: number } | undefined;
+  const e = err as { message?: string; code?: string; error_code?: string } | undefined;
+  // Exact codes from GoTrue's ErrorCode union (@supabase/auth-js error-codes.d.ts).
+  // Verified against the shipped typings rather than guessed — an earlier version
+  // of this check invented "..._enroll_disabled", which never matches, and would
+  // have left every admin locked out with TOTP switched off.
+  const code = e?.code ?? e?.error_code;
+  if (
+    code === 'mfa_totp_enroll_not_enabled' ||
+    code === 'mfa_totp_verify_not_enabled' ||
+    code === 'mfa_phone_enroll_not_enabled' ||
+    code === 'mfa_phone_verify_not_enabled' ||
+    code === 'mfa_webauthn_enroll_not_enabled' ||
+    code === 'mfa_webauthn_verify_not_enabled'
+  ) return true;
+
+  // Message fallback: older GoTrue builds return prose without a code.
   const msg = (e?.message ?? '').toLowerCase();
-  return (
-    e?.code === 'mfa_totp_enroll_disabled' ||
-    e?.code === 'mfa_totp_verify_disabled' ||
-    /totp.*(disabled|not enabled)/.test(msg) ||
-    /mfa.*(disabled|not enabled|unsupported)/.test(msg) ||
-    /enroll.*disabled/.test(msg)
-  );
+  return /mfa|totp|webauthn/.test(msg) && /(not enabled|disabled|unsupported)/.test(msg);
 }
 
 /**
