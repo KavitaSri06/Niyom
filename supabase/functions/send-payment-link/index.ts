@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { emailFooterHtml, emailFooterText } from "../_shared/email_footer.ts";
 
 // Sprint 2 — Cashfree Payment Link.
 //
@@ -37,8 +38,6 @@ const NIYOM_BANK = {
   branch: "Anna Nagar, Chennai",
 };
 
-const NIYOM_ADDRESS = "No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095";
-const NIYOM_ARN = "ARN-362707 (Valid till 11-JUN-2029)";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -269,15 +268,9 @@ ${(employee.designation && employee.designation.trim()) || "Relationship Manager
 M: ${employee.phone ?? "-"}   E: ${employee.email ?? "-"}
 
 ---
-Niyom Wealth Distribution LLP | AMFI Registered Mutual Fund Distributor
-${NIYOM_ARN}
-${NIYOM_ADDRESS}
-
 For your security, Niyom Wealth will never ask you to share OTPs, passwords, or card details over the phone or email.
-Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.
 
-This message is intended for the named recipient only.
-© ${year} Niyom Wealth Distribution LLP.   Ref: ${deal.confirmation_number}`;
+${emailFooterText({ year, ref: deal.confirmation_number })}`;
 
     const bankRow = (label: string, value: string) =>
       `<tr><td style="padding:5px 12px;color:#666;font-size:13px;">${label}</td>
@@ -333,15 +326,8 @@ This message is intended for the named recipient only.
         M: ${employee.phone ?? "-"} &nbsp; E: <a href="mailto:${employee.email ?? ""}" style="color:#B8961E;">${employee.email ?? "-"}</a>
       </div>
     </div>
-    <div style="margin-top:28px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#666;line-height:1.7;">
-      <p style="margin:0 0 12px;">For your security, Niyom Wealth will never ask you to share OTPs, passwords, or card details.</p>
-      <p style="margin:0 0 6px;"><strong>Niyom Wealth Distribution LLP</strong> &nbsp;|&nbsp; AMFI Registered Mutual Fund Distributor</p>
-      <p style="margin:0 0 6px;">${NIYOM_ARN}</p>
-      <p style="margin:0 0 12px;">${NIYOM_ADDRESS}</p>
-      <p style="margin:0 0 12px;font-size:11px;color:#888;">Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.</p>
-      <p style="margin:0;font-size:11px;color:#888;">This message is intended for the named recipient only.<br/>
-         © ${year} Niyom Wealth Distribution LLP. &nbsp; Ref: ${deal.confirmation_number}</p>
-    </div>
+    <p style="margin:28px 0 0;font-size:12px;color:#666;line-height:1.7;">For your security, Niyom Wealth will never ask you to share OTPs, passwords, or card details.</p>
+    ${emailFooterHtml({ year, ref: deal.confirmation_number })}
   </div>
 </body></html>`;
 

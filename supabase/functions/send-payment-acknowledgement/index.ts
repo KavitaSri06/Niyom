@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { emailFooterHtml, emailFooterText, NOTICE_RECIPIENT, NOTICE_ATTACHMENT } from "../_shared/email_footer.ts";
 
 // Sends a Payment Acknowledgement email to the client with the appropriate
 // template selected AUTOMATICALLY from the live payment status:
@@ -32,8 +33,6 @@ const corsHeaders = {
 };
 
 const BUCKET = "deal-documents";
-const NIYOM_ADDRESS = "No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095";
-const NIYOM_ARN = "ARN-362707 (Valid till 11-JUN-2029)";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -94,15 +93,7 @@ If you have already made the payment, kindly ignore this email or contact your R
 Thank you,
 Niyom Wealth Distribution LLP
 
----
-Niyom Wealth Distribution LLP  |  AMFI Registered Mutual Fund Distributor
-${NIYOM_ARN}
-${NIYOM_ADDRESS}
-
-Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.
-
-This message is intended for the named recipient only.
-© ${c.year} Niyom Wealth Distribution LLP.   Ref: ${c.confirmationNumber}`;
+${emailFooterText({ year: c.year, ref: c.confirmationNumber })}`;
 }
 
 function partialText(c: Ctx): string {
@@ -123,15 +114,7 @@ Your updated Payment Receipt is attached.
 Thank you,
 Niyom Wealth Distribution LLP
 
----
-Niyom Wealth Distribution LLP  |  AMFI Registered Mutual Fund Distributor
-${NIYOM_ARN}
-${NIYOM_ADDRESS}
-
-Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.
-
-This message and attachment are intended for the named recipient only.
-© ${c.year} Niyom Wealth Distribution LLP.   Ref: ${c.confirmationNumber}`;
+${emailFooterText({ year: c.year, ref: c.confirmationNumber, notice: NOTICE_ATTACHMENT })}`;
 }
 
 function fullText(c: Ctx): string {
@@ -149,15 +132,7 @@ Your official Payment Receipt is attached.
 
 Thank you for choosing Niyom Wealth Distribution LLP.
 
----
-Niyom Wealth Distribution LLP  |  AMFI Registered Mutual Fund Distributor
-${NIYOM_ARN}
-${NIYOM_ADDRESS}
-
-Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.
-
-This message and attachment are intended for the named recipient only.
-© ${c.year} Niyom Wealth Distribution LLP.   Ref: ${c.confirmationNumber}`;
+${emailFooterText({ year: c.year, ref: c.confirmationNumber, notice: NOTICE_ATTACHMENT })}`;
 }
 
 function shellHtml(preheader: string, body: string, refFooter: string, year: number, includesAttachment: boolean): string {
@@ -171,14 +146,7 @@ function shellHtml(preheader: string, body: string, refFooter: string, year: num
       <div style="font-size:20px;font-weight:700;color:#111;">Niyom Wealth</div>
     </div>
     ${body}
-    <div style="margin-top:28px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#666;line-height:1.7;">
-      <p style="margin:0 0 6px;"><strong>Niyom Wealth Distribution LLP</strong> &nbsp;|&nbsp; AMFI Registered Mutual Fund Distributor</p>
-      <p style="margin:0 0 6px;">${NIYOM_ARN}</p>
-      <p style="margin:0 0 12px;">${NIYOM_ADDRESS}</p>
-      <p style="margin:0 0 12px;font-size:11px;color:#888;">Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.</p>
-      <p style="margin:0;font-size:11px;color:#888;">${includesAttachment ? "This message and attachment are" : "This message is"} intended for the named recipient only.<br/>
-        © ${year} Niyom Wealth Distribution LLP. &nbsp; Ref: ${refFooter}</p>
-    </div>
+    ${emailFooterHtml({ year, ref: refFooter, notice: includesAttachment ? NOTICE_ATTACHMENT : NOTICE_RECIPIENT })}
   </div>
 </body></html>`;
 }

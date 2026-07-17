@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, json, generateOTP, hashOTP, maskEmail, sendEmail } from "../_shared/signing.ts";
+import { emailFooterHtml, emailFooterText, NOTICE_AUTOMATED } from "../_shared/email_footer.ts";
 
 // Public function (verify_jwt = false). Emails a 6-digit OTP to the debit
 // note's DSA email for the signing flow. EMAIL ONLY — no SMS.
@@ -75,12 +76,7 @@ For your security, Niyom Wealth will never ask you to share this code. If you di
 
 Niyom Wealth Distribution LLP
 
----
-Niyom Wealth Distribution LLP | AMFI Registered Mutual Fund Distributor
-ARN-362707 (Valid till 11-JUN-2029)
-
-This is a system-generated message. Please do not reply.
-© ${year} Niyom Wealth Distribution LLP.   Ref: ${note.debit_note_number}`;
+${emailFooterText({ year, ref: note.debit_note_number, notice: NOTICE_AUTOMATED })}`;
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
 <body style="font-family:Arial,Helvetica,sans-serif;color:#222;line-height:1.7;margin:0;padding:0;background:#f6f6f6;">
@@ -97,12 +93,7 @@ This is a system-generated message. Please do not reply.
     <p style="margin:0 0 14px;color:#555;font-size:13px;">This code is valid for 10 minutes.</p>
     <p style="margin:0 0 14px;color:#555;font-size:13px;">For your security, Niyom Wealth will never ask you to share this code. If you did not request it, please reach out to your Relationship Manager.</p>
     <p style="margin:18px 0 0;color:#111;font-weight:600;">Niyom Wealth Distribution LLP</p>
-    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #eee;font-size:11px;color:#888;line-height:1.7;">
-      <p style="margin:0 0 4px;"><strong>Niyom Wealth Distribution LLP</strong> &nbsp;|&nbsp; AMFI Registered Mutual Fund Distributor</p>
-      <p style="margin:0 0 10px;">ARN-362707 (Valid till 11-JUN-2029)</p>
-      <p style="margin:0;">This is a system-generated message. Please do not reply.<br/>
-         © ${year} Niyom Wealth Distribution LLP. &nbsp; Ref: ${note.debit_note_number}</p>
-    </div>
+    ${emailFooterHtml({ year, ref: note.debit_note_number, notice: NOTICE_AUTOMATED })}
   </div>
 </body></html>`;
 

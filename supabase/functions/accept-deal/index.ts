@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { emailFooterHtml, emailFooterText } from "../_shared/email_footer.ts";
 
 // Public function (verify_jwt = false). Verifies the email OTP, stores the
 // e-signature + signed PDF, and permanently locks the deal as accepted.
@@ -286,15 +287,7 @@ ${downloadUrl
 
 For any clarification on this transaction, please feel free to reach out to your Relationship Manager.${rmBlockText}
 
----
-Niyom Wealth Distribution LLP | AMFI Registered Mutual Fund Distributor
-ARN-362707 (Valid till 11-JUN-2029)
-No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095
-
-Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.
-
-This message is intended for the named recipient only.
-© ${year} Niyom Wealth Distribution LLP.   Ref: ${deal.confirmation_number}`;
+${emailFooterText({ year, ref: deal.confirmation_number })}`;
 
         const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
 <body style="font-family:Arial,Helvetica,sans-serif;color:#222;line-height:1.7;margin:0;padding:0;background:#f6f6f6;">
@@ -321,14 +314,7 @@ This message is intended for the named recipient only.
       : `<p style="margin:0 0 14px;">We have retained a signed copy on our side, which your Relationship Manager can share with you at any time, should you need it.</p>`}
     <p style="margin:0 0 14px;">For any clarification on this transaction, please feel free to reach out to your Relationship Manager.</p>
     ${rmBlockHtml}
-    <div style="margin-top:28px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#666;line-height:1.7;">
-      <p style="margin:0 0 6px;"><strong>Niyom Wealth Distribution LLP</strong> &nbsp;|&nbsp; AMFI Registered Mutual Fund Distributor</p>
-      <p style="margin:0 0 6px;">ARN-362707 (Valid till 11-JUN-2029)</p>
-      <p style="margin:0 0 12px;">No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095</p>
-      <p style="margin:0 0 12px;font-size:11px;color:#888;">Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.</p>
-      <p style="margin:0;font-size:11px;color:#888;">This message is intended for the named recipient only.<br/>
-         © ${year} Niyom Wealth Distribution LLP. &nbsp; Ref: ${deal.confirmation_number}</p>
-    </div>
+    ${emailFooterHtml({ year, ref: deal.confirmation_number })}
   </div></body></html>`;
 
         let ok = false;

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { NWEmployee, NWTransaction, NWClient, ProductType } from './types';
-import { fmt, PRODUCT_LABELS } from './utils';
+import { fmt, fmtDate, PRODUCT_LABELS } from './utils';
 import { BarChart3, Download, ChevronDown } from 'lucide-react';
 
 interface Props { employee: NWEmployee; }
@@ -10,6 +10,9 @@ interface MISRow {
   client_id: string;
   client_name: string;
   client_code: string;
+  /** Transaction date this revenue arose from. Always inside the selected
+   *  period — the query filters on it — and drives the newest-first ordering. */
+  date: string;
   product_type: ProductType;
   product_name: string;
   revenue_type: 'landing_cost' | 'insurance' | 'trail';
@@ -96,6 +99,7 @@ export default function MIS({ employee }: Props) {
         client_id: t.client_id,
         client_name: client.full_name,
         client_code: client.client_code,
+        date: t.txn_date,
         product_type: t.product_type,
         product_name: t.product_name,
       };
@@ -155,6 +159,12 @@ export default function MIS({ employee }: Props) {
       }
     }
 
+    // Newest first. Dates are ISO (YYYY-MM-DD) so they order correctly as
+    // strings; client name breaks ties so rows from the same day keep a stable,
+    // predictable order instead of shifting between loads.
+    computed.sort((a, b) =>
+      b.date.localeCompare(a.date) || a.client_name.localeCompare(b.client_name));
+
     setRows(computed);
     setLoading(false);
     setHasLoaded(true);
@@ -185,6 +195,7 @@ export default function MIS({ employee }: Props) {
     const rowsHtml = rows.map((r, i) => `
       <tr>
         <td>${i + 1}</td>
+        <td style="white-space:nowrap">${fmtDate(r.date)}</td>
         <td><strong>${r.client_name}</strong><br><span style="color:#888;font-size:11px">${r.client_code}</span></td>
         <td>${PRODUCT_LABELS[r.product_type] || r.product_type}</td>
         <td>${r.product_name}</td>
@@ -226,8 +237,8 @@ export default function MIS({ employee }: Props) {
     <div class="stat" style="border-top-color:#059669"><div class="stat-label">Total Entries</div><div class="stat-value">${rows.length}</div></div>
   </div>
   <table>
-    <thead><tr><th>#</th><th>Client</th><th>Product Type</th><th>Product</th><th>Revenue Type</th><th>Details</th><th style="text-align:right">Revenue</th></tr></thead>
-    <tbody>${rowsHtml || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#aaa">No revenue entries for this period</td></tr>'}</tbody>
+    <thead><tr><th>#</th><th>Date</th><th>Client</th><th>Product Type</th><th>Product</th><th>Revenue Type</th><th>Details</th><th style="text-align:right">Revenue</th></tr></thead>
+    <tbody>${rowsHtml || '<tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa">No revenue entries for this period</td></tr>'}</tbody>
   </table>
   <div class="footer">Niyom Wealth Distribution &nbsp;&middot;&nbsp; Confidential &nbsp;&middot;&nbsp; Generated ${new Date().toLocaleString('en-IN')}</div>
 </body>
@@ -331,20 +342,23 @@ export default function MIS({ employee }: Props) {
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  {['Client', 'Product', 'Type', 'Revenue Type', 'Details', 'Revenue'].map(h => (
+                  {['Date', 'Client', 'Product', 'Type', 'Revenue Type', 'Details', 'Revenue'].map(h => (
                     <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-12 text-sm" style={{ color: 'var(--text-faint)' }}>
+                  <tr><td colSpan={7} className="text-center py-12 text-sm" style={{ color: 'var(--text-faint)' }}>
                     No revenue entries for {MONTHS[selectedMonth]} {selectedYear}
                   </td></tr>
                 ) : rows.map((r, i) => (
                   <tr key={i} style={{ borderBottom: '1px solid var(--bg-raised)' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <td className="px-5 py-3.5 whitespace-nowrap">
+                      <p className="text-sm text-text-primary">{fmtDate(r.date)}</p>
+                    </td>
                     <td className="px-5 py-3.5">
                       <p className="text-sm font-medium text-text-primary">{r.client_name}</p>
                       <p className="text-xs font-mono" style={{ color: 'var(--text-faint)' }}>{r.client_code}</p>
@@ -378,7 +392,7 @@ export default function MIS({ employee }: Props) {
               {rows.length > 0 && (
                 <tfoot>
                   <tr style={{ borderTop: '2px solid var(--border)' }}>
-                    <td colSpan={5} className="px-5 py-3.5 text-sm font-bold text-text-primary">Total Revenue</td>
+                    <td colSpan={6} className="px-5 py-3.5 text-sm font-bold text-text-primary">Total Revenue</td>
                     <td className="px-5 py-3.5 text-sm font-bold text-c-emerald">{fmt(totalRevenue)}</td>
                   </tr>
                 </tfoot>

@@ -1,3 +1,4 @@
+import { emailFooterHtml, emailFooterText } from "./email_footer.ts";
 // -----------------------------------------------------------------------------
 // Transfer / Deal Closure — email templates
 //
@@ -13,8 +14,6 @@
 // block stay consistent across the customer's inbox.
 // -----------------------------------------------------------------------------
 
-const NIYOM_ADDRESS = "No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095";
-const NIYOM_ARN     = "ARN-362707 (Valid till 11-JUN-2029)";
 
 const MODE_LABEL: Record<string, string> = {
   imps: "IMPS", neft: "NEFT", rtgs: "RTGS", upi: "UPI",
@@ -110,15 +109,7 @@ Should you have any questions, please reach out to your Relationship Manager.
 Warm regards,
 Niyom Wealth Distribution LLP
 
----
-Niyom Wealth Distribution LLP  |  AMFI Registered Mutual Fund Distributor
-${NIYOM_ARN}
-${NIYOM_ADDRESS}
-
-Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.
-
-This message is intended for the named recipient only.
-© ${ctx.year} Niyom Wealth Distribution LLP.   Ref: ${ctx.confirmationNumber} · ${ctx.transferReference}`;
+${emailFooterText({ year: ctx.year, ref: `${ctx.confirmationNumber} \u00B7 ${ctx.transferReference}` })}`;
 }
 
 function renderLedgerText(rows: LedgerRow[]): string {
@@ -221,14 +212,7 @@ function shellHtml(preheader: string, body: string, refFooter: string, year: num
       <div style="font-size:20px;font-weight:700;color:#111;">Niyom Wealth</div>
     </div>
     ${body}
-    <div style="margin-top:28px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#666;line-height:1.7;">
-      <p style="margin:0 0 6px;"><strong>Niyom Wealth Distribution LLP</strong> &nbsp;|&nbsp; AMFI Registered Mutual Fund Distributor</p>
-      <p style="margin:0 0 6px;">${NIYOM_ARN}</p>
-      <p style="margin:0 0 12px;">${NIYOM_ADDRESS}</p>
-      <p style="margin:0 0 12px;font-size:11px;color:#888;">Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.</p>
-      <p style="margin:0;font-size:11px;color:#888;">This message is intended for the named recipient only.<br/>
-        © ${year} Niyom Wealth Distribution LLP. &nbsp; Ref: ${refFooter}</p>
-    </div>
+    ${emailFooterHtml({ year, ref: refFooter })}
   </div>
 </body></html>`;
 }

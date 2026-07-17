@@ -3,6 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   corsHeaders, json, generateToken, formatDesignation, isValidEmail, buildCc, INR, sendEmail,
 } from "../_shared/signing.ts";
+import { emailFooterHtml, emailFooterText } from "../_shared/email_footer.ts";
 
 // Debit Note signing: sends a SECURE LINK (no PDF attachment) to the DSA
 // (payee) so they can review and e-sign the debit note. Requires an
@@ -140,12 +141,7 @@ M: ${employee.phone}   E: ${employee.email}
 ---
 For your security, Niyom Wealth will never ask you to share OTPs, passwords, or this secure link.
 
-Niyom Wealth Distribution LLP | AMFI Registered Mutual Fund Distributor
-ARN-362707 (Valid till 11-JUN-2029)
-No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095
-
-This message is intended for the named recipient only.
-© ${year} Niyom Wealth Distribution LLP.   Ref: ${note.debit_note_number}`;
+${emailFooterText({ year, ref: note.debit_note_number })}`;
 
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
 <body style="font-family:Arial,Helvetica,sans-serif;color:#222;line-height:1.7;margin:0;padding:0;background:#f6f6f6;">
@@ -183,14 +179,8 @@ This message is intended for the named recipient only.
         M: ${employee.phone} &nbsp; E: <a href="mailto:${employee.email}" style="color:#B8961E;">${employee.email}</a>
       </div>
     </div>
-    <div style="margin-top:28px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#666;line-height:1.7;">
-      <p style="margin:0 0 12px;">For your security, Niyom Wealth will never ask you to share OTPs, passwords, or this secure link.</p>
-      <p style="margin:0 0 6px;"><strong>Niyom Wealth Distribution LLP</strong> &nbsp;|&nbsp; AMFI Registered Mutual Fund Distributor</p>
-      <p style="margin:0 0 6px;">ARN-362707 (Valid till 11-JUN-2029)</p>
-      <p style="margin:0 0 12px;">No 126, 1st Floor, Poonamalle High Road, Maduravoyal, Chennai – 600 095</p>
-      <p style="margin:0;font-size:11px;color:#888;">This message is intended for the named recipient only.<br/>
-         © ${year} Niyom Wealth Distribution LLP. &nbsp; Ref: ${note.debit_note_number}</p>
-    </div>
+    <p style="margin:28px 0 0;font-size:12px;color:#666;line-height:1.7;">For your security, Niyom Wealth will never ask you to share OTPs, passwords, or this secure link.</p>
+    ${emailFooterHtml({ year, ref: note.debit_note_number })}
   </div>
 </body></html>`;
 
