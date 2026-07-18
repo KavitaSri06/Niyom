@@ -44,6 +44,21 @@ h1, h2, h3, h4 {
   /* Primary control press feedback. */
   .press { transition: transform var(--dur-fast, 150ms) var(--ease-out, ease); }
   .press:active { transform: translateY(1px) scale(0.99); }
+
+  /* Universal, gentle button feel — smooth state changes + a subtle press.
+   * Low-specificity element rule, so any component's own transition/utility
+   * still wins; this only fills the gap where a button had none. Enabled buttons
+   * only, and never overrides an explicit transform. */
+  button:not(:disabled) {
+    transition: background-color var(--dur-base, 250ms) var(--ease-out, ease),
+                color var(--dur-base, 250ms) var(--ease-out, ease),
+                box-shadow var(--dur-base, 250ms) var(--ease-out, ease),
+                opacity var(--dur-base, 250ms) var(--ease-out, ease),
+                filter var(--dur-base, 250ms) var(--ease-out, ease);
+  }
+  button:not(:disabled):active {
+    transform: scale(0.985);
+  }
 }
 
 /* -----------------------------------------------------------------------------
