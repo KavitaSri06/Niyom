@@ -1013,7 +1013,7 @@ export default function Portfolio({ employee }: Props) {
       {/* Holdings table */}
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full nw-table">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 {['Product', 'Type', 'Key Details', 'Qty', 'Invested', 'Current Value', 'P&L', 'Actions'].map(h => (

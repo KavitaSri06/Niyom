@@ -192,7 +192,7 @@ export default function Reports({ employee }: Props) {
               {/* Holdings table */}
               <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full nw-table">
                     <thead><tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                       {['Product', 'Client', 'Type', 'Invested', 'Current Value', 'P&L'].map(h => (
                         <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
@@ -222,7 +222,7 @@ export default function Reports({ employee }: Props) {
           {mode === 'transactions' && (
             <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full nw-table">
                   <thead><tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     {['Date', 'Client', 'Type', 'Product', 'Amount'].map(h => (
                       <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
@@ -249,7 +249,7 @@ export default function Reports({ employee }: Props) {
           {mode === 'clients' && (
             <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full nw-table">
                   <thead><tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     {['Client', 'Code', ...(isAdmin ? ['Employee'] : []), 'Portfolio', 'Status', 'Joined'].map(h => (
                       <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>

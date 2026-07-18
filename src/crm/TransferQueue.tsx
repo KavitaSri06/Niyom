@@ -593,7 +593,7 @@ export default function TransferQueue({ employee }: Props) {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm nw-table">
                   <thead>
                     <tr style={{ background: 'var(--bg-base)', color: 'var(--text-muted)' }}>
                       <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wider">Payment No.</th>
@@ -760,7 +760,7 @@ export default function TransferQueue({ employee }: Props) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full nw-table">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   {['Deal Number', 'Client', 'Security', 'Type', 'Settlement', 'Accepted', 'Last Payment', ''].map(h => (
