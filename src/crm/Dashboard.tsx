@@ -167,7 +167,7 @@ export default function Dashboard({ employee, onNavigate }: Props) {
             <span className="text-xs ml-1" style={{ color: 'var(--text-faint)' }}>— clients & AUM per employee</span>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full nw-table">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   {['Employee', 'Code', 'Clients', 'Verified', 'Portfolio AUM', 'Share'].map(h => (

@@ -47,6 +47,28 @@ h1, h2, h3, h4 {
 }
 
 /* -----------------------------------------------------------------------------
+ * Shared data-table treatment — add class="nw-table" to a <table> for zebra
+ * rows, a row hover-highlight, and a sticky header. The sticky header only
+ * engages when the table sits in a vertically-scrolling container, so it's a
+ * harmless no-op elsewhere. Row/header cell typography stays with the component.
+ * -------------------------------------------------------------------------- */
+.nw-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-elevated);
+}
+.nw-table tbody tr {
+  transition: background-color var(--dur-fast, 150ms) ease;
+}
+.nw-table tbody tr:nth-child(even) {
+  background: rgba(var(--hover-bg-rgb), 0.022);
+}
+.nw-table tbody tr:hover {
+  background: var(--hover-bg);
+}
+
+/* -----------------------------------------------------------------------------
  * Theme transition
  * Smoothly cross-fade colors when the theme switches. Scoped to color-ish
  * properties so layout/transform animations are unaffected. A short-lived
