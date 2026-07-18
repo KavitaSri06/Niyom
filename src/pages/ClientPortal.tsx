@@ -142,10 +142,10 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
             { label: 'Total Invested', value: fmt(totalInvested), color: 'var(--text-muted)', sub: null },
             { label: gainLoss >= 0 ? 'Total Gain' : 'Total Loss', value: `${gainLoss >= 0 ? '+' : ''}${fmt(gainLoss)}`, color: gainLoss >= 0 ? 'var(--success)' : 'var(--danger)', sub: `${gainLoss >= 0 ? '+' : ''}${gainPct}%` },
             { label: 'Holdings', value: holdings.length.toString(), color: 'var(--chart-5)', sub: `${new Set(holdings.map(h => h.product_type)).size} types` },
-          ].map(s => (
-            <div key={s.label} className="rounded-2xl p-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+          ].map((s, i) => (
+            <div key={s.label} className={`lift rounded-2xl p-5 animate-fadeInUp ${['', 'animate-delay-100', 'animate-delay-200', 'animate-delay-300'][i] || ''}`} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
               <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>{s.label}</p>
-              <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+              <p className="text-3xl font-bold tracking-tight" style={{ color: s.color, fontFamily: 'var(--font-display)' }}>{s.value}</p>
               {s.sub && <p className="text-xs mt-1" style={{ color: `color-mix(in srgb, ${s.color} 60%, transparent)` }}>{s.sub}</p>}
             </div>
           ))}
@@ -232,7 +232,7 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full nw-table">
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                       {['Product', 'Type', 'Qty', 'Invested', 'Current Value', 'P&L'].map(h => (
@@ -247,9 +247,7 @@ export default function ClientPortal({ clientId, onLogout }: Props) {
                       // For DSA clients, show client_price instead of avg_cost
                       const displayPrice = h.client_price ?? h.avg_cost;
                       return (
-                        <tr key={h.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <tr key={h.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}>
                           <td className="px-5 py-3.5">
                             <p className="text-sm font-medium text-text-primary">{h.product_name}</p>
                             {BOND_TYPES.includes(h.product_type) && h.coupon_rate && (
