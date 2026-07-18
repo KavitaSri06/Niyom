@@ -22,9 +22,12 @@ export default {
       // Type families. Deliberately does NOT redefine `sans` or `mono` —
       // `font-mono` has 55 existing usages and the sans default is the CRM's
       // UI face; overriding either would restyle the app implicitly.
+      // Follow the CSS tokens so a brand type change lives in one place
+      // (src/theme/tokens.css). display = Space Grotesk, body/sans = Inter.
       fontFamily: {
-        display: ['Playfair Display', 'Georgia', 'Times New Roman', 'serif'],
-        body: ['Cormorant Garamond', 'Georgia', 'Times New Roman', 'serif'],
+        display: ['var(--font-display)'],
+        body: ['var(--font-body)'],
+        sans: ['var(--font-body)'],
       },
       // Target radius scale (see --radius-* in tokens.css). Exposed under a
       // `token-` prefix so the stock rounded-* utilities keep working while

@@ -5,6 +5,48 @@
 @tailwind utilities;
 
 /* -----------------------------------------------------------------------------
+ * Base typography — Inter across the product (headings opt into Space Grotesk
+ * via font-display / var(--font-display)). Antialiasing + kerning give the
+ * premium fintech feel the type system is going for.
+ * -------------------------------------------------------------------------- */
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* Headings speak in the display voice (Space Grotesk), a touch tighter for the
+ * modern-fintech feel. Components that set their own font-family still win. */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* -----------------------------------------------------------------------------
+ * Shared interaction utilities — opt-in classes reused across the platform so
+ * the "premium" motion is one definition, not scattered inline styles.
+ * -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  /* Card / tile hover lift — subtle rise + shadow bloom. */
+  .lift {
+    transition: transform var(--dur-base, 250ms) var(--ease-out, ease),
+                box-shadow var(--dur-base, 250ms) var(--ease-out, ease),
+                border-color var(--dur-base, 250ms) var(--ease-out, ease);
+  }
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(var(--accent-rgb), 0.35);
+  }
+
+  /* Primary control press feedback. */
+  .press { transition: transform var(--dur-fast, 150ms) var(--ease-out, ease); }
+  .press:active { transform: translateY(1px) scale(0.99); }
+}
+
+/* -----------------------------------------------------------------------------
  * Theme transition
  * Smoothly cross-fade colors when the theme switches. Scoped to color-ish
  * properties so layout/transform animations are unaffected. A short-lived

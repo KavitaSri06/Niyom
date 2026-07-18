@@ -371,7 +371,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
               { icon: Award, title: 'Tax Information', desc: 'General information on tax-efficient investment structures', img: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=400' },
               { icon: Zap, title: 'Alternative Products', desc: 'Distribution of secondary bonds, unlisted shares, and pre-IPO opportunities', img: 'https://images.pexels.com/photos/7567565/pexels-photo-7567565.jpeg?auto=compress&cs=tinysrgb&w=400' },
             ].map((service, i) => (
-              <div key={i} className={`group bg-bg-elevated rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-border-subtle ${isLoaded ? `animate-fadeInUp animate-delay-${(i + 3) * 100}` : 'opacity-0'}`}>
+              <div key={i} className={`lift group bg-bg-elevated rounded-xl overflow-hidden border border-border-subtle ${isLoaded ? `animate-fadeInUp animate-delay-${(i + 3) * 100}` : 'opacity-0'}`} style={{ boxShadow: 'var(--shadow-card)' }}>
                 <div className="h-48 overflow-hidden">
                   <img src={service.img} alt={service.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                 </div>

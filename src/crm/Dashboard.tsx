@@ -140,17 +140,18 @@ export default function Dashboard({ employee, onNavigate }: Props) {
 
       {/* Stats */}
       <div className={`grid gap-4 ${isAdmin ? 'grid-cols-2 lg:grid-cols-5' : 'grid-cols-2 lg:grid-cols-4'}`}>
-        {statCards.map(s => {
+        {statCards.map((s, i) => {
           const Icon = s.icon;
+          const delay = ['', 'animate-delay-100', 'animate-delay-200', 'animate-delay-300', 'animate-delay-400'][i] || '';
           return (
-            <div key={s.label} className="rounded-2xl p-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <div key={s.label} className={`lift rounded-2xl p-5 animate-fadeInUp ${delay}`} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `color-mix(in srgb, ${s.color} 8%, transparent)` }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `color-mix(in srgb, ${s.color} 12%, transparent)` }}>
                   <Icon className="w-4 h-4" style={{ color: s.color }} />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-text-primary">{s.value}</p>
+              <p className="text-3xl font-bold text-text-primary tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>{s.value}</p>
               <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>{s.sub}</p>
             </div>
           );
