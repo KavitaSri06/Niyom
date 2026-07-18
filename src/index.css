@@ -108,6 +108,32 @@ h1, h2, h3, h4 {
   outline-offset: 2px;
 }
 
+/* -----------------------------------------------------------------------------
+ * Form controls — brand-consistent selection, global and additive. No form
+ * markup, fields, validation or submit logic is touched; only the native
+ * control chrome is themed.
+ * -------------------------------------------------------------------------- */
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'] {
+  accent-color: var(--accent);
+}
+
+/* Native date/time calendar icon is dark by default and near-invisible on the
+ * navy inputs — lighten it in dark mode so the picker stays usable. */
+[data-theme='dark'] input[type='date']::-webkit-calendar-picker-indicator,
+[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator,
+[data-theme='dark'] input[type='datetime-local']::-webkit-calendar-picker-indicator,
+[data-theme='dark'] input[type='month']::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+  cursor: pointer;
+}
+[data-theme='dark'] input[type='date']:hover::-webkit-calendar-picker-indicator,
+[data-theme='dark'] input[type='time']:hover::-webkit-calendar-picker-indicator {
+  opacity: 0.9;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
