@@ -28,6 +28,7 @@ const fmtDateTime = (d: string | null) => d ? new Date(d).toLocaleString('en-IN'
 interface Props { employee: NWEmployee; }
 
 interface PayoutRow {
+  txn_id: string;      // source transaction — recorded on the debit note it lands in
   dsa_id: string;
   dsa_code: string;
   dsa_name: string;
@@ -154,6 +155,7 @@ export default function DSAPayout({ employee }: Props) {
       if (!client || !client.dsa) continue;
 
       rows.push({
+        txn_id: t.id,
         dsa_id: client.dsa.id,
         dsa_code: client.dsa.dsa_code,
         dsa_name: client.dsa.full_name,
@@ -173,9 +175,20 @@ export default function DSAPayout({ employee }: Props) {
       console.warn(`[DSAPayout] ${skippedOutOfPeriod.length} transaction(s) excluded from ${selectedMonthLabel} payout (txn_date out of period):`, skippedOutOfPeriod);
     }
 
-    // Group by DSA
+    // Exclude transactions already covered by an ACTIVE (non-cancelled) debit
+    // note, so the pending view only shows UNCOVERED payouts. This is what
+    // stops a later payout merging into — or being stranded behind — a note that
+    // already exists (paid/signed included).
+    const { data: coveredLines } = await supabase
+      .from('dsa_debit_note_lines')
+      .select('transaction_id, debit_note:dsa_debit_notes!inner(status)')
+      .neq('debit_note.status', 'cancelled');
+    const coveredTxnIds = new Set((coveredLines || []).map((l: any) => l.transaction_id));
+
+    // Group the remaining (uncovered) rows by DSA for batching into a note.
     const dsaMap = new Map<string, DSAGroup>();
     for (const r of rows) {
+      if (coveredTxnIds.has(r.txn_id)) continue;
       if (!dsaMap.has(r.dsa_id)) {
         dsaMap.set(r.dsa_id, {
           dsa_id: r.dsa_id,
@@ -335,6 +348,21 @@ export default function DSAPayout({ employee }: Props) {
       savedId = inserted?.id;
     }
 
+    // Record exactly which transactions this note covers. On regenerate the
+    // covered set is unchanged (g was rebuilt from the note's own lines), so
+    // clear and re-insert to keep payouts in sync. UNIQUE(transaction_id)
+    // guarantees no payout can land in two active notes.
+    if (savedId) {
+      if (existing) {
+        await supabase.from('dsa_debit_note_lines').delete().eq('debit_note_id', savedId);
+      }
+      const lineRows = g.rows.map(r => ({ debit_note_id: savedId!, transaction_id: r.txn_id, payout: r.payout }));
+      if (lineRows.length) {
+        const { error: lineErr } = await supabase.from('dsa_debit_note_lines').insert(lineRows);
+        if (lineErr) throw lineErr;
+      }
+    }
+
     // Audit: record generation (best-effort; never block the generate flow)
     if (savedId) {
       await supabase.from('dsa_debit_note_events').insert({
@@ -349,28 +377,18 @@ export default function DSAPayout({ employee }: Props) {
     setGenerating(true);
     setGenStatus('');
     try {
-      // Only an ACTIVE (non-cancelled) note counts as "existing". A cancelled
-      // note is an immutable audit record and must NOT block a fresh note for
-      // the same DSA/period — generation creates a new note (next sequential
-      // number) reflecting the corrected payout.
-      const activeByDsa = new Map(
-        debitNotes.filter(n => n.status !== 'cancelled').map(n => [n.dsa_id, n])
-      );
+      // Each group holds only UNCOVERED payouts (rows already in an active note
+      // were excluded upstream), so every group becomes a brand-new note — no
+      // per-DSA "existing note" lookup, and nothing to skip. Notes already
+      // generated/paid/signed keep their coverage untouched.
       let done = 0;
-      let skipped = 0;
       for (const g of groups) {
-        const existing = activeByDsa.get(g.dsa_id);
-        // A signed note is locked (audit record) — never regenerate over it.
-        if (existing && existing.signature_status === 'signed') {
-          skipped++;
-          continue;
-        }
         setGenStatus(`Generating ${++done}/${groups.length} — ${g.dsa_name}`);
-        await generateForGroup(g, existing);
+        await generateForGroup(g, undefined);
       }
       await loadDebitNotes();
-      const note = skipped ? ` (${skipped} signed skipped)` : '';
-      setGenStatus(`Generated ${done} debit note${done === 1 ? '' : 's'} for ${MONTHS[selectedMonth]} ${selectedYear}${note}`);
+      await calculate(); // recompute pending so the just-covered payouts drop out
+      setGenStatus(`Generated ${done} debit note${done === 1 ? '' : 's'} for ${MONTHS[selectedMonth]} ${selectedYear}`);
     } catch (e) {
       setGenStatus(`Error: ${e instanceof Error ? e.message : 'Failed to generate debit notes'}`);
     } finally {
@@ -387,14 +405,50 @@ export default function DSAPayout({ employee }: Props) {
       setGenStatus(`Cannot regenerate a ${note.status} debit note.`);
       return;
     }
-    const g = groups.find(x => x.dsa_id === note.dsa_id);
-    if (!g) {
-      setGenStatus('Recalculate payout for this period before regenerating.');
-      return;
-    }
     setRegenDsaId(note.dsa_id);
     setGenStatus('');
     try {
+      // Rebuild from THIS note's own covered transactions — they're excluded
+      // from the pending groups precisely because this note covers them — and
+      // recompute their current payout. Regenerate keeps the same transaction
+      // set; only the amounts/PDF refresh.
+      const { data: lines } = await supabase.from('dsa_debit_note_lines')
+        .select('transaction_id').eq('debit_note_id', note.id);
+      const txnIds = (lines || []).map((l: any) => l.transaction_id);
+      if (!txnIds.length) {
+        setGenStatus('This note has no linked transactions to regenerate from.');
+        return;
+      }
+      const { data: txns } = await supabase.from('nw_transactions').select('*').in('id', txnIds);
+      const { data: clients } = await supabase.from('nw_clients')
+        .select('id, full_name, client_code, dsa_id, dsa:nw_dsa(id, dsa_code, full_name)')
+        .in('id', (txns || []).map((t: any) => t.client_id));
+
+      const rows: PayoutRow[] = [];
+      for (const t of (txns as NWTransaction[]) || []) {
+        const client = (clients as any[])?.find(c => c.id === t.client_id);
+        if (!client || !client.dsa) continue;
+        if (t.dsa_price == null || t.client_price == null) continue;
+        const qty = t.quantity || 0;
+        const payout = t.txn_type === 'sell'
+          ? (t.dsa_price - t.client_price) * qty
+          : (t.client_price - t.dsa_price) * qty;
+        rows.push({
+          txn_id: t.id,
+          dsa_id: client.dsa.id, dsa_code: client.dsa.dsa_code, dsa_name: client.dsa.full_name,
+          client_id: client.id, client_name: client.full_name, client_code: client.client_code,
+          product_type: t.product_type, product_name: t.product_name, quantity: qty,
+          dsa_price: t.dsa_price, client_price: t.client_price, payout,
+        });
+      }
+      if (!rows.length) {
+        setGenStatus('Linked transactions no longer carry DSA pricing.');
+        return;
+      }
+      const g: DSAGroup = {
+        dsa_id: note.dsa_id, dsa_code: rows[0].dsa_code, dsa_name: rows[0].dsa_name,
+        rows, total: rows.reduce((s, r) => s + r.payout, 0),
+      };
       await generateForGroup(g, note);
       await loadDebitNotes();
       setGenStatus(`Regenerated ${note.debit_note_number}`);
@@ -564,6 +618,9 @@ export default function DSAPayout({ employee }: Props) {
         .eq('id', note.id)
         .eq('status', 'generated'); // guard: never re-cancel / overwrite an existing cancellation
       if (error) throw error;
+      // Release this note's covered transactions so they can be re-billed on a
+      // fresh note. The cancelled note's pdf_snapshot keeps the audit record.
+      await supabase.from('dsa_debit_note_lines').delete().eq('debit_note_id', note.id);
       // Audit trail
       await supabase.from('nw_activity_logs').insert([{
         employee_id: employee.id,
