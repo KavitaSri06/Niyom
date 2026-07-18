@@ -434,7 +434,7 @@ export default function ManageClients({ employee }: Props) {
       {/* Table */}
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full nw-table">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 {['Client', 'Code', ...(isAdmin ? ['Employee'] : []), 'Portfolio', 'Status', 'Date', 'Actions'].map(h => (
@@ -448,9 +448,7 @@ export default function ManageClients({ employee }: Props) {
               ) : clients.length === 0 ? (
                 <tr><td colSpan={isAdmin ? 7 : 6} className="text-center py-12 text-sm" style={{ color: 'var(--text-faint)' }}>No clients found</td></tr>
               ) : clients.map(c => (
-                <tr key={c.id} className="transition-colors" style={{ borderBottom: '1px solid var(--bg-raised)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <tr key={c.id} className="transition-colors" style={{ borderBottom: '1px solid var(--bg-raised)' }}>
                   <td className="px-5 py-3.5">
                     <p className="text-sm font-medium text-text-primary">{c.full_name}</p>
                     <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{c.phone || c.email || '—'}</p>

@@ -339,7 +339,7 @@ export default function MIS({ employee }: Props) {
             <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{rows.length} {rows.length === 1 ? 'entry' : 'entries'}</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full nw-table">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   {['Date', 'Client', 'Product', 'Type', 'Revenue Type', 'Details', 'Revenue'].map(h => (
@@ -353,9 +353,7 @@ export default function MIS({ employee }: Props) {
                     No revenue entries for {MONTHS[selectedMonth]} {selectedYear}
                   </td></tr>
                 ) : rows.map((r, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid var(--bg-raised)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <tr key={i} style={{ borderBottom: '1px solid var(--bg-raised)' }}>
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <p className="text-sm text-text-primary">{fmtDate(r.date)}</p>
                     </td>

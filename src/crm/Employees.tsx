@@ -150,7 +150,7 @@ export default function Employees({ employee }: Props) {
       {/* Table */}
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full nw-table">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 {['Employee', 'Code', 'Designation', 'Status', 'Joined', 'Actions'].map(h => (
@@ -162,9 +162,7 @@ export default function Employees({ employee }: Props) {
               {loading ? (
                 <tr><td colSpan={6} className="text-center py-12"><div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin mx-auto" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} /></td></tr>
               ) : employees.map(e => (
-                <tr key={e.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}
-                  onMouseEnter={ev => (ev.currentTarget.style.background = 'var(--bg-surface)')}
-                  onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
+                <tr key={e.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)' }}>

@@ -857,7 +857,7 @@ export default function DSAPayout({ employee }: Props) {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full nw-table">
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                       {['Client', 'Product', 'Qty', 'DSA Price', 'Client Price', 'Payout'].map(h => (
@@ -867,9 +867,7 @@ export default function DSAPayout({ employee }: Props) {
                   </thead>
                   <tbody>
                     {g.rows.map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid var(--bg-raised)' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <tr key={i} style={{ borderBottom: '1px solid var(--bg-raised)' }}>
                         <td className="px-5 py-3">
                           <p className="text-sm font-medium text-text-primary">{r.client_name}</p>
                           <p className="text-xs font-mono" style={{ color: 'var(--text-faint)' }}>{r.client_code}</p>

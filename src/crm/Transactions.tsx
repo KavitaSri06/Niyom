@@ -888,7 +888,7 @@ export default function Transactions({ employee }: Props) {
 
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full nw-table">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                 {['Date', 'Client', 'Type', 'Product', 'Details', 'Amount', 'Actions'].map(h => (
@@ -907,9 +907,7 @@ export default function Transactions({ employee }: Props) {
                 const isIt = t.product_type === 'insurance';
                 const payout = isB && t.face_value && t.coupon_rate && t.quantity ? calcPayout(t.face_value, t.coupon_rate, t.quantity, t.payout_frequency || 'annual') : null;
                 return (
-                  <tr key={t.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <tr key={t.id} style={{ borderBottom: '1px solid var(--bg-raised)' }}>
                     <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-muted)' }}>{fmtDate(t.txn_date)}</td>
                     <td className="px-5 py-3.5">
                       <p className="text-sm font-medium text-text-primary">{(t.client as any)?.full_name || '—'}</p>
