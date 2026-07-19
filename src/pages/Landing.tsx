@@ -94,7 +94,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
               </div>
               <button
                 onClick={() => onNavigate('client-login')}
-                className={`bg-accent-soft hover:bg-accent-soft-deep text-black px-8 py-3 rounded-md font-semibold transition-all duration-300 shadow-md hover:shadow-lg ${isLoaded ? 'animate-slideDown animate-delay-200 animate-gold-shine' : 'opacity-0'}`}
+                className={`lift press bg-accent-soft hover:bg-accent-soft-deep text-black px-8 py-3 rounded-xl font-semibold shadow-md ${isLoaded ? 'animate-slideDown animate-delay-200' : 'opacity-0'}`}
               >
                 Client Login
               </button>
@@ -451,7 +451,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
           </p>
           <button
             onClick={() => onNavigate('client-login')}
-            className={`bg-black hover:bg-gray-900 text-white font-bold py-4 px-10 rounded-md transition-all duration-300 shadow-lg hover:shadow-xl text-lg ${isLoaded ? 'animate-fadeInUp animate-delay-400 animate-pulse-subtle' : 'opacity-0'}`}
+            className={`lift press bg-black hover:bg-gray-900 text-white font-bold py-4 px-10 rounded-xl shadow-lg text-lg ${isLoaded ? 'animate-fadeInUp animate-delay-400' : 'opacity-0'}`}
           >
             Create Your Account
           </button>
