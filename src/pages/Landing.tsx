@@ -1,4 +1,4 @@
-import { ArrowRight, Shield, Target, Zap, TrendingUp, Users, Award, Instagram, Linkedin, ChevronRight, Phone, Mail, MessageCircle, Menu, X, ChevronDown } from 'lucide-react';
+import { ArrowRight, Shield, Target, Zap, TrendingUp, Users, Award, Instagram, Linkedin, ChevronRight, Phone, Mail, MessageCircle, Menu, X, ChevronDown, MapPin } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Logo } from '../components/Logo';
 import { RegulatoryInfo } from '../components/RegulatoryInfo';
@@ -517,6 +517,29 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
               >
                 +91 8939433113
               </a>
+            </div>
+          </div>
+
+          <div className={`lift mt-8 bg-gradient-to-br from-black to-gray-900 rounded-xl p-8 shadow-xl ${isLoaded ? 'animate-fadeInUp animate-delay-500' : 'opacity-0'}`}>
+            <div className="flex items-start gap-4">
+              <div className="bg-accent-soft p-4 rounded-full shrink-0">
+                <MapPin className="w-8 h-8 text-black" />
+              </div>
+              <div>
+                <h4 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+                  Our Office
+                </h4>
+                <a
+                  href="https://www.google.com/maps/search/?api=1&query=No+126+Poonamallee+High+Road+Maduravoyal+Chennai+600095"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent-soft hover:text-white text-lg leading-relaxed transition-colors duration-300 block"
+                >
+                  No 126, 1st Floor, Poonamallee High Rd, Varalakshmi Nagar,<br />
+                  Sentamil Nagar, Maduravoyal, Chennai,<br />
+                  Greater Chennai, Tamil Nadu 600095
+                </a>
+              </div>
             </div>
           </div>
 
