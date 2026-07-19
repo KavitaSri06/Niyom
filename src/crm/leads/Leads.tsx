@@ -3,11 +3,14 @@ import { supabase } from '../../lib/supabase';
 import { NWEmployee, CRMPage } from '../types';
 import { List, LayoutGrid, Plus } from 'lucide-react';
 import { NWLead } from './leadTypes';
+import { isAdminRole } from './leadUtils';
 import LeadList from './LeadList';
 import LeadPipeline from './LeadPipeline';
 import LeadWorkspace from './LeadWorkspace';
 import LeadForm from './LeadForm';
 import LeadAssignModal from './LeadAssignModal';
+import LeadImport from './LeadImport';
+import LeadDuplicateQueue from './LeadDuplicateQueue';
 
 interface Props {
   employee: NWEmployee;
@@ -20,14 +23,16 @@ const LEAD_SELECT =
   'created_by:nw_employees!nw_leads_created_by_employee_id_fkey(full_name, employee_code)';
 
 type FormState = { open: boolean; mode: 'create' | 'edit'; lead: NWLead | null };
-type View = 'list' | 'board';
+type View = 'list' | 'board' | 'import';
 
 export default function Leads({ employee, onNavigate }: Props) {
+  const isAdmin = isAdminRole(employee);
   const [refreshKey, setRefreshKey] = useState(0);
   const [view, setView] = useState<View>('list');
   const [openLead, setOpenLead] = useState<NWLead | null>(null);      // workspace
   const [form, setForm] = useState<FormState>({ open: false, mode: 'create', lead: null });
   const [assign, setAssign] = useState<{ open: boolean; leads: NWLead[] }>({ open: false, leads: [] });
+  const [dupOpen, setDupOpen] = useState(false);
   const [toast, setToast] = useState('');
 
   const bump = () => setRefreshKey(k => k + 1);
@@ -38,6 +43,15 @@ export default function Leads({ employee, onNavigate }: Props) {
     const { data } = await supabase.from('nw_leads').select(LEAD_SELECT).eq('id', leadOrId).single();
     if (data) setOpenLead(data as unknown as NWLead);
   }, []);
+
+  // Import takes over the whole page (admin only).
+  if (view === 'import' && isAdmin) {
+    return (
+      <LeadImport employee={employee}
+        onBack={() => setView('list')}
+        onDone={() => { setView('list'); bump(); }} />
+    );
+  }
 
   // Workspace takes over the whole page.
   if (openLead) {
@@ -92,6 +106,8 @@ export default function Leads({ employee, onNavigate }: Props) {
           onOpen={openWorkspace}
           onEdit={l => setForm({ open: true, mode: 'edit', lead: l })}
           onAssign={leads => setAssign({ open: true, leads })}
+          onImport={() => setView('import')}
+          onOpenDuplicates={() => setDupOpen(true)}
         />
       ) : (
         <div className="space-y-5">
@@ -123,6 +139,12 @@ export default function Leads({ employee, onNavigate }: Props) {
         <LeadAssignModal leads={assign.leads}
           onClose={() => setAssign({ open: false, leads: [] })}
           onAssigned={count => { setAssign({ open: false, leads: [] }); flash(`${count} lead${count === 1 ? '' : 's'} assigned`); bump(); }} />
+      )}
+      {dupOpen && isAdmin && (
+        <LeadDuplicateQueue employee={employee}
+          onClose={() => setDupOpen(false)}
+          onOpenLead={openWorkspace}
+          onChanged={bump} />
       )}
       {toast && <Toast text={toast} />}
     </div>

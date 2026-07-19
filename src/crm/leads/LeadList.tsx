@@ -3,12 +3,14 @@ import { supabase } from '../../lib/supabase';
 import { NWEmployee } from '../types';
 import {
   Search, Plus, SlidersHorizontal, X, ChevronLeft, ChevronRight, UserPlus,
-  Pencil, Layers, Users2, Sparkles, Inbox, RefreshCw,
+  Pencil, Layers, Users2, Sparkles, Inbox, RefreshCw, Upload, Download, Bookmark, Save, ShieldAlert,
 } from 'lucide-react';
-import { NWLead, LeadListFilters, LeadStatus, LeadPriority, LeadOrigin } from './leadTypes';
+import { NWLead, LeadListFilters, LeadStatus, LeadPriority, LeadOrigin, NWLeadSavedView } from './leadTypes';
 import { LEAD_STATUSES, PRIORITIES, INTERESTED_PRODUCTS, LEAD_SOURCES, LEAD_ORIGIN_LABEL, PAGE_SIZE } from './leadConstants';
 import { StatusBadge, PriorityBadge, ScoreBadge, Input, Select } from './leadUi';
 import { isAdminRole, formatMoney, formatDate, initials, relativeTime } from './leadUtils';
+import { leadsToCsv, downloadCsv } from './leadImportUtils';
+import LeadBulkToolbar from './LeadBulkToolbar';
 
 const LEAD_SELECT =
   '*, owner:nw_employees!nw_leads_owner_employee_id_fkey(full_name, employee_code), ' +
@@ -28,9 +30,11 @@ interface Props {
   onAssign: (leads: NWLead[]) => void;
   refreshKey: number;               // bump to force a reload from the container
   viewToggle?: React.ReactNode;     // List/Board switch, rendered in the header
+  onImport?: () => void;            // admin: open the bulk importer
+  onOpenDuplicates?: () => void;    // admin: open the duplicate-review queue
 }
 
-export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, refreshKey, viewToggle }: Props) {
+export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, refreshKey, viewToggle, onImport, onOpenDuplicates }: Props) {
   const isAdmin = isAdminRole(employee);
   const [leads, setLeads] = useState<NWLead[]>([]);
   const [total, setTotal] = useState(0);
@@ -42,8 +46,45 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [employees, setEmployees] = useState<{ id: string; full_name: string }[]>([]);
   const [stats, setStats] = useState({ total: 0, today: 0, pool: 0, converted: 0 });
+  const [views, setViews] = useState<NWLeadSavedView[]>([]);
+  const [showViews, setShowViews] = useState(false);
+  const [saveViewName, setSaveViewName] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [dupCount, setDupCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    supabase.from('nw_lead_duplicate_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+      .then(({ count }) => setDupCount(count ?? 0));
+  }, [isAdmin, refreshKey]);
 
   const setF = (patch: Partial<LeadListFilters>) => { setFilters(f => ({ ...f, ...patch })); setPage(0); };
+
+  const loadViews = useCallback(() => {
+    supabase.from('nw_lead_saved_views').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => setViews((data as NWLeadSavedView[]) || []));
+  }, []);
+  useEffect(() => { loadViews(); }, [loadViews]);
+
+  const applyView = (v: NWLeadSavedView) => {
+    const f = { ...EMPTY_FILTERS, ...(v.filters as Partial<LeadListFilters>) };
+    setFilters(f); setSearchInput(f.search || ''); setPage(0); setShowViews(false);
+  };
+  const saveView = async () => {
+    if (!saveViewName.trim()) return;
+    await supabase.from('nw_lead_saved_views').insert([{ employee_id: employee.id, name: saveViewName.trim(), filters }]);
+    setSaveViewName(''); loadViews();
+  };
+  const deleteView = async (id: string) => { await supabase.from('nw_lead_saved_views').delete().eq('id', id); loadViews(); };
+
+  // Export the current filtered result set (capped) to CSV.
+  const exportFiltered = async () => {
+    setExporting(true);
+    const { data } = await buildQuery(false).order('created_at', { ascending: false }).range(0, 4999);
+    const rows = (data as unknown as NWLead[]) || [];
+    downloadCsv(`leads_${new Date().toISOString().slice(0, 10)}.csv`, leadsToCsv(rows));
+    setExporting(false);
+  };
 
   // Debounce the free-text search box into the filter.
   useEffect(() => {
@@ -153,8 +194,30 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
             {isAdmin ? 'Full pipeline visibility across the team' : 'Your assigned & self-generated leads'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {viewToggle}
+          {isAdmin && onOpenDuplicates && dupCount > 0 && (
+            <button onClick={onOpenDuplicates}
+              className="px-3 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 relative"
+              style={{ background: 'rgba(251,191,36,0.1)', color: 'rgb(var(--warning-soft-rgb))', border: '1px solid rgba(251,191,36,0.3)' }}>
+              <ShieldAlert className="w-4 h-4" /> Duplicates
+              <span className="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center" style={{ background: 'rgb(var(--warning-soft-rgb))', color: '#000' }}>{dupCount}</span>
+            </button>
+          )}
+          {isAdmin && (
+            <button onClick={exportFiltered} disabled={exporting}
+              className="px-3 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+              <Download className="w-4 h-4" /> {exporting ? 'Exporting…' : 'Export'}
+            </button>
+          )}
+          {isAdmin && onImport && (
+            <button onClick={onImport}
+              className="px-3 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+              <Upload className="w-4 h-4" /> Import
+            </button>
+          )}
           <button onClick={onNew}
             className="px-4 py-2.5 rounded-xl text-sm font-bold text-on-accent flex items-center gap-2"
             style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
@@ -202,6 +265,38 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }} />
           <Input value={searchInput} onChange={e => setSearchInput(e.target.value)}
             placeholder="Search name, mobile, email, city, lead code…" style={{ paddingLeft: '2.25rem' }} />
+        </div>
+        {/* Saved views */}
+        <div className="relative">
+          <button onClick={() => setShowViews(s => !s)}
+            className="px-3.5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
+            style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+            <Bookmark className="w-4 h-4" /> Views
+          </button>
+          {showViews && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowViews(false)} />
+              <div className="absolute right-0 top-full mt-1 z-50 w-64 rounded-xl shadow-2xl p-2" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                <p className="text-[10px] font-bold uppercase tracking-wider px-2 py-1" style={{ color: 'var(--text-faint)' }}>Saved views</p>
+                {views.length === 0 ? (
+                  <p className="text-xs px-2 py-2" style={{ color: 'var(--text-faint)' }}>No saved views yet.</p>
+                ) : views.map(v => (
+                  <div key={v.id} className="flex items-center gap-1 group">
+                    <button onClick={() => applyView(v)} className="flex-1 text-left px-2 py-1.5 text-xs rounded hover:bg-[var(--hover-bg)] truncate" style={{ color: 'var(--text-secondary)' }}>
+                      {v.name}{v.is_shared && <span className="ml-1 text-[9px]" style={{ color: 'var(--accent)' }}>· shared</span>}
+                    </button>
+                    {v.employee_id === employee.id && (
+                      <button onClick={() => deleteView(v.id)} className="p-1 rounded" style={{ color: 'var(--text-faint)' }}><X className="w-3 h-3" /></button>
+                    )}
+                  </div>
+                ))}
+                <div className="flex items-center gap-1 mt-1 pt-2" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                  <Input value={saveViewName} onChange={e => setSaveViewName(e.target.value)} placeholder="Save current as…" style={{ padding: '0.4rem 0.6rem', fontSize: '0.75rem' }} />
+                  <button onClick={saveView} disabled={!saveViewName.trim()} className="p-2 rounded-lg disabled:opacity-40" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}><Save className="w-3.5 h-3.5" /></button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
         <button onClick={() => setShowFilters(s => !s)}
           className="px-3.5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 relative"
@@ -271,17 +366,13 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
 
       {/* Bulk action bar (admin) */}
       {isAdmin && selected.size > 0 && (
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl" style={{ background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.25)' }}>
-          <p className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>{selected.size} selected</p>
-          <div className="flex items-center gap-2">
-            <button onClick={() => onAssign(selectedLeads)}
-              className="text-xs font-bold px-3 py-1.5 rounded-lg text-on-accent flex items-center gap-1.5"
-              style={{ background: 'var(--accent)' }}>
-              <UserPlus className="w-3.5 h-3.5" /> Assign
-            </button>
-            <button onClick={() => setSelected(new Set())} className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Clear</button>
-          </div>
-        </div>
+        <LeadBulkToolbar
+          employee={employee}
+          leads={selectedLeads}
+          onAssign={onAssign}
+          onDone={load}
+          onClear={() => setSelected(new Set())}
+        />
       )}
 
       {/* Table */}
