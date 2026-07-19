@@ -42,9 +42,14 @@ function AppContent() {
   const [isAdmin, setIsAdmin] = useState(false);
   // null = unknown, true = public client, false = CRM employee (don't redirect to dashboard)
   const [isPublicClient, setIsPublicClient] = useState<boolean | null>(null);
-  // Client portal state
-  const [clientPortalId, setClientPortalId] = useState<string | null>(null);
-  const [clientPasswordChanged, setClientPasswordChanged] = useState(false);
+  // Client portal state — persisted to sessionStorage so a page refresh keeps
+  // the client inside the portal instead of dropping back to landing/dashboard.
+  const [clientPortalId, setClientPortalId] = useState<string | null>(() => {
+    try { return sessionStorage.getItem('nw_portal_client') || null; } catch { return null; }
+  });
+  const [clientPasswordChanged, setClientPasswordChanged] = useState<boolean>(() => {
+    try { return sessionStorage.getItem('nw_portal_pw_ok') === '1'; } catch { return false; }
+  });
   // Public secure deal-confirmation link token (/deal/<token>)
   const [dealToken, setDealToken] = useState<string | null>(null);
   // Public secure debit-note link token (/debit-note/<token>)
@@ -55,6 +60,8 @@ function AppContent() {
       const pathname = window.location.pathname;
       const params = new URLSearchParams(window.location.search);
       const adminKey = params.get('admin');
+      let hasPortalSession = false;
+      try { hasPortalSession = !!sessionStorage.getItem('nw_portal_client'); } catch {}
 
       if (pathname.startsWith('/debit-note/')) {
         const t = pathname.slice('/debit-note/'.length).replace(/\/$/, '');
@@ -95,6 +102,12 @@ function AppContent() {
       } else if (adminKey === 'niyom_admin_2024') {
         setIsAdmin(true);
         setCurrentPage('admin');
+      } else if (hasPortalSession) {
+        // A refreshed client-portal session that landed on a non-specific route
+        // (e.g. '/' because the portal was entered via an in-app link that never
+        // changed the URL). Restore the portal and normalise the URL.
+        setCurrentPage('client-login');
+        if (pathname !== '/client-login') window.history.replaceState({}, '', '/client-login');
       }
     };
 
@@ -102,6 +115,28 @@ function AppContent() {
     window.addEventListener('popstate', checkRoute);
 
     return () => window.removeEventListener('popstate', checkRoute);
+  }, []);
+
+  // Mount-only: a client-portal pointer restored from sessionStorage is only
+  // valid while a live Supabase auth session backs it. If the session has
+  // expired, drop the stale pointer so the login form shows instead of a portal
+  // that can't load any data. Runs once, so it never races a fresh in-app login.
+  useEffect(() => {
+    if (!clientPortalId) return;
+    let cancelled = false;
+    import('./lib/supabase').then(({ supabase }) =>
+      supabase.auth.getSession().then(({ data }) => {
+        if (cancelled || data.session) return;
+        try {
+          sessionStorage.removeItem('nw_portal_client');
+          sessionStorage.removeItem('nw_portal_pw_ok');
+        } catch {}
+        setClientPortalId(null);
+        setClientPasswordChanged(false);
+      }),
+    );
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Resolve whether the logged-in user is a public client or CRM employee (runs once per user session)
@@ -118,6 +153,10 @@ function AppContent() {
 
     const pathname = window.location.pathname;
     if (pathname.startsWith('/crm') || pathname.startsWith('/client-login')) return;
+
+    // An active client-portal session must never be redirected to the public
+    // client dashboard — it stays in the portal (see checkRoute restoration).
+    if (clientPortalId) return;
 
     if (!user || isAdmin) {
       if (!isAdmin) {
@@ -138,7 +177,7 @@ function AppContent() {
       setShowSignup(false);
     }
     // Once logged in, don't force-redirect — let the user navigate freely
-  }, [user, loading, isAdmin, isPublicClient]);
+  }, [user, loading, isAdmin, isPublicClient, clientPortalId]);
 
   const handleGetStarted = () => {
     setShowAuth(true);
@@ -191,7 +230,43 @@ function AppContent() {
   };
 
   const handleNavigate = (page: string) => {
+    // Entering the client portal via an in-app link: reflect it on the URL so a
+    // later refresh resolves back to the portal instead of the landing page.
+    if (page === 'client-login' && window.location.pathname !== '/client-login') {
+      window.history.pushState({}, '', '/client-login');
+    }
     setCurrentPage(page as any);
+  };
+
+  // Client-portal session persistence — survives refresh, cleared on logout.
+  const handleClientLogin = (id: string, pwChanged: boolean) => {
+    try {
+      sessionStorage.setItem('nw_portal_client', id);
+      sessionStorage.setItem('nw_portal_pw_ok', pwChanged ? '1' : '0');
+    } catch {}
+    if (window.location.pathname !== '/client-login') {
+      window.history.pushState({}, '', '/client-login');
+    }
+    setClientPortalId(id);
+    setClientPasswordChanged(pwChanged);
+  };
+
+  const handleClientPasswordChanged = () => {
+    try { sessionStorage.setItem('nw_portal_pw_ok', '1'); } catch {}
+    setClientPasswordChanged(true);
+  };
+
+  const handleClientLogout = () => {
+    try {
+      sessionStorage.removeItem('nw_portal_client');
+      sessionStorage.removeItem('nw_portal_pw_ok');
+    } catch {}
+    // End the Supabase auth session too, so logout is complete (not just UI state).
+    import('./lib/supabase').then(({ supabase }) => supabase.auth.signOut());
+    setClientPortalId(null);
+    setClientPasswordChanged(false);
+    window.history.pushState({}, '', '/client-login');
+    setCurrentPage('client-login');
   };
 
   const handleKYCSuccess = () => {
@@ -241,15 +316,15 @@ function AppContent() {
         return (
           <ClientChangePassword
             clientId={clientPortalId}
-            onComplete={() => setClientPasswordChanged(true)}
+            onComplete={handleClientPasswordChanged}
           />
         );
       }
-      return <ClientPortal clientId={clientPortalId} onLogout={() => { setClientPortalId(null); setClientPasswordChanged(false); }} />;
+      return <ClientPortal clientId={clientPortalId} onLogout={handleClientLogout} />;
     }
     return (
       <ClientLogin
-        onLogin={(id, pwChanged) => { setClientPortalId(id); setClientPasswordChanged(pwChanged); }}
+        onLogin={handleClientLogin}
         onInvestNow={() => {
           window.history.pushState({}, '', '/onboarding');
           setCurrentPage('client-onboarding' as any);
@@ -269,15 +344,15 @@ function AppContent() {
         return (
           <ClientChangePassword
             clientId={clientPortalId}
-            onComplete={() => setClientPasswordChanged(true)}
+            onComplete={handleClientPasswordChanged}
           />
         );
       }
-      return <ClientPortal clientId={clientPortalId} onLogout={() => { setClientPortalId(null); setClientPasswordChanged(false); }} />;
+      return <ClientPortal clientId={clientPortalId} onLogout={handleClientLogout} />;
     }
     return (
       <ClientLogin
-        onLogin={(id, pwChanged) => { setClientPortalId(id); setClientPasswordChanged(pwChanged); }}
+        onLogin={handleClientLogin}
         onInvestNow={() => {
           window.history.pushState({}, '', '/onboarding');
           setCurrentPage('client-onboarding' as any);
