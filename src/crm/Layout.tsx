@@ -28,7 +28,7 @@ const NAV = [
   { key: 'mis' as CRMPage,             label: 'MIS Report',        icon: BarChart3 },
   { key: 'dsa_management' as CRMPage,   label: 'DSA Management',    icon: Handshake },
   { key: 'dsa_payout' as CRMPage,      label: 'DSA Payout',        icon: Wallet },
-  { key: 'documents' as CRMPage,        label: 'Documents',         icon: FolderOpen },
+  { key: 'documents' as CRMPage,        label: 'Documents',         icon: FolderOpen, hideForAdmin: true },
   { key: 'admin_documents' as CRMPage,  label: 'Document Vault',    icon: Shield, adminOnly: true },
   { key: 'employees' as CRMPage,        label: 'Employees',         icon: UserCog, adminOnly: true },
   { key: 'settings' as CRMPage,         label: 'Settings',          icon: Settings },
@@ -54,7 +54,7 @@ export default function Layout({ children, page, onNavigate, employee }: Props) 
     setAlerts([]);
   };
 
-  const navItems = NAV.filter(n => !n.adminOnly || isAdmin);
+  const navItems = NAV.filter(n => (!n.adminOnly || isAdmin) && !(n.hideForAdmin && isAdmin));
 
   const goHome = () => {
     window.location.href = '/';
