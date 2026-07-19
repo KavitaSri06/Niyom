@@ -7,4 +7,6 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  // Honor a harness-assigned PORT (multi-session dev servers); defaults to 5173.
+  server: process.env.PORT ? { port: Number(process.env.PORT) } : undefined,
 });

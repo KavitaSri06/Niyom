@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { NWEmployee } from './types';
 import { fmtDate } from './utils';
-import { User, Lock, Bell, CheckCircle2, AlertCircle, Eye, EyeOff, Shield } from 'lucide-react';
+import { User, Lock, Bell, CheckCircle2, AlertCircle, Eye, EyeOff, Shield, Smartphone } from 'lucide-react';
+import {
+  listVerifiedTotpFactors, startTotpEnrollment, verifyTotpCode, cancelEnrollment,
+  disableTotp, mfaErrorMessage, isMfaUnavailable, employeeIsPrivileged,
+  type TotpEnrollment,
+} from './mfa';
 
 interface Props { employee: NWEmployee; }
 
@@ -37,6 +42,27 @@ export default function Settings({ employee }: Props) {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
+  // --- Two-factor (TOTP) ---
+  // Opt-in: the login gate no longer forces enrolment, so this is the only place
+  // a member turns their own second factor on or off.
+  const [mfaOn, setMfaOn] = useState<boolean | null>(null);   // null = still loading
+  const [mfaSupported, setMfaSupported] = useState(true);     // false = TOTP off project-wide
+  const [enrollment, setEnrollment] = useState<TotpEnrollment | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaBusy, setMfaBusy] = useState(false);
+  const [confirmDisable, setConfirmDisable] = useState(false);
+
+  const refreshMfa = useCallback(async () => {
+    try {
+      setMfaOn((await listVerifiedTotpFactors()).length > 0);
+    } catch (err) {
+      if (isMfaUnavailable(err)) { setMfaSupported(false); setMfaOn(false); return; }
+      setMfaOn(false);
+    }
+  }, []);
+
+  useEffect(() => { refreshMfa(); }, [refreshMfa]);
+
   const notify = (msg: string, isErr = false) => {
     if (isErr) setError(msg); else setSuccess(msg);
     setTimeout(() => { setSuccess(''); setError(''); }, 4000);
@@ -58,6 +84,47 @@ export default function Settings({ employee }: Props) {
     const { error: err } = await supabase.auth.updateUser({ password: passwords.next });
     setSaving(false);
     if (err) notify(err.message, true); else { notify('Password updated.'); setPasswords({ next: '', confirm: '' }); }
+  };
+
+  const beginEnroll = async () => {
+    setMfaBusy(true);
+    try {
+      setEnrollment(await startTotpEnrollment());
+      setMfaCode('');
+    } catch (err) {
+      notify(mfaErrorMessage(err), true);
+    } finally { setMfaBusy(false); }
+  };
+
+  const confirmEnroll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!enrollment) return;
+    setMfaBusy(true);
+    try {
+      await verifyTotpCode(enrollment.factorId, mfaCode);
+      setEnrollment(null); setMfaCode('');
+      await refreshMfa();
+      notify('Two-factor authentication is on.');
+    } catch (err) {
+      notify(mfaErrorMessage(err), true);
+    } finally { setMfaBusy(false); }
+  };
+
+  const abortEnroll = async () => {
+    if (enrollment) await cancelEnrollment(enrollment.factorId);
+    setEnrollment(null); setMfaCode('');
+  };
+
+  const turnOffMfa = async () => {
+    setMfaBusy(true);
+    try {
+      await disableTotp();
+      setConfirmDisable(false);
+      await refreshMfa();
+      notify('Two-factor authentication is off. Your password is now the only thing protecting this account.');
+    } catch (err) {
+      notify(mfaErrorMessage(err), true);
+    } finally { setMfaBusy(false); }
   };
 
   const tabs = [
@@ -144,6 +211,107 @@ export default function Settings({ employee }: Props) {
 
       {tab === 'security' && (
         <div className="space-y-5">
+          {/* Two-factor. Opt-in — the login gate no longer forces enrolment, so
+              this card is the only way it goes on or off. */}
+          <div className="rounded-2xl p-6 space-y-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                  <Smartphone className="w-4 h-4" style={{ color: 'var(--accent)' }} /> Two-Factor Authentication
+                </h3>
+                <p className="text-xs mt-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  A 6-digit code from your authenticator app, asked for each time you sign in.
+                </p>
+              </div>
+              {mfaOn !== null && mfaSupported && (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full shrink-0"
+                  style={mfaOn
+                    ? { background: 'rgba(16,185,129,0.12)', color: 'var(--success)' }
+                    : { background: 'rgba(245,158,11,0.12)', color: 'var(--warning)' }}>
+                  {mfaOn ? 'On' : 'Off'}
+                </span>
+              )}
+            </div>
+
+            {!mfaSupported ? (
+              <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+                Two-factor is switched off for this Supabase project, so it cannot be enabled here.
+              </p>
+            ) : mfaOn === null ? (
+              <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Checking…</p>
+            ) : enrollment ? (
+              /* --- enrolment in progress --- */
+              <form onSubmit={confirmEnroll} className="space-y-4">
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  Scan this with Google Authenticator, Authy or 1Password, then enter the 6-digit code it shows.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-5 items-start">
+                  <img src={enrollment.qrCode} alt="Two-factor QR code" width={160} height={160}
+                    className="rounded-xl" style={{ background: '#fff', padding: 8 }} />
+                  <div className="min-w-0">
+                    <p className="text-xs mb-1" style={{ color: 'var(--text-faint)' }}>Or enter this key by hand:</p>
+                    <code className="text-xs break-all" style={{ color: 'var(--accent)' }}>{enrollment.secret}</code>
+                  </div>
+                </div>
+                <Field label="6-Digit Code">
+                  <Input value={mfaCode} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="000000"
+                    onChange={e => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+                </Field>
+                <div className="flex gap-3 justify-end">
+                  <button type="button" onClick={abortEnroll} disabled={mfaBusy}
+                    className="px-4 py-2.5 rounded-xl text-sm disabled:opacity-50"
+                    style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
+                  <button type="submit" disabled={mfaBusy || mfaCode.length !== 6}
+                    className="px-6 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+                    {mfaBusy ? 'Verifying…' : 'Turn On'}
+                  </button>
+                </div>
+              </form>
+            ) : mfaOn ? (
+              /* --- on: offer to turn off, with a confirmation --- */
+              confirmDisable ? (
+                <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <p className="text-sm text-text-primary">Turn off two-factor authentication?</p>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Your password becomes the only thing protecting this account — and this account can see every
+                    client's PAN, Aadhaar, bank and demat details, and can raise payment links.
+                  </p>
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setConfirmDisable(false)} disabled={mfaBusy}
+                      className="px-4 py-2 rounded-xl text-sm disabled:opacity-50"
+                      style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Keep it on</button>
+                    <button onClick={turnOffMfa} disabled={mfaBusy}
+                      className="px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-50"
+                      style={{ background: 'var(--danger)', color: '#fff' }}>
+                      {mfaBusy ? 'Turning off…' : 'Turn Off'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-end">
+                  <button onClick={() => setConfirmDisable(true)}
+                    className="px-4 py-2.5 rounded-xl text-sm font-semibold"
+                    style={{ color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.3)' }}>Turn Off</button>
+                </div>
+              )
+            ) : (
+              /* --- off: offer to turn on --- */
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+                  {employeeIsPrivileged(employee)
+                    ? 'Strongly recommended — this account can see every client\'s financial details.'
+                    : 'Recommended for anyone handling client data.'}
+                </p>
+                <button onClick={beginEnroll} disabled={mfaBusy}
+                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50 shrink-0"
+                  style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+                  {mfaBusy ? 'Starting…' : 'Turn On'}
+                </button>
+              </div>
+            )}
+          </div>
+
           <form onSubmit={savePassword} className="rounded-2xl p-6 space-y-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
             <h3 className="text-sm font-bold text-text-primary flex items-center gap-2"><Lock className="w-4 h-4" style={{ color: 'var(--accent)' }} /> Change Password</h3>
             {[{ key: 'next' as const, label: 'New Password' }, { key: 'confirm' as const, label: 'Confirm Password' }].map(f => (

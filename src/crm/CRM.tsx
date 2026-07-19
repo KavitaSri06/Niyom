@@ -6,6 +6,7 @@ import CRMLogin from './CRMLogin';
 import ChangePassword from './ChangePassword';
 import Layout from './Layout';
 import Dashboard from './Dashboard';
+import Leads from './leads/Leads';
 import ClientOnboarding from './ClientOnboarding';
 import ManageClients from './ManageClients';
 import Portfolio from './Portfolio';
@@ -34,6 +35,7 @@ export default function CRM() {
 
   const validPages = [
     'dashboard',
+    'leads',
     'onboarding',
     'deal_confirmation',
     'transfer_queue',
@@ -156,6 +158,7 @@ export default function CRM() {
   const renderPage = () => {
     switch (page) {
       case 'dashboard': return <Dashboard employee={employee} onNavigate={navigate} />;
+      case 'leads': return <Leads employee={employee} onNavigate={navigate} pageParams={pageParams} />;
       case 'onboarding': return <ClientOnboarding employee={employee} onNavigate={navigate} />;
       case 'clients': return <ManageClients employee={employee} onNavigate={navigate} />;
       case 'portfolio': return <Portfolio employee={employee} />;
