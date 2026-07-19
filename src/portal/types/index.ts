@@ -120,6 +120,58 @@ export interface Notice {
   isMock: boolean;
 }
 
+/* ---------------------------------------------------------------------------
+ * Portfolio & Allocation view models (Phase 2)
+ * ------------------------------------------------------------------------- */
+
+/** Broad asset class a holding rolls up to, derived from product + scheme. */
+export type AssetClass = 'Equity' | 'Debt' | 'Hybrid' | 'Insurance' | 'Other';
+
+/** A normalized, presentation-ready holding row spanning every product. */
+export interface HoldingRow {
+  id: string;
+  productType: ProductType;
+  productLabel: string;
+  /** Vivid theme-constant hex for the product. */
+  productColor: string;
+  name: string;
+  /** Product-specific secondary line (folio, coupon, ISIN, policy…). */
+  meta?: string;
+  assetClass: AssetClass;
+  category?: string;
+  amc?: string;
+  units?: number;
+  invested: number;
+  value: number;
+  gain: number;
+  gainPercent: number;
+}
+
+/** One slice of an allocation breakdown along a chosen dimension. */
+export interface AllocationBucket {
+  key: string;
+  label: string;
+  color: string;
+  value: number;
+  percent: number;
+  count: number;
+}
+
+/** A full breakdown of the portfolio along one dimension. */
+export interface AllocationDimension {
+  id: 'product' | 'assetClass' | 'category' | 'amc';
+  title: string;
+  buckets: AllocationBucket[];
+  total: number;
+}
+
+/** Aggregate for the Portfolio & Allocation pages. */
+export interface PortfolioData {
+  summary: PortfolioSummary;
+  rows: HoldingRow[];
+  breakdowns: Record<AllocationDimension['id'], AllocationDimension>;
+}
+
 /** Everything the Wealth Dashboard needs in one aggregate. */
 export interface DashboardData {
   summary: PortfolioSummary;

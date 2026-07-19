@@ -8,10 +8,16 @@
  */
 import type { NWHolding, NWTransaction, ProductType } from '../../crm/types';
 import { PRODUCT_LABELS, PRODUCT_CHART_COLORS } from '../../crm/utils';
+import { ASSET_CLASS_COLOR, paletteColor } from './palette';
 import type {
+  AllocationBucket,
+  AllocationDimension,
   AllocationSlice,
+  AssetClass,
+  HoldingRow,
   MutualFundLine,
   MutualFundSummary,
+  PortfolioData,
   PortfolioSummary,
   RecentTransaction,
 } from '../types';
@@ -21,6 +27,56 @@ const holdingInvested = (h: NWHolding): number => h.invested_amount || 0;
 
 const pct = (part: number, whole: number): number =>
   whole > 0 ? (part / whole) * 100 : 0;
+
+const titleCase = (s: string): string =>
+  s.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim();
+
+/** Broad asset class from product type + (for MF) scheme type. */
+function assetClassOf(h: NWHolding): AssetClass {
+  switch (h.product_type) {
+    case 'secondary_bond':
+    case 'primary_bond':
+    case 'fixed_deposit':
+      return 'Debt';
+    case 'insurance':
+      return 'Insurance';
+    case 'unlisted_share':
+      return 'Equity';
+    case 'mutual_fund': {
+      const s = (h.scheme_type || '').toLowerCase();
+      if (/hybrid|balanced|multi[- ]?asset|advantage/.test(s)) return 'Hybrid';
+      if (/debt|liquid|gilt|bond|money|overnight|income|duration/.test(s)) return 'Debt';
+      if (/equity|flexi|large|mid|small|index|elss|value|focus|cap/.test(s)) return 'Equity';
+      return 'Equity';
+    }
+    default:
+      return 'Other';
+  }
+}
+
+/** Category label used for the category breakdown. */
+function categoryOf(h: NWHolding): string {
+  if (h.product_type === 'mutual_fund') return h.scheme_type ? titleCase(h.scheme_type) : 'Uncategorised';
+  if (h.product_type === 'insurance') return h.insurance_type ? titleCase(h.insurance_type) : 'Insurance';
+  return PRODUCT_LABELS[h.product_type];
+}
+
+/** Product-specific secondary line for the holdings table. */
+function metaOf(h: NWHolding): string | undefined {
+  switch (h.product_type) {
+    case 'mutual_fund':
+      return h.folio_number ? `Folio ${h.folio_number}` : h.fund_house || undefined;
+    case 'secondary_bond':
+    case 'primary_bond':
+      return h.coupon_rate ? `${h.coupon_rate}% coupon` : h.isin || undefined;
+    case 'fixed_deposit':
+      return h.coupon_rate ? `${h.coupon_rate}% p.a.` : undefined;
+    case 'insurance':
+      return h.policy_number ? `Policy ${h.policy_number}` : h.insurer_name || undefined;
+    default:
+      return undefined;
+  }
+}
 
 export const PortfolioService = {
   /** Top-line wealth summary + six-way allocation, across every product. */
@@ -102,5 +158,101 @@ export const PortfolioService = {
       amount: t.consolidated_amount || 0,
       date: t.txn_date,
     }));
+  },
+
+  /** Normalize every holding into a product-agnostic table row (Phase 2). */
+  buildHoldingRows(holdings: NWHolding[]): HoldingRow[] {
+    return holdings
+      .map((h) => {
+        const value = holdingValue(h);
+        const invested = holdingInvested(h);
+        const gain = value - invested;
+        return {
+          id: h.id,
+          productType: h.product_type,
+          productLabel: PRODUCT_LABELS[h.product_type] ?? h.product_type,
+          productColor: PRODUCT_CHART_COLORS[h.product_type] ?? '#7688A4',
+          name: h.product_name,
+          meta: metaOf(h),
+          assetClass: assetClassOf(h),
+          category: categoryOf(h),
+          amc: h.fund_house || undefined,
+          units: h.quantity || undefined,
+          invested,
+          value,
+          gain,
+          gainPercent: pct(gain, invested),
+        };
+      })
+      .sort((a, b) => b.value - a.value);
+  },
+
+  /**
+   * Generic allocation breakdown along one dimension. `keyOf` returns a stable
+   * grouping key + display label; colors come from the caller so product keeps
+   * its brand colors while category/AMC use the shared palette.
+   */
+  buildBreakdown(
+    rows: HoldingRow[],
+    id: AllocationDimension['id'],
+    title: string,
+    keyOf: (r: HoldingRow) => { key: string; label: string; color?: string },
+  ): AllocationDimension {
+    const total = rows.reduce((s, r) => s + r.value, 0);
+    const map = new Map<string, { label: string; color?: string; value: number; count: number }>();
+
+    for (const r of rows) {
+      const { key, label, color } = keyOf(r);
+      const entry = map.get(key) ?? { label, color, value: 0, count: 0 };
+      entry.value += r.value;
+      entry.count += 1;
+      map.set(key, entry);
+    }
+
+    const buckets: AllocationBucket[] = [...map.entries()]
+      .map(([key, e]) => ({
+        key,
+        label: e.label,
+        color: e.color ?? '#7688A4',
+        value: e.value,
+        percent: pct(e.value, total),
+        count: e.count,
+      }))
+      .filter((b) => b.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .map((b, i) => ({ ...b, color: b.color === '#7688A4' ? paletteColor(i) : b.color }));
+
+    return { id, title, buckets, total };
+  },
+
+  /** Full aggregate for the Portfolio & Allocation pages. */
+  buildPortfolioData(holdings: NWHolding[]): PortfolioData {
+    const rows = this.buildHoldingRows(holdings);
+    return {
+      summary: this.buildSummary(holdings),
+      rows,
+      breakdowns: {
+        product: this.buildBreakdown(rows, 'product', 'By Product', (r) => ({
+          key: r.productType,
+          label: r.productLabel,
+          color: r.productColor,
+        })),
+        assetClass: this.buildBreakdown(rows, 'assetClass', 'By Asset Class', (r) => ({
+          key: r.assetClass,
+          label: r.assetClass,
+          color: ASSET_CLASS_COLOR[r.assetClass],
+        })),
+        category: this.buildBreakdown(rows, 'category', 'By Category', (r) => ({
+          key: r.category ?? 'Uncategorised',
+          label: r.category ?? 'Uncategorised',
+        })),
+        amc: this.buildBreakdown(
+          rows.filter((r) => r.amc),
+          'amc',
+          'By AMC / Issuer',
+          (r) => ({ key: r.amc as string, label: r.amc as string }),
+        ),
+      },
+    };
   },
 };

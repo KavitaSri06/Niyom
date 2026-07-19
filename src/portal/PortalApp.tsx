@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { PortalShell } from './layout/PortalShell';
 import { VIEW_TITLES, type PortalView } from './layout/navigation';
 import { usePortalRouter } from './routing/usePortalRouter';
-import { useDashboardData } from './hooks/useDashboardData';
+import { useClientSnapshot } from './hooks/useClientSnapshot';
+import { buildDashboardData } from './services/dashboardModel';
+import { PortfolioService } from './services/PortfolioService';
 import { DashboardPage } from './features/dashboard/DashboardPage';
+import { PortfolioPage } from './features/portfolio/PortfolioPage';
+import { AllocationPage } from './features/allocation/AllocationPage';
 import { PlaceholderPage } from './features/PlaceholderPage';
 import { ChangePasswordModal } from './features/profile/ChangePasswordModal';
 
@@ -15,8 +19,6 @@ interface PortalAppProps {
 
 /** Phase → label for placeholder views, so the roadmap is transparent. */
 const VIEW_PHASE: Partial<Record<PortalView, string>> = {
-  portfolio: 'Phase 2',
-  allocation: 'Phase 2',
   'mutual-funds': 'Phase 3',
   transactions: 'Phase 4',
   sip: 'Phase 3',
@@ -28,32 +30,50 @@ const VIEW_PHASE: Partial<Record<PortalView, string>> = {
 };
 
 /**
- * The Wealth Portal application root. Owns internal routing + data, and mounts
- * the shell. Replaces the body of the legacy ClientPortal without touching the
- * host router in App.tsx.
+ * Wealth Portal root. Fetches one client snapshot and derives every view's
+ * model from it, so navigation between Dashboard / Portfolio / Allocation never
+ * re-queries. Owns internal routing; leaves the host router in App.tsx untouched.
  */
 export default function PortalApp({ clientId, onLogout }: PortalAppProps) {
   const { view, navigate } = usePortalRouter();
-  const { client, data, loading, error, refreshedAt, refresh } = useDashboardData(clientId);
+  const { snapshot, loading, error, refreshedAt, refresh } = useClientSnapshot(clientId);
   const [showChangePw, setShowChangePw] = useState(false);
 
+  const client = snapshot.client;
+  const hasData = !!refreshedAt; // first load completed
+
+  const dashboardData = useMemo(
+    () => (hasData ? buildDashboardData(snapshot, clientId) : null),
+    [hasData, snapshot, clientId],
+  );
+  const portfolioData = useMemo(
+    () => (hasData ? PortfolioService.buildPortfolioData(snapshot.holdings) : null),
+    [hasData, snapshot.holdings],
+  );
+
   const renderView = () => {
-    if (view === 'dashboard') {
-      if (loading && !data) return <LoadingState />;
-      if (error) return <ErrorState message={error} onRetry={refresh} />;
-      if (data) {
-        return (
+    if (loading && !hasData) return <LoadingState />;
+    if (error) return <ErrorState message={error} onRetry={refresh} />;
+
+    switch (view) {
+      case 'dashboard':
+        return dashboardData ? (
           <DashboardPage
             client={client}
-            data={data}
+            data={dashboardData}
             refreshedAt={refreshedAt}
             onNavigate={navigate}
           />
+        ) : (
+          <LoadingState />
         );
-      }
-      return <LoadingState />;
+      case 'portfolio':
+        return portfolioData ? <PortfolioPage data={portfolioData} /> : <LoadingState />;
+      case 'allocation':
+        return portfolioData ? <AllocationPage data={portfolioData} /> : <LoadingState />;
+      default:
+        return <PlaceholderPage title={VIEW_TITLES[view]} phase={VIEW_PHASE[view]} />;
     }
-    return <PlaceholderPage title={VIEW_TITLES[view]} phase={VIEW_PHASE[view]} />;
   };
 
   return (
