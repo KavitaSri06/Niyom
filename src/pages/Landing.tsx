@@ -35,7 +35,18 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
 
   return (
     <div className="min-h-screen bg-bg-base">
-      <nav className={`bg-black text-white shadow-lg sticky top-0 z-50 ${isLoaded ? 'animate-fadeIn' : 'opacity-0'}`}>
+      {/* Frosted-glass sticky nav — translucent navy over a blur so content
+          scrolls softly beneath it. Falls back to solid navy where backdrop
+          blur is unsupported. */}
+      <nav
+        className={`text-white sticky top-0 z-50 ${isLoaded ? 'animate-fadeIn' : 'opacity-0'}`}
+        style={{
+          background: 'rgba(7, 21, 36, 0.72)',
+          backdropFilter: 'saturate(160%) blur(14px)',
+          WebkitBackdropFilter: 'saturate(160%) blur(14px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+        }}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center px-6 py-5">
             <button
@@ -339,6 +350,12 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
             className="w-full h-full object-cover"
           />
         </div>
+        {/* Navy gradient scrim — deepens the brand tone and lifts headline
+            contrast over the photo. A soft gold glow warms the centre. */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(180deg, rgba(7,21,36,0.55) 0%, rgba(7,21,36,0.35) 45%, rgba(7,21,36,0.88) 100%)' }} />
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(60% 55% at 50% 40%, rgba(200,164,93,0.10) 0%, transparent 70%)' }} />
         <div className="relative max-w-6xl mx-auto text-center">
           <h2 className={`text-6xl font-bold mb-6 leading-tight ${isLoaded ? 'animate-fadeInUp' : 'opacity-0'}`} style={{ fontFamily: 'var(--font-display)' }}>
             Your Financial Success<br />
@@ -349,7 +366,7 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
           </p>
           <button
             onClick={() => onNavigate('client-login')}
-            className={`bg-accent-soft hover:bg-accent-soft-deep text-black font-bold py-4 px-10 rounded-md flex items-center gap-3 mx-auto transition-all duration-300 shadow-lg hover:shadow-xl text-lg ${isLoaded ? 'animate-fadeInUp animate-delay-400 animate-float' : 'opacity-0'}`}
+            className={`lift press bg-accent-soft hover:bg-accent-soft-deep text-black font-bold py-4 px-10 rounded-xl flex items-center gap-3 mx-auto shadow-lg text-lg ${isLoaded ? 'animate-fadeInUp animate-delay-400' : 'opacity-0'}`}
           >
             Get Started <ArrowRight size={24} />
           </button>
