@@ -9,6 +9,7 @@ import { PortfolioService } from './services/PortfolioService';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { PortfolioPage } from './features/portfolio/PortfolioPage';
 import { AllocationPage } from './features/allocation/AllocationPage';
+import { MutualFundsModule } from './features/mutual-funds/MutualFundsModule';
 import { PlaceholderPage } from './features/PlaceholderPage';
 import { ChangePasswordModal } from './features/profile/ChangePasswordModal';
 
@@ -19,7 +20,6 @@ interface PortalAppProps {
 
 /** Phase → label for placeholder views, so the roadmap is transparent. */
 const VIEW_PHASE: Partial<Record<PortalView, string>> = {
-  'mutual-funds': 'Phase 3',
   transactions: 'Phase 4',
   sip: 'Phase 3',
   reports: 'Phase 4',
@@ -52,8 +52,13 @@ export default function PortalApp({ clientId, onLogout }: PortalAppProps) {
   );
 
   const renderView = () => {
-    if (loading && !hasData) return <LoadingState />;
-    if (error) return <ErrorState message={error} onRetry={refresh} />;
+    // Views with their own data source don't wait on the client snapshot.
+    if (view === 'mutual-funds') return <MutualFundsModule clientId={clientId} />;
+
+    // Snapshot-backed views (dashboard / portfolio / allocation).
+    const snapshotView = view === 'dashboard' || view === 'portfolio' || view === 'allocation';
+    if (snapshotView && loading && !hasData) return <LoadingState />;
+    if (snapshotView && error) return <ErrorState message={error} onRetry={refresh} />;
 
     switch (view) {
       case 'dashboard':
