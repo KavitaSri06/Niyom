@@ -159,7 +159,7 @@ export default function CRM() {
     switch (page) {
       case 'dashboard': return <Dashboard employee={employee} onNavigate={navigate} />;
       case 'leads': return <Leads employee={employee} onNavigate={navigate} pageParams={pageParams} />;
-      case 'onboarding': return <ClientOnboarding employee={employee} onNavigate={navigate} />;
+      case 'onboarding': return <ClientOnboarding employee={employee} onNavigate={navigate} pageParams={pageParams} />;
       case 'clients': return <ManageClients employee={employee} onNavigate={navigate} />;
       case 'portfolio': return <Portfolio employee={employee} />;
       case 'transactions': return <Transactions employee={employee} />;

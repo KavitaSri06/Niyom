@@ -27,9 +27,10 @@ interface Props {
   onEdit: (lead: NWLead) => void;
   onAssign: (leads: NWLead[]) => void;
   refreshKey: number;               // bump to force a reload from the container
+  viewToggle?: React.ReactNode;     // List/Board switch, rendered in the header
 }
 
-export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, refreshKey }: Props) {
+export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, refreshKey, viewToggle }: Props) {
   const isAdmin = isAdminRole(employee);
   const [leads, setLeads] = useState<NWLead[]>([]);
   const [total, setTotal] = useState(0);
@@ -152,11 +153,14 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
             {isAdmin ? 'Full pipeline visibility across the team' : 'Your assigned & self-generated leads'}
           </p>
         </div>
-        <button onClick={onNew}
-          className="px-4 py-2.5 rounded-xl text-sm font-bold text-on-accent flex items-center gap-2"
-          style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
-          <Plus className="w-4 h-4" /> New Lead
-        </button>
+        <div className="flex items-center gap-2">
+          {viewToggle}
+          <button onClick={onNew}
+            className="px-4 py-2.5 rounded-xl text-sm font-bold text-on-accent flex items-center gap-2"
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+            <Plus className="w-4 h-4" /> New Lead
+          </button>
+        </div>
       </div>
 
       {/* KPI strip */}

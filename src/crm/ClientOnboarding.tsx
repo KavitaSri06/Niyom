@@ -3,7 +3,14 @@ import { supabase } from '../lib/supabase';
 import { NWEmployee, NWDSA, CRMPage } from './types';
 import { User, Building2, Upload, FileText, CheckCircle2, AlertCircle, ChevronRight, Users, Handshake, UserCheck, UserPlus } from 'lucide-react';
 
-interface Props { employee: NWEmployee; onNavigate: (page: CRMPage) => void; }
+interface Props {
+  employee: NWEmployee;
+  onNavigate: (page: CRMPage) => void;
+  // Optional: when navigated here from a lead's "Convert to Client" action, this
+  // carries { leadId } so the form is pre-filled and the lead is marked converted
+  // on success. Absent for the normal onboarding flow — behaviour is unchanged.
+  pageParams?: Record<string, string>;
+}
 
 // Steps differ based on sourced_via: Direct = 4 steps, DSA = 5 steps (extra DSA step before Demat & Bank)
 const DIRECT_STEPS = ['Source', 'Basic Info', 'Demat & Bank', 'Documents', 'Review'];
@@ -76,9 +83,11 @@ interface DSAForm {
 }
 interface DSADocs { photo: File | null; pan: File | null; bank: File | null; }
 
-export default function ClientOnboarding({ employee, onNavigate }: Props) {
+export default function ClientOnboarding({ employee, onNavigate, pageParams }: Props) {
+  const fromLeadId = pageParams?.leadId || null;
   const [step, setStep] = useState(0);
   const [sourcedVia, setSourcedVia] = useState<'direct' | 'dsa' | ''>('');
+  const [leadBanner, setLeadBanner] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -147,6 +156,29 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
     if (!isAdmin) query = (query as any).eq('employee_id', employee.id);
     query.then(({ data }) => setExistingDSAs((data as NWDSA[]) || []));
   }, [sourcedVia, isAdmin, employee.id]);
+
+  // Convert-from-lead: pre-fill what the lead already knows, default to Direct,
+  // and jump past the Source step. The RM completes KYC/demat/bank as usual.
+  useEffect(() => {
+    if (!fromLeadId) return;
+    supabase.from('nw_leads').select('*').eq('id', fromLeadId).single().then(({ data }) => {
+      if (!data) return;
+      setSourcedVia('direct');
+      setForm(f => ({
+        ...f,
+        full_name: (data as any).lead_name || '',
+        phone: (data as any).mobile || '',
+        email: (data as any).email || '',
+        pan: (data as any).pan || '',
+        address: (data as any).address || '',
+        city: (data as any).city || '',
+        state: (data as any).state || '',
+        notes: (data as any).remarks || '',
+      }));
+      setLeadBanner((data as any).lead_code || '');
+      setStep(1); // skip Source; go straight to Basic Info
+    });
+  }, [fromLeadId]);
 
   const handleDocFile = (type: string, file: File | null) => {
     if (!file) return;
@@ -375,6 +407,13 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
         description: `${form.full_name} onboarded with code ${clientCode}${isDSA ? ' (via DSA)' : ''}${clientLoginEnabled ? ' · Client login enabled' : ''}`,
       }]);
 
+      // If this onboarding came from a lead conversion, mark that lead converted
+      // (archived + locked) and link it to the new client. Non-fatal on failure.
+      if (fromLeadId) {
+        await supabase.rpc('nw_mark_lead_converted', { p_lead_id: fromLeadId, p_client_id: client.id })
+          .then(() => {}, () => {});
+      }
+
       setSuccess(`Client ${form.full_name} onboarded successfully with code ${clientCode}!`);
       setSaving(false);
       setTimeout(() => onNavigate('clients'), 2000);
@@ -391,6 +430,15 @@ export default function ClientOnboarding({ employee, onNavigate }: Props) {
         <h1 className="text-2xl font-bold text-text-primary">Client Onboarding</h1>
         <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>Complete the form to onboard a new client</p>
       </div>
+
+      {leadBanner && (
+        <div className="p-3 rounded-xl flex items-center gap-2.5" style={{ background: 'rgba(var(--accent-rgb),0.08)', border: '1px solid rgba(var(--accent-rgb),0.25)' }}>
+          <UserCheck className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--accent)' }} />
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            Converting lead <span className="font-mono font-bold" style={{ color: 'var(--accent)' }}>{leadBanner}</span> — details pre-filled. The lead will be marked <strong>Converted</strong> and locked once onboarding completes.
+          </p>
+        </div>
+      )}
 
       {/* Stepper */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
