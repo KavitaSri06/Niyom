@@ -27,6 +27,7 @@ import EmployeeDashboard from './pages/EmployeeDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AddDeal from './pages/AddDeal';
 import CRM from './crm/CRM';
+import MfAdminApp from './mfadmin/MfAdminApp';
 import ClientLogin from './pages/ClientLogin';
 import ClientChangePassword from './pages/ClientChangePassword';
 import ClientPortal from './pages/ClientPortal';
@@ -36,7 +37,7 @@ import PublicDebitNoteView from './pages/PublicDebitNoteView';
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState<'landing' | 'services' | 'learning' | 'news' | 'mfresearch' | 'calculator' | 'unlisted' | 'bonds' | 'login' | 'signup' | 'dashboard' | 'kyc' | 'admin' | 'order-placement' | 'privacy' | 'terms' | 'risk' | 'disclaimer' | 'mutual-funds' | 'primary-bonds' | 'fixed-deposits' | 'insurance' | 'crm-login' | 'crm-employee' | 'crm-admin' | 'crm-add-deal' | 'crm-new' | 'client-portal' | 'client-login'>('landing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'services' | 'learning' | 'news' | 'mfresearch' | 'calculator' | 'unlisted' | 'bonds' | 'login' | 'signup' | 'dashboard' | 'kyc' | 'admin' | 'order-placement' | 'privacy' | 'terms' | 'risk' | 'disclaimer' | 'mutual-funds' | 'primary-bonds' | 'fixed-deposits' | 'insurance' | 'crm-login' | 'crm-employee' | 'crm-admin' | 'crm-add-deal' | 'crm-new' | 'client-portal' | 'client-login' | 'mf-admin'>('landing');
   const [showAuth, setShowAuth] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -81,6 +82,8 @@ function AppContent() {
         setCurrentPage('client-login');
       } else if (pathname === '/crm' || pathname === '/crm/' || pathname.startsWith('/crm/')) {
         setCurrentPage('crm-new');
+      } else if (pathname === '/mf-admin' || pathname === '/mf-admin/' || pathname.startsWith('/mf-admin/')) {
+        setCurrentPage('mf-admin');
       } else if (pathname === '/order-placement') {
         setCurrentPage('order-placement');
       } else if (pathname === '/privacy') {
@@ -152,7 +155,7 @@ function AppContent() {
     if (loading) return;
 
     const pathname = window.location.pathname;
-    if (pathname.startsWith('/crm') || pathname.startsWith('/client-login')) return;
+    if (pathname.startsWith('/crm') || pathname.startsWith('/client-login') || pathname.startsWith('/mf-admin')) return;
 
     // An active client-portal session must never be redirected to the public
     // client dashboard — it stays in the portal (see checkRoute restoration).
@@ -336,6 +339,11 @@ function AppContent() {
   // New premium CRM (takes priority)
   if (currentPage === 'crm-new') {
     return <CRM />;
+  }
+
+  // NIYOM MF Admin Portal (employee-facing, self-gated)
+  if (currentPage === 'mf-admin') {
+    return <MfAdminApp />;
   }
 
   if (currentPage === 'client-portal') {
