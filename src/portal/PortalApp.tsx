@@ -10,6 +10,9 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { PortfolioPage } from './features/portfolio/PortfolioPage';
 import { AllocationPage } from './features/allocation/AllocationPage';
 import { MutualFundsModule } from './features/mutual-funds/MutualFundsModule';
+import { TransactionsPage } from './features/transactions/TransactionsPage';
+import { ReportsPage } from './features/reports/ReportsPage';
+import { DocumentsPage } from './features/documents/DocumentsPage';
 import { PlaceholderPage } from './features/PlaceholderPage';
 import { ChangePasswordModal } from './features/profile/ChangePasswordModal';
 
@@ -20,10 +23,7 @@ interface PortalAppProps {
 
 /** Phase → label for placeholder views, so the roadmap is transparent. */
 const VIEW_PHASE: Partial<Record<PortalView, string>> = {
-  transactions: 'Phase 4',
   sip: 'Phase 3',
-  reports: 'Phase 4',
-  documents: 'Phase 4',
   notifications: 'Phase 4',
   support: 'Phase 4',
   profile: 'Phase 4',
@@ -52,7 +52,7 @@ export default function PortalApp({ clientId, onLogout }: PortalAppProps) {
   );
 
   const renderView = () => {
-    // Views with their own data source don't wait on the client snapshot.
+    // Views that fetch their own data don't wait on the client snapshot.
     if (view === 'mutual-funds')
       return (
         <MutualFundsModule
@@ -61,9 +61,15 @@ export default function PortalApp({ clientId, onLogout }: PortalAppProps) {
           holdingsLoading={loading && !hasData}
         />
       );
+    if (view === 'transactions') return <TransactionsPage clientId={clientId} client={client} />;
+    if (view === 'documents') return <DocumentsPage clientId={clientId} />;
 
-    // Snapshot-backed views (dashboard / portfolio / allocation).
-    const snapshotView = view === 'dashboard' || view === 'portfolio' || view === 'allocation';
+    // Snapshot-backed views (dashboard / portfolio / allocation / reports).
+    const snapshotView =
+      view === 'dashboard' ||
+      view === 'portfolio' ||
+      view === 'allocation' ||
+      view === 'reports';
     if (snapshotView && loading && !hasData) return <LoadingState />;
     if (snapshotView && error) return <ErrorState message={error} onRetry={refresh} />;
 
@@ -83,6 +89,8 @@ export default function PortalApp({ clientId, onLogout }: PortalAppProps) {
         return portfolioData ? <PortfolioPage data={portfolioData} /> : <LoadingState />;
       case 'allocation':
         return portfolioData ? <AllocationPage data={portfolioData} /> : <LoadingState />;
+      case 'reports':
+        return <ReportsPage clientId={clientId} client={client} holdings={snapshot.holdings} />;
       default:
         return <PlaceholderPage title={VIEW_TITLES[view]} phase={VIEW_PHASE[view]} />;
     }
