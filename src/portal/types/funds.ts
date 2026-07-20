@@ -107,3 +107,44 @@ export interface OrderResult {
   /** True while BSEService is mocked (no real money moved). */
   isMock: boolean;
 }
+
+/* ----------------------------- Redeem & Switch ---------------------------- */
+
+export type RedeemMode = 'amount' | 'units' | 'all';
+
+export interface RedemptionRequest {
+  clientId: string;
+  schemeCode?: string;
+  schemeName: string;
+  folioNumber?: string;
+  mode: RedeemMode;
+  /** ₹ value being redeemed (caller-computed, incl. for `all`). */
+  amount: number;
+  units: number;
+}
+
+export interface SwitchRequest {
+  clientId: string;
+  fromSchemeCode?: string;
+  fromSchemeName: string;
+  toSchemeCode: string;
+  toSchemeName: string;
+  folioNumber?: string;
+  mode: RedeemMode;
+  amount: number;
+  units: number;
+}
+
+/** Shared confirmation for redeem/switch (non-purchase MF transactions). */
+export interface TxnResult {
+  orderId: string;
+  kind: 'redeem' | 'switch';
+  schemeName: string;
+  /** Human summary line, e.g. "₹50,000 redeemed" or "Switched to X". */
+  detail: string;
+  amount: number;
+  status: 'confirmed';
+  placedAt: string;
+  expectedNavDate: string;
+  isMock: boolean;
+}

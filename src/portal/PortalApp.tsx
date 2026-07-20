@@ -53,7 +53,14 @@ export default function PortalApp({ clientId, onLogout }: PortalAppProps) {
 
   const renderView = () => {
     // Views with their own data source don't wait on the client snapshot.
-    if (view === 'mutual-funds') return <MutualFundsModule clientId={clientId} />;
+    if (view === 'mutual-funds')
+      return (
+        <MutualFundsModule
+          clientId={clientId}
+          holdings={snapshot.holdings}
+          holdingsLoading={loading && !hasData}
+        />
+      );
 
     // Snapshot-backed views (dashboard / portfolio / allocation).
     const snapshotView = view === 'dashboard' || view === 'portfolio' || view === 'allocation';

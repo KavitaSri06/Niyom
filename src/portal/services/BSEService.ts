@@ -14,7 +14,15 @@
  * When going live, replace the bodies (fetch BSE scheme master, POST orders to
  * the BSE order API) — the public signatures and returned view models stay put.
  */
-import type { FundScheme, OrderRequest, OrderResult } from '../types/funds';
+import type {
+  FundScheme,
+  OrderRequest,
+  OrderResult,
+  RedemptionRequest,
+  SwitchRequest,
+  TxnResult,
+} from '../types/funds';
+import { fmt } from '../../crm/utils';
 
 const today = new Date();
 const navDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1)
@@ -161,6 +169,46 @@ export const BSEService = {
         schemeCode: req.schemeCode,
         schemeName: scheme?.name ?? req.schemeCode,
         type: req.type,
+        amount: req.amount,
+        status: 'confirmed' as const,
+        placedAt: new Date().toISOString(),
+        expectedNavDate: expectedNavDate(),
+        isMock: true,
+      },
+      700,
+    );
+  },
+
+  /** SIMULATED redemption. Returns a confirmation ref; moves no real money. */
+  async placeRedemption(req: RedemptionRequest): Promise<TxnResult> {
+    const detail =
+      req.mode === 'all'
+        ? `Full redemption · ${req.units.toFixed(3)} units`
+        : `${fmt(req.amount)} redeemed`;
+    return delay(
+      {
+        orderId: `NIYOM${Date.now().toString().slice(-8)}`,
+        kind: 'redeem' as const,
+        schemeName: req.schemeName,
+        detail,
+        amount: req.amount,
+        status: 'confirmed' as const,
+        placedAt: new Date().toISOString(),
+        expectedNavDate: expectedNavDate(),
+        isMock: true,
+      },
+      700,
+    );
+  },
+
+  /** SIMULATED switch. Returns a confirmation ref; moves no real money. */
+  async placeSwitch(req: SwitchRequest): Promise<TxnResult> {
+    return delay(
+      {
+        orderId: `NIYOM${Date.now().toString().slice(-8)}`,
+        kind: 'switch' as const,
+        schemeName: req.fromSchemeName,
+        detail: `Switched ${fmt(req.amount)} to ${req.toSchemeName}`,
         amount: req.amount,
         status: 'confirmed' as const,
         placedAt: new Date().toISOString(),
