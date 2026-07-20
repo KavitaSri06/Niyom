@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { PortalShell } from './layout/PortalShell';
-import { VIEW_TITLES, type PortalView } from './layout/navigation';
+import { VIEW_TITLES } from './layout/navigation';
 import { usePortalRouter } from './routing/usePortalRouter';
 import { useClientSnapshot } from './hooks/useClientSnapshot';
 import { buildDashboardData } from './services/dashboardModel';
@@ -14,20 +14,15 @@ import { TransactionsPage } from './features/transactions/TransactionsPage';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { DocumentsPage } from './features/documents/DocumentsPage';
 import { ProfilePage } from './features/profile/ProfilePage';
-import { PlaceholderPage } from './features/PlaceholderPage';
+import { SipPage } from './features/sip/SipPage';
+import { NotificationsPage } from './features/notifications/NotificationsPage';
+import { SupportPage } from './features/support/SupportPage';
 import { ChangePasswordModal } from './features/profile/ChangePasswordModal';
 
 interface PortalAppProps {
   clientId: string;
   onLogout: () => void;
 }
-
-/** Phase → label for placeholder views, so the roadmap is transparent. */
-const VIEW_PHASE: Partial<Record<PortalView, string>> = {
-  sip: 'Phase 3',
-  notifications: 'Phase 4',
-  support: 'Phase 4',
-};
 
 /**
  * Wealth Portal root. Fetches one client snapshot and derives every view's
@@ -63,6 +58,8 @@ export default function PortalApp({ clientId, onLogout }: PortalAppProps) {
       );
     if (view === 'transactions') return <TransactionsPage clientId={clientId} client={client} />;
     if (view === 'documents') return <DocumentsPage clientId={clientId} />;
+    if (view === 'notifications') return <NotificationsPage clientId={clientId} />;
+    if (view === 'support') return <SupportPage />;
 
     // Snapshot-backed views (need the client record / holdings).
     const snapshotView =
@@ -70,7 +67,8 @@ export default function PortalApp({ clientId, onLogout }: PortalAppProps) {
       view === 'portfolio' ||
       view === 'allocation' ||
       view === 'reports' ||
-      view === 'profile';
+      view === 'profile' ||
+      view === 'sip';
     if (snapshotView && loading && !hasData) return <LoadingState />;
     if (snapshotView && error) return <ErrorState message={error} onRetry={refresh} />;
 
@@ -100,8 +98,10 @@ export default function PortalApp({ clientId, onLogout }: PortalAppProps) {
             onChangePassword={() => setShowChangePw(true)}
           />
         );
+      case 'sip':
+        return <SipPage clientId={clientId} holdings={snapshot.holdings} onNavigate={navigate} />;
       default:
-        return <PlaceholderPage title={VIEW_TITLES[view]} phase={VIEW_PHASE[view]} />;
+        return null;
     }
   };
 

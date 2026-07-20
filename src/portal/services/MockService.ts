@@ -22,6 +22,7 @@ import type {
   UpcomingSip,
   XirrEstimate,
 } from '../types';
+import type { PortalNotification, SipMandate } from '../types/engagement';
 
 /** Stable pseudo-random in [0,1) seeded by a string — no Math.random flicker. */
 const seeded = (seed: string): number => {
@@ -124,5 +125,45 @@ export const MockService = {
         isMock: true,
       },
     ];
+  },
+
+  /** Active SIP mandates — seeded from the client's actual MF holdings. */
+  sipMandates(holdings: NWHolding[], clientId: string): SipMandate[] {
+    const mf = holdings.filter((h) => h.product_type === 'mutual_fund').slice(0, 4);
+    const today = new Date();
+    return mf.map((h, i) => {
+      const amount = Math.max(1000, Math.round((h.invested_amount || 60000) / 24 / 500) * 500);
+      const installmentsDone = 6 + Math.floor(seeded(clientId + h.id) * 30);
+      const started = new Date(today);
+      started.setMonth(started.getMonth() - installmentsDone);
+      return {
+        id: `sip-${h.id}`,
+        fundName: h.product_name,
+        amc: h.fund_house,
+        amount,
+        frequency: 'Monthly' as const,
+        nextDate: addDays(today, 4 + i * 6 + Math.floor(seeded(h.id) * 6)),
+        startedOn: started.toISOString(),
+        installmentsDone,
+        investedSoFar: amount * installmentsDone,
+        status: 'active' as const,
+        isMock: true,
+      };
+    });
+  },
+
+  /** Notification feed — placeholder until a client notifications table exists. */
+  notificationsFeed(clientId: string): PortalNotification[] {
+    const now = Date.now();
+    const seed = seeded(clientId + ':notif');
+    const items: Array<Omit<PortalNotification, 'isMock'>> = [
+      { id: 'n1', category: 'transaction', title: 'Purchase confirmed', body: 'Your ₹50,000 investment in Parag Parikh Flexi Cap Fund has been allotted.', date: new Date(now - 6 * 36e5).toISOString(), read: false },
+      { id: 'n2', category: 'sip', title: 'SIP due in 3 days', body: 'Your monthly SIP of ₹5,000 in Mirae Asset Large & Midcap is scheduled.', date: new Date(now - 1 * 864e5).toISOString(), read: false },
+      { id: 'n3', category: 'nav', title: 'Portfolio up today', body: `Your portfolio moved ${(seed * 1.4).toFixed(2)}% today. View the dashboard for details.`, date: new Date(now - 1 * 864e5 - 3 * 36e5).toISOString(), read: false },
+      { id: 'n4', category: 'document', title: 'Statement ready', body: 'Your consolidated account statement for last month is available under Reports.', date: new Date(now - 3 * 864e5).toISOString(), read: true },
+      { id: 'n5', category: 'kyc', title: 'KYC verified', body: 'Your KYC has been successfully verified. All transaction types are enabled.', date: new Date(now - 8 * 864e5).toISOString(), read: true },
+      { id: 'n6', category: 'general', title: 'Welcome to NIYOM Wealth', body: 'Your private client portal is ready. Explore funds and track your wealth in one place.', date: new Date(now - 20 * 864e5).toISOString(), read: true },
+    ];
+    return items.map((n) => ({ ...n, isMock: true }));
   },
 };
