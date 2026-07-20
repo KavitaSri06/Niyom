@@ -13,6 +13,7 @@ import { MutualFundsModule } from './features/mutual-funds/MutualFundsModule';
 import { TransactionsPage } from './features/transactions/TransactionsPage';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { DocumentsPage } from './features/documents/DocumentsPage';
+import { ProfilePage } from './features/profile/ProfilePage';
 import { PlaceholderPage } from './features/PlaceholderPage';
 import { ChangePasswordModal } from './features/profile/ChangePasswordModal';
 
@@ -26,7 +27,6 @@ const VIEW_PHASE: Partial<Record<PortalView, string>> = {
   sip: 'Phase 3',
   notifications: 'Phase 4',
   support: 'Phase 4',
-  profile: 'Phase 4',
 };
 
 /**
@@ -64,12 +64,13 @@ export default function PortalApp({ clientId, onLogout }: PortalAppProps) {
     if (view === 'transactions') return <TransactionsPage clientId={clientId} client={client} />;
     if (view === 'documents') return <DocumentsPage clientId={clientId} />;
 
-    // Snapshot-backed views (dashboard / portfolio / allocation / reports).
+    // Snapshot-backed views (need the client record / holdings).
     const snapshotView =
       view === 'dashboard' ||
       view === 'portfolio' ||
       view === 'allocation' ||
-      view === 'reports';
+      view === 'reports' ||
+      view === 'profile';
     if (snapshotView && loading && !hasData) return <LoadingState />;
     if (snapshotView && error) return <ErrorState message={error} onRetry={refresh} />;
 
@@ -91,6 +92,14 @@ export default function PortalApp({ clientId, onLogout }: PortalAppProps) {
         return portfolioData ? <AllocationPage data={portfolioData} /> : <LoadingState />;
       case 'reports':
         return <ReportsPage clientId={clientId} client={client} holdings={snapshot.holdings} />;
+      case 'profile':
+        return (
+          <ProfilePage
+            client={client}
+            clientId={clientId}
+            onChangePassword={() => setShowChangePw(true)}
+          />
+        );
       default:
         return <PlaceholderPage title={VIEW_TITLES[view]} phase={VIEW_PHASE[view]} />;
     }
