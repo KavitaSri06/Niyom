@@ -5,7 +5,7 @@ import {
   LayoutDashboard, UserPlus, Users, PieChart, ArrowLeftRight,
   FileText, UserCog, Settings, LogOut, Bell, ChevronRight, X, Home,
   FolderOpen, Shield, BarChart3, Wallet, Handshake, ClipboardList,
-  Send, Target,
+  Send, Target, Landmark,
 } from 'lucide-react';
 import { ThemeToggle } from '../theme/ThemeToggle';
 
@@ -26,6 +26,7 @@ const NAV = [
   { key: 'portfolio' as CRMPage,        label: 'Portfolio',         icon: PieChart },
   { key: 'transactions' as CRMPage,     label: 'Transactions',      icon: ArrowLeftRight },
   { key: 'reports' as CRMPage,          label: 'Reports',           icon: FileText },
+  { key: 'bonds' as CRMPage,            label: 'Bond Creation',     icon: Landmark },
   { key: 'mis' as CRMPage,             label: 'MIS Report',        icon: BarChart3 },
   { key: 'dsa_management' as CRMPage,   label: 'DSA Management',    icon: Handshake },
   { key: 'dsa_payout' as CRMPage,      label: 'DSA Payout',        icon: Wallet },

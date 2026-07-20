@@ -7,6 +7,7 @@ import ChangePassword from './ChangePassword';
 import Layout from './Layout';
 import Dashboard from './Dashboard';
 import Leads from './leads/Leads';
+import Bonds from './bonds/Bonds';
 import ClientOnboarding from './ClientOnboarding';
 import ManageClients from './ManageClients';
 import Portfolio from './Portfolio';
@@ -43,6 +44,7 @@ export default function CRM() {
     'portfolio',
     'transactions',
     'reports',
+    'bonds',
     'mis',
     'dsa_management',
     'dsa_payout',
@@ -164,6 +166,7 @@ export default function CRM() {
       case 'portfolio': return <Portfolio employee={employee} />;
       case 'transactions': return <Transactions employee={employee} />;
       case 'reports': return <Reports employee={employee} />;
+      case 'bonds': return <Bonds employee={employee} onNavigate={navigate} pageParams={pageParams} />;
       case 'documents': return <Documents employee={employee} initialClientId={pageParams.clientId} onBack={pageParams.clientId ? () => navigate('clients') : undefined} />;
       case 'admin_documents': return isAdmin ? <AdminDocuments employee={employee} /> : <Documents employee={employee} />;
       case 'mis': return <MIS employee={employee} />;

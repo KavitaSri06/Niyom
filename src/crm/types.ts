@@ -279,6 +279,7 @@ export type CRMPage =
   | 'portfolio'
   | 'transactions'
   | 'reports'
+  | 'bonds'
   | 'mis'
   | 'dsa_payout'
   | 'dsa_management'
