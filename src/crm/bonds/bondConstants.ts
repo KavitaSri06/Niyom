@@ -62,7 +62,7 @@ export const BOND_SECTIONS: BondSectionDef[] = [
     title: 'Pricing',
     fields: [
       { key: 'face_value_text', label: 'Face Value' },
-      { key: 'purchase_price', label: 'Purchase Price (per 100)', type: 'text' },  // admin row only
+      { key: 'purchase_price', label: 'Existing Price (per 100)', type: 'text' },  // admin row only — base for markup
       { key: 'selling_price', label: 'Selling Price', type: 'currency' },
       { key: 'minimum_investment', label: 'Minimum Investment' },
       { key: 'multiples', label: 'Multiples' },

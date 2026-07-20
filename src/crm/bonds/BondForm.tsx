@@ -51,10 +51,12 @@ export default function BondForm({ mode, bond, employeeId, onClose, onSaved }: P
 
   const set = (k: string, v: string) => setF(prev => ({ ...prev, [k]: v }));
 
-  // Live selling-price preview from landing cost + default margin.
+  // Existing (cost) price to mark up from: explicit landing cost if set, else the
+  // imported price (Price Per 100). Selling price = existing price + % increase.
+  const basePrice = f.landing_cost !== '' ? parseFloat(f.landing_cost)
+    : f.purchase_price !== '' ? parseFloat(f.purchase_price) : null;
   const previewPrice = computeSellingPrice(
-    f.landing_cost === '' ? null : parseFloat(f.landing_cost),
-    (f.default_margin_type as 'none' | 'percent' | 'flat') || 'none',
+    basePrice, 'percent',
     f.default_margin_value === '' ? null : parseFloat(f.default_margin_value),
   );
 
@@ -64,8 +66,9 @@ export default function BondForm({ mode, bond, employeeId, onClose, onSaved }: P
     FIELDS_NUM.forEach(k => { out[k] = f[k] === '' ? null : parseFloat(f[k]); });
     FIELDS_DATE.forEach(k => { out[k] = f[k] === '' ? null : f[k]; });
     out.status = f.status as BondStatus;
-    out.default_margin_type = f.default_margin_type;
-    // If the admin set a margin but no explicit selling price, apply the preview.
+    // Single-knob model: the default margin is always a percentage increase.
+    out.default_margin_type = f.default_margin_value === '' ? 'none' : 'percent';
+    // If the admin set a % but no explicit selling price, apply the preview.
     if ((out.selling_price === null || out.selling_price === undefined) && previewPrice !== null) {
       out.selling_price = previewPrice;
     }
@@ -167,16 +170,14 @@ export default function BondForm({ mode, bond, employeeId, onClose, onSaved }: P
         {T('issue_size', 'Issue Size')}
 
         <SectionTitle>Pricing — Internal (Admin only)</SectionTitle>
-        {N('purchase_price', 'Purchase Price (per 100)')}
-        {N('landing_cost', 'Landing Cost (confidential)')}
-        <Field label="Default Margin Type"><Select value={f.default_margin_type} onChange={e => set('default_margin_type', e.target.value)}>
-          <option value="none">None</option><option value="percent">Percentage %</option><option value="flat">Flat Amount ₹</option>
-        </Select></Field>
-        {N('default_margin_value', 'Default Margin Value')}
+        {N('purchase_price', 'Existing Price (per 100)')}
+        {N('default_margin_value', '% Increase')}
         {N('selling_price', 'Selling Price (client-facing)')}
         <div className="flex items-end pb-1">
           <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
-            {previewPrice !== null ? `Preview from landing cost + margin: ₹${previewPrice.toLocaleString('en-IN')}` : 'Set landing cost + margin to preview selling price.'}
+            {previewPrice !== null
+              ? `Selling price = existing price + ${f.default_margin_value || 0}% → ₹${previewPrice.toLocaleString('en-IN')}. Leave "Selling Price" blank to use this.`
+              : 'Enter the existing price and a % increase to preview the selling price.'}
           </p>
         </div>
 

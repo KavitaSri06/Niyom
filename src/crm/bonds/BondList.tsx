@@ -205,7 +205,7 @@ export default function BondList({ employee, refreshKey, onOpen, onUpload, onNew
                 <Th label="Yield" k="yield_ytm" right />
                 <Th label="Maturity" k="maturity_date" />
                 <Th label="Rating" k="rating" />
-                {isAdmin && <Th label="Landing" right />}
+                {isAdmin && <Th label="Existing" right />}
                 <Th label="Selling" k="selling_price" right />
                 {isAdmin && <Th label="Margin" right />}
                 <Th label="Status" />
@@ -226,7 +226,8 @@ export default function BondList({ employee, refreshKey, onOpen, onUpload, onNew
                 </td></tr>
               ) : pageRows.map(b => {
                 const admin = b as NWBond;
-                const margin = isAdmin ? impliedMarginPercent(admin.landing_cost, b.selling_price) : null;
+                const basePrice = isAdmin ? (admin.landing_cost ?? admin.purchase_price ?? null) : null;
+                const margin = isAdmin ? impliedMarginPercent(basePrice, b.selling_price) : null;
                 return (
                   <tr key={b.id} className="crm-row-hover cursor-pointer" style={{ borderBottom: '1px solid var(--border-subtle)' }} onClick={() => onOpen(b.id)}>
                     <td className="px-3 py-2.5 max-w-[240px]">
@@ -238,7 +239,7 @@ export default function BondList({ employee, refreshKey, onOpen, onUpload, onNew
                     <td className="px-3 py-2.5 text-sm text-right font-semibold" style={{ color: 'var(--accent)' }}>{formatPercent(b.yield_ytm)}</td>
                     <td className="px-3 py-2.5 text-xs" style={{ color: 'var(--text-secondary)' }}>{formatDate(b.maturity_date)}</td>
                     <td className="px-3 py-2.5 text-xs" style={{ color: 'var(--text-secondary)' }}>{b.rating || '—'}</td>
-                    {isAdmin && <td className="px-3 py-2.5 text-xs text-right" style={{ color: 'var(--text-faint)' }}>{formatINR(admin.landing_cost)}</td>}
+                    {isAdmin && <td className="px-3 py-2.5 text-xs text-right" style={{ color: 'var(--text-faint)' }}>{formatINR(basePrice)}</td>}
                     <td className="px-3 py-2.5 text-sm text-right font-bold" style={{ color: 'var(--text-primary)' }}>{formatINR(b.selling_price)}</td>
                     {isAdmin && <td className="px-3 py-2.5 text-xs text-right" style={{ color: 'var(--text-faint)' }}>{margin !== null ? `${margin}%` : '—'}</td>}
                     <td className="px-3 py-2.5"><BondStatusBadge status={b.status} /></td>

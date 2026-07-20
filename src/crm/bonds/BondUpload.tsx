@@ -2,19 +2,23 @@
 //
 // Excel is parsed client-side now; PDF/Word show the "coming soon" message from
 // the modular parser. Low-confidence rows are highlighted and flagged
-// needs_review (persisted), never silently trusted. Admin may correct any cell,
-// optionally set landing cost / selling price, drop bad rows, then save the batch.
+// needs_review (persisted), never silently trusted. Pricing uses one knob: a %
+// increase applied to each bond's existing price (the imported Price Per 100) to
+// derive the selling price. Admin may correct any cell, drop bad rows, then save.
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, UploadCloud, FileSpreadsheet, AlertTriangle, CheckCircle2,
-  Loader2, Trash2, Filter,
+  Loader2, Trash2, Filter, Percent,
 } from 'lucide-react';
 import { NWEmployee } from '../types';
 import { BondStatus, ParsedBond, ParsedBondData } from './bondTypes';
 import { BOND_STATUSES } from './bondConstants';
+import { computeSellingPrice } from './bondUtils';
 import { parseBondFile } from './bondParser';
 import { insertBatch, uploadDocument, BondInsertRow } from './bondService';
+
+const DEFAULT_MARKUP = 2;
 
 interface Props {
   employee: NWEmployee;
@@ -25,8 +29,7 @@ interface Props {
 
 interface EditableRow extends ParsedBond {
   included: boolean;
-  landing_cost: number | null;
-  selling_price: number | null;
+  selling_price: number | null;   // derived from existing price + markup %
   status: BondStatus;
 }
 
@@ -44,6 +47,7 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [onlyFlagged, setOnlyFlagged] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [markup, setMarkup] = useState<number>(DEFAULT_MARKUP);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(async (f: File) => {
@@ -67,8 +71,7 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
       setRows(result.bonds.map(b => ({
         ...b,
         included: true,
-        landing_cost: null,
-        selling_price: null,
+        selling_price: computeSellingPrice(b.data.purchase_price, 'percent', DEFAULT_MARKUP),
         status: 'Available' as BondStatus,
       })));
       setPhase('preview');
@@ -89,6 +92,10 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
   const patchData = (i: number, patch: Partial<ParsedBondData>) =>
     setRows(rs => rs.map((r, idx) => (idx === i ? { ...r, data: { ...r.data, ...patch } } : r)));
 
+  // Apply the single markup % to every row: selling price = existing price + %.
+  const applyMarkup = (pct: number) =>
+    setRows(rs => rs.map(r => ({ ...r, selling_price: computeSellingPrice(r.data.purchase_price, 'percent', pct) })));
+
   const flaggedCount = useMemo(() => rows.filter(r => r.needsReview).length, [rows]);
   const includedCount = useMemo(() => rows.filter(r => r.included).length, [rows]);
   const visibleRows = useMemo(() => rows.map((r, i) => ({ r, i })).filter(({ r }) => !onlyFlagged || r.needsReview), [rows, onlyFlagged]);
@@ -108,7 +115,6 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
       const payload: BondInsertRow[] = rows.filter(r => r.included).map(r => ({
         ...r.data,
         face_value: r.data.face_value,
-        landing_cost: r.landing_cost,
         selling_price: r.selling_price,
         status: r.status,
         source: 'excel_upload',
@@ -182,7 +188,15 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
             {categories.length > 0 && <><span style={{ color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--text-faint)' }}>{categories.length} categor{categories.length === 1 ? 'y' : 'ies'}</span></>}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Single pricing knob: % increase from each bond's existing price */}
+          <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <Percent className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+            <span className="text-xs font-semibold" style={{ color: 'var(--text-faint)' }}>Increase</span>
+            <input type="number" step="0.01" value={markup} onChange={e => setMarkup(e.target.value === '' ? 0 : parseFloat(e.target.value))}
+              className="w-16 px-2 py-1 rounded-lg text-sm outline-none text-right" style={cellStyle} />
+            <button onClick={() => applyMarkup(markup)} className="px-2.5 py-1 rounded-lg text-xs font-bold text-on-accent" style={{ background: 'var(--accent)' }}>Apply to all</button>
+          </div>
           {flaggedCount > 0 && (
             <button onClick={() => setOnlyFlagged(v => !v)} className="px-3 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
               style={{ background: onlyFlagged ? 'var(--accent)' : 'var(--bg-surface)', color: onlyFlagged ? 'var(--text-on-accent)' : 'var(--text-secondary)', border: '1px solid var(--border)' }}>
@@ -209,7 +223,7 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
           <table className="w-full text-xs">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['', 'Company', 'ISIN', 'Coupon', 'Yield', 'Maturity', 'Rating', 'Sec. Type', 'Landing Cost', 'Selling Price', 'Status'].map(h => (
+                {['', 'Company', 'ISIN', 'Coupon', 'Yield', 'Maturity', 'Rating', 'Sec. Type', 'Existing Price', 'Selling Price', 'Status'].map(h => (
                   <th key={h} className="px-2 py-2 text-left font-bold uppercase tracking-wider whitespace-nowrap" style={{ color: 'var(--text-faint)' }}>{h}</th>
                 ))}
               </tr>
@@ -233,7 +247,7 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
                   <td className="px-2 py-1.5"><input className={`${cellInput} min-w-[110px]`} style={cellStyle} value={r.data.maturity_text} onChange={e => patchData(i, { maturity_text: e.target.value })} title={r.data.maturity_date ?? 'no ISO date'} /></td>
                   <td className="px-2 py-1.5"><input className={`${cellInput} min-w-[120px]`} style={cellStyle} value={r.data.rating} onChange={e => patchData(i, { rating: e.target.value })} /></td>
                   <td className="px-2 py-1.5"><input className={`${cellInput} min-w-[130px]`} style={cellStyle} value={r.data.security_type} onChange={e => patchData(i, { security_type: e.target.value })} /></td>
-                  <td className="px-2 py-1.5"><input type="number" step="0.01" placeholder="—" className={`${cellInput} w-24 text-right`} style={cellStyle} value={r.landing_cost ?? ''} onChange={e => patchRow(i, { landing_cost: e.target.value === '' ? null : parseFloat(e.target.value) })} /></td>
+                  <td className="px-2 py-1.5"><input type="number" step="0.01" placeholder="—" title="Existing price (Price Per 100) — the base to mark up from" className={`${cellInput} w-24 text-right`} style={cellStyle} value={r.data.purchase_price ?? ''} onChange={e => patchData(i, { purchase_price: e.target.value === '' ? null : parseFloat(e.target.value) })} /></td>
                   <td className="px-2 py-1.5"><input type="number" step="0.01" placeholder="—" className={`${cellInput} w-24 text-right`} style={cellStyle} value={r.selling_price ?? ''} onChange={e => patchRow(i, { selling_price: e.target.value === '' ? null : parseFloat(e.target.value) })} /></td>
                   <td className="px-2 py-1.5">
                     <div className="flex items-center gap-1">

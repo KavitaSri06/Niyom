@@ -46,7 +46,9 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
     return () => { cancelled = true; };
   }, [isAdmin, bondId, refreshKey]);
 
-  const landingCost = isAdmin ? (bond as NWBond)?.landing_cost ?? null : null;
+  // Existing (cost) price to mark up from: an explicit landing cost wins, else the
+  // price the bond was imported with (Price Per 100). Admin only.
+  const basePrice = isAdmin ? ((bond as NWBond)?.landing_cost ?? (bond as NWBond)?.purchase_price ?? null) : null;
 
   const loadVersions = async () => {
     setVersions(await listVersions(bondId));
@@ -185,7 +187,7 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
               <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Client Pricing</span>
               {bond.selling_price != null && <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{formatINRFull(bond.selling_price)}</span>}
             </div>
-            <BondMarginCalculator bondId={bondId} isAdmin={isAdmin} landingCost={landingCost} defaultSellingPrice={bond.selling_price} onChange={setMargin} />
+            <BondMarginCalculator bondId={bondId} isAdmin={isAdmin} basePrice={basePrice} defaultSellingPrice={bond.selling_price} onChange={setMargin} />
             <button onClick={doGenerate} disabled={generating} className="w-full mt-4 px-4 py-3 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50 flex items-center justify-center gap-2" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
               {generating ? 'Generating…' : 'Generate Marketing PDF'}
