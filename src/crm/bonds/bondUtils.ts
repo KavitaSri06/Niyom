@@ -131,3 +131,48 @@ export function impliedMarginPercent(landingCost: number | null, sellingPrice: n
   if (!landingCost || !sellingPrice) return null;
   return +(((sellingPrice - landingCost) / landingCost) * 100).toFixed(2);
 }
+
+// ---- Quantity / investment math ---------------------------------------------
+// Bonds are quoted per ₹100 of face value. The client actually invests in whole
+// units (bonds); these helpers turn a per-100 price + a unit quantity into the
+// PRECISE rupee figures a client cares about, and guard the minimum investment.
+
+// Best-effort numeric minimum investment (in face-value rupees) from the sheet's
+// free text, so we never quote below the minimum lot.
+export function bondMinInvestment(
+  minimumText: string | null | undefined,
+  multiplesText: string | null | undefined,
+  faceValue: number | null | undefined,
+): number | null {
+  return parseIndianAmount(minimumText) ?? parseIndianAmount(multiplesText) ?? faceValue ?? null;
+}
+
+// Smallest whole-unit quantity that meets the minimum investment.
+export function minUnitsFor(faceValue: number | null | undefined, minInvestment: number | null | undefined): number {
+  if (!faceValue || faceValue <= 0) return 1;
+  if (!minInvestment || minInvestment <= 0) return 1;
+  return Math.max(1, Math.ceil(minInvestment / faceValue));
+}
+
+export interface BondInvestment {
+  faceValueAmount: number | null;   // quantity × face value  (the "notional")
+  pricePerUnit: number | null;      // face value × sellingPer100 / 100
+  investmentAmount: number | null;  // quantity × pricePerUnit  (precise ₹ payable)
+  annualIncome: number | null;      // quantity × face value × coupon / 100
+}
+
+export function computeBondInvestment(params: {
+  faceValue: number | null | undefined;
+  sellingPricePer100: number | null | undefined;   // marked-up price per ₹100
+  coupon: number | null | undefined;                // percent
+  quantity: number | null | undefined;              // whole units
+}): BondInvestment {
+  const { faceValue, sellingPricePer100, coupon, quantity } = params;
+  const q = quantity && quantity > 0 ? Math.floor(quantity) : null;
+  const fv = faceValue && faceValue > 0 ? faceValue : null;
+  const faceValueAmount = fv && q ? fv * q : null;
+  const pricePerUnit = fv && sellingPricePer100 ? +((fv * sellingPricePer100) / 100).toFixed(2) : null;
+  const investmentAmount = pricePerUnit && q ? +(pricePerUnit * q).toFixed(2) : null;
+  const annualIncome = faceValueAmount && coupon ? +((faceValueAmount * coupon) / 100).toFixed(2) : null;
+  return { faceValueAmount, pricePerUnit, investmentAmount, annualIncome };
+}

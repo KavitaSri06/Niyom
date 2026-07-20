@@ -5,17 +5,20 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowLeft, FileText, Pencil, Archive, ArchiveRestore, Loader2, History,
-  RotateCcw, Trash2, ChevronDown,
+  ArrowLeft, ImageDown, FileText, Pencil, Archive, ArchiveRestore, Loader2, History,
+  RotateCcw, Trash2, ChevronDown, Minus, Plus, AlertTriangle,
 } from 'lucide-react';
 import { NWEmployee } from '../types';
 import { NWBond, NWBondCatalog, NWBondVersion, BondStatus } from './bondTypes';
 import { BOND_SECTIONS, BOND_STATUSES, bondStatusRgb } from './bondConstants';
-import { isAdminRole, formatINR, formatINRFull, formatPercent, formatDate, timeAgo } from './bondUtils';
+import {
+  isAdminRole, formatINR, formatINRFull, formatPercent, formatDate, timeAgo,
+  bondMinInvestment, minUnitsFor, computeBondInvestment,
+} from './bondUtils';
 import {
   getBond, listVersions, restoreVersion, archiveBond, unarchiveBond, deleteBond, setStatus, logMarketingPdf,
 } from './bondService';
-import { generateMarketingPdf } from './marketingPdf';
+import { generateMarketingImage, generateMarketingPdf } from './marketingPdf';
 import BondMarginCalculator, { MarginState } from './BondMarginCalculator';
 
 interface Props {
@@ -32,7 +35,8 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
   const [bond, setBond] = useState<NWBond | NWBondCatalog | null>(null);
   const [loading, setLoading] = useState(true);
   const [margin, setMargin] = useState<MarginState>({ marginType: 'percent', marginValue: 2, sellingPrice: null });
-  const [generating, setGenerating] = useState(false);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [generating, setGenerating] = useState<false | 'image' | 'pdf'>(false);
   const [versions, setVersions] = useState<NWBondVersion[]>([]);
   const [showVersions, setShowVersions] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -50,18 +54,26 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
   // price the bond was imported with (Price Per 100). Admin only.
   const basePrice = isAdmin ? ((bond as NWBond)?.landing_cost ?? (bond as NWBond)?.purchase_price ?? null) : null;
 
+  // Default the quantity to the minimum lot so a client is never quoted below the
+  // minimum investment.
+  const minInvestment = bond ? bondMinInvestment(bond.minimum_investment, bond.multiples, bond.face_value) : null;
+  const minUnits = bond ? minUnitsFor(bond.face_value, minInvestment) : 1;
+  useEffect(() => { setQuantity(minUnits); }, [minUnits, bondId]);
+
   const loadVersions = async () => {
     setVersions(await listVersions(bondId));
     setShowVersions(true);
   };
 
-  const doGenerate = async () => {
+  const doGenerate = async (format: 'image' | 'pdf') => {
     if (!bond) return;
-    setGenerating(true);
+    setGenerating(format);
     try {
       const price = margin.sellingPrice ?? bond.selling_price ?? null;
+      const opts = { sellingPrice: price, quantity, generatedByName: employee.full_name };
       // marketingPdf only reads confidential-safe fields; NWBond is a superset.
-      await generateMarketingPdf(bond as NWBondCatalog, { sellingPrice: price, generatedByName: employee.full_name });
+      if (format === 'image') await generateMarketingImage(bond as NWBondCatalog, opts);
+      else await generateMarketingPdf(bond as NWBondCatalog, opts);
       await logMarketingPdf(bondId, margin.marginType, margin.marginValue, price);
     } finally {
       setGenerating(false);
@@ -180,18 +192,67 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
           })}
         </div>
 
-        {/* Right: pricing + PDF */}
+        {/* Right: pricing + quantity + output */}
         <div className="space-y-5">
           <div className="rounded-2xl p-5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Client Pricing</span>
-              {bond.selling_price != null && <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{formatINRFull(bond.selling_price)}</span>}
+              {bond.selling_price != null && <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{formatINRFull(bond.selling_price)}<span className="text-[10px] font-medium" style={{ color: 'var(--text-faint)' }}> /₹100</span></span>}
             </div>
             <BondMarginCalculator bondId={bondId} isAdmin={isAdmin} basePrice={basePrice} defaultSellingPrice={bond.selling_price} onChange={setMargin} />
-            <button onClick={doGenerate} disabled={generating} className="w-full mt-4 px-4 py-3 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50 flex items-center justify-center gap-2" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
-              {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              {generating ? 'Generating…' : 'Generate Marketing PDF'}
-            </button>
+
+            {/* Quantity → precise investment */}
+            {(() => {
+              const per100 = margin.sellingPrice ?? bond.selling_price ?? null;
+              const inv = computeBondInvestment({ faceValue: bond.face_value, sellingPricePer100: per100, coupon: bond.coupon, quantity });
+              const belowMin = bond.face_value != null && minInvestment != null && quantity * bond.face_value < minInvestment;
+              const stat = (label: string, value: string, sub?: string) => (
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{label}</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{value}</span>
+                  {sub && <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{sub}</span>}
+                </div>
+              );
+              return (
+                <div className="mt-4 rounded-2xl p-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Quantity (units)</span>
+                    <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>Min {minUnits.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <button onClick={() => setQuantity(q => Math.max(minUnits, q - 1))} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}><Minus className="w-4 h-4" /></button>
+                    <input type="number" min={1} value={quantity}
+                      onChange={e => setQuantity(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                      className="flex-1 min-w-0 px-3 py-2 rounded-xl text-sm text-center font-bold outline-none"
+                      style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                    <button onClick={() => setQuantity(q => q + 1)} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}><Plus className="w-4 h-4" /></button>
+                  </div>
+                  {belowMin && (
+                    <div className="flex items-start gap-1.5 mb-3 text-[11px] px-2.5 py-2 rounded-lg" style={{ background: 'rgba(245,158,11,0.12)', color: 'rgb(180,120,10)', border: '1px solid rgba(245,158,11,0.3)' }}>
+                      <AlertTriangle className="w-3.5 h-3.5 mt-px flex-shrink-0" />
+                      <span>Below the minimum investment of {formatINR(minInvestment)}. Increase the quantity to at least {minUnits.toLocaleString('en-IN')} units.</span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    {stat('Total Investment', inv.investmentAmount !== null ? formatINRFull(inv.investmentAmount) : '—', inv.pricePerUnit !== null ? `${formatINRFull(inv.pricePerUnit)}/unit` : undefined)}
+                    {stat('Annual Income', inv.annualIncome !== null ? formatINRFull(inv.annualIncome) : '—', bond.coupon !== null ? `at ${formatPercent(bond.coupon)}` : undefined)}
+                    {stat('Face Value', inv.faceValueAmount !== null ? formatINR(inv.faceValueAmount) : (bond.face_value_text || '—'))}
+                    {stat('Yield (YTM)', formatPercent(bond.yield_ytm))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              <button onClick={() => doGenerate('image')} disabled={!!generating} className="col-span-2 px-4 py-3 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50 flex items-center justify-center gap-2" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+                {generating === 'image' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageDown className="w-4 h-4" />}
+                {generating === 'image' ? 'Generating…' : 'Marketing Image'}
+              </button>
+              <button onClick={() => doGenerate('pdf')} disabled={!!generating} title="Download as PDF instead" className="px-3 py-3 rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                {generating === 'pdf' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                PDF
+              </button>
+            </div>
             <p className="text-[11px] mt-2 text-center" style={{ color: 'var(--text-faint)' }}>Client-facing brochure — landing cost is never included.</p>
           </div>
 
