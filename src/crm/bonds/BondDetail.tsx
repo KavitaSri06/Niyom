@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowLeft, ImageDown, FileText, Megaphone, ReceiptText, Pencil, Archive, ArchiveRestore, Loader2, History,
+  ArrowLeft, ImageDown, FileText, Megaphone, Pencil, Archive, ArchiveRestore, Loader2, History,
   RotateCcw, Trash2, ChevronDown, Minus, Plus, AlertTriangle,
 } from 'lucide-react';
 import { NWEmployee } from '../types';
@@ -20,7 +20,7 @@ import {
   getBond, listVersions, restoreVersion, archiveBond, unarchiveBond, deleteBond, setStatus, logMarketingPdf,
 } from './bondService';
 import { generateMarketingImage, generateMarketingPdf } from './marketingPdf';
-import { generateCashflowPdf, EmployeeContact } from './cashflowPdf';
+import { EmployeeContact } from './cashflowPdf';
 import { generatePromoImage } from './promoImage';
 import BondMarginCalculator, { MarginState } from './BondMarginCalculator';
 
@@ -39,8 +39,7 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
   const [loading, setLoading] = useState(true);
   const [margin, setMargin] = useState<MarginState>({ marginType: 'percent', marginValue: 2, sellingPrice: null });
   const [quantity, setQuantity] = useState<number>(1);
-  const [generating, setGenerating] = useState<false | 'image' | 'pdf' | 'cashflow' | 'promo'>(false);
-  const [notice, setNotice] = useState<string>('');
+  const [generating, setGenerating] = useState<false | 'image' | 'pdf' | 'promo'>(false);
   const [versions, setVersions] = useState<NWBondVersion[]>([]);
   const [showVersions, setShowVersions] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -82,7 +81,6 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
     redemptionText: bond?.maturity_text, quantity, cleanPricePer100: price,
   });
 
-  const flash = (msg: string) => { setNotice(msg); setTimeout(() => setNotice(''), 4000); };
 
   const doGenerate = async (format: 'image' | 'pdf') => {
     if (!bond) return;
@@ -100,18 +98,6 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
       if (format === 'image') await generateMarketingImage(bond as NWBondCatalog, opts);
       else await generateMarketingPdf(bond as NWBondCatalog, opts);
       await logMarketingPdf(bondId, margin.marginType, margin.marginValue, price);
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  const doCashflow = async () => {
-    if (!bond) return;
-    setGenerating('cashflow');
-    try {
-      const price = margin.sellingPrice ?? bond.selling_price ?? null;
-      const cf = await generateCashflowPdf(bond as NWBondCatalog, { quantity, pricePer100: price, contact });
-      if (!cf.ok) flash(`Cashflow needs more data: ${cf.reason ?? 'missing coupon / maturity'}.`);
     } finally {
       setGenerating(false);
     }
@@ -311,17 +297,12 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
                 PDF
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              <button onClick={doPromo} disabled={!!generating} title="Promotional image — core details only, no price" className="px-3 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+            <div className="mt-2">
+              <button onClick={doPromo} disabled={!!generating} title="Promotional image — core details only, no price" className="w-full px-3 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
                 {generating === 'promo' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Megaphone className="w-4 h-4" />}
                 Promo Image
               </button>
-              <button onClick={doCashflow} disabled={!!generating} title="Download the full cashflow schedule (PDF)" className="px-3 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                {generating === 'cashflow' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ReceiptText className="w-4 h-4" />}
-                Cashflow
-              </button>
             </div>
-            {notice && <p className="text-[11px] mt-2 text-center" style={{ color: 'rgb(180,120,10)' }}>{notice}</p>}
             <p className="text-[11px] mt-2 text-center" style={{ color: 'var(--text-faint)' }}>Client-facing — landing cost is never included. Figures indicative.</p>
           </div>
 
