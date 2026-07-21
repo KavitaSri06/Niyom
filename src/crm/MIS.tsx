@@ -107,7 +107,16 @@ export default function MIS({ employee }: Props) {
       // Unlisted shares / secondary bonds / primary bonds → profit vs landing cost.
       // BUY:  (Client Price − Landing Cost) × qty
       // SELL: (Landing Cost − Client Price) × qty  (direction reversed)
-      if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(t.product_type)) {
+      //
+      // Only GENUINE business counts: one that came through the deal-
+      // confirmation flow (has a deal_confirmation_id) or was transferred
+      // (transfer_stage = 'transferred'). Existing client positions recorded for
+      // the portfolio — and any manual entry that never went through the deal →
+      // transfer flow — carry neither and must not inflate revenue. (Insurance /
+      // MF below are direct-entry revenue with no transfer step, so they are not
+      // gated this way.)
+      if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(t.product_type)
+          && ((t as any).transfer_stage === 'transferred' || (t as any).deal_confirmation_id)) {
         const landingCost = (t as any).landing_cost || 0;
         const qty = t.quantity || 0;
         const price =

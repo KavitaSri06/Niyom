@@ -4,7 +4,7 @@ import { NWEmployee, NWTransaction, NWClient, ProductType } from './types';
 import { fmt, fmtDate, PRODUCT_LABELS, PRODUCT_COLORS, TXN_LABELS, TXN_COLORS } from './utils';
 import { Plus, X, Pencil, Trash2, Upload, FileText, ExternalLink, Search, ChevronDown, ChevronRight, Percent, TrendingUp, Shield } from 'lucide-react';
 
-interface Props { employee: NWEmployee; }
+interface Props { employee: NWEmployee; onNavigate?: (page: string, params?: Record<string, string>) => void; }
 
 const PRODUCTS: ProductType[] = ['unlisted_share', 'secondary_bond', 'primary_bond', 'mutual_fund', 'fixed_deposit', 'insurance'];
 const TXN_TYPES = ['buy', 'sell'];
@@ -284,7 +284,7 @@ async function syncTransactionToHolding(txn: Record<string, any>) {
   await supabase.from('nw_clients').update({ portfolio_value: total }).eq('id', txn.client_id);
 }
 
-export default function Transactions({ employee }: Props) {
+export default function Transactions({ employee, onNavigate }: Props) {
   const [txns, setTxns] = useState<NWTransaction[]>([]);
   const [clients, setClients] = useState<NWClient[]>([]);
   const [empList, setEmpList] = useState<{ id: string; full_name: string; employee_code: string }[]>([]);
@@ -848,9 +848,17 @@ export default function Transactions({ employee }: Props) {
           <h1 className="text-2xl font-bold text-text-primary">Transactions</h1>
           <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>New business — current transactions added here appear in MIS</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-on-accent" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
-          <Plus className="w-4 h-4" /> Add New Business
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={() => onNavigate?.('portfolio', { addHolding: '1' })}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
+            style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+            title="Record a client's pre-existing holding for their portfolio — does not affect MIS revenue">
+            <Plus className="w-4 h-4" /> Add Existing Business
+          </button>
+          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-on-accent" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+            <Plus className="w-4 h-4" /> Add New Business
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3">

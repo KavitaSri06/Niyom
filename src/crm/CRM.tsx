@@ -163,8 +163,8 @@ export default function CRM() {
       case 'leads': return <Leads employee={employee} onNavigate={navigate} pageParams={pageParams} />;
       case 'onboarding': return <ClientOnboarding employee={employee} onNavigate={navigate} pageParams={pageParams} />;
       case 'clients': return <ManageClients employee={employee} onNavigate={navigate} />;
-      case 'portfolio': return <Portfolio employee={employee} />;
-      case 'transactions': return <Transactions employee={employee} />;
+      case 'portfolio': return <Portfolio employee={employee} onNavigate={navigate} pageParams={pageParams} />;
+      case 'transactions': return <Transactions employee={employee} onNavigate={navigate} />;
       case 'reports': return <Reports employee={employee} />;
       case 'bonds': return <Bonds employee={employee} onNavigate={navigate} pageParams={pageParams} />;
       case 'documents': return <Documents employee={employee} initialClientId={pageParams.clientId} onBack={pageParams.clientId ? () => navigate('clients') : undefined} />;

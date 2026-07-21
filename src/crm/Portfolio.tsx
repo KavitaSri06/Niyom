@@ -4,7 +4,11 @@ import { NWEmployee, NWHolding, NWClient, ProductType } from './types';
 import { fmt, fmtDate, PRODUCT_LABELS, PRODUCT_COLORS, PRODUCT_CHART_COLORS } from './utils';
 import { Plus, X, Pencil, Trash2, ChevronDown, Printer, TrendingUp, Percent, Shield } from 'lucide-react';
 
-interface Props { employee: NWEmployee; }
+interface Props {
+  employee: NWEmployee;
+  onNavigate?: (page: string, params?: Record<string, string>) => void;
+  pageParams?: Record<string, string>;
+}
 
 const PRODUCTS: ProductType[] = ['unlisted_share', 'secondary_bond', 'primary_bond', 'mutual_fund', 'fixed_deposit', 'insurance'];
 const BOND_TYPES: ProductType[] = ['secondary_bond', 'primary_bond', 'fixed_deposit'];
@@ -229,7 +233,7 @@ const emptyForm = (): HoldingForm => ({
   premium_amount: '', premium_frequency: 'annual', policy_start_date: '', premium_due_date: '', nominee_name: '',
 });
 
-export default function Portfolio({ employee }: Props) {
+export default function Portfolio({ employee, pageParams }: Props) {
   const [holdings, setHoldings] = useState<NWHolding[]>([]);
   const [clients, setClients] = useState<NWClient[]>([]);
   const [empList, setEmpList] = useState<{ id: string; full_name: string; employee_code: string }[]>([]);
@@ -244,6 +248,17 @@ export default function Portfolio({ employee }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  // Deep-link from Transactions' "Add Existing Business" button: open the Add
+  // Holding form straight away. A holding is a portfolio-only record (no
+  // transaction), so it never touches MIS revenue.
+  useEffect(() => {
+    if (pageParams?.addHolding === '1') {
+      setForm(emptyForm());
+      setError('');
+      setShowAdd(true);
+    }
+  }, [pageParams?.addHolding]);
 
   const toggleGroup = (key: string) => setExpandedGroups(prev => {
     const next = new Set(prev);
@@ -704,7 +719,7 @@ export default function Portfolio({ employee }: Props) {
               </Field>
             </>
           )}
-          <Field label="Landing Cost / Unit (₹)" hint="Internal acquisition cost — used for MIS revenue calculation">
+          <Field label="Landing Cost / Unit (₹)" hint="Internal acquisition cost (optional) — portfolio record only, does not affect MIS">
             <I type="number" value={form.landing_cost} onChange={e => setF('landing_cost', e.target.value)} placeholder="0.00" />
           </Field>
         </div>
@@ -765,7 +780,7 @@ export default function Portfolio({ employee }: Props) {
               </>
             )}
             {!(['fixed_deposit'].includes(form.product_type)) && (
-              <Field label="Landing Cost / Unit (₹)" hint="Internal acquisition cost — for MIS revenue calculation">
+              <Field label="Landing Cost / Unit (₹)" hint="Internal acquisition cost (optional) — portfolio record only, does not affect MIS">
                 <I type="number" value={form.landing_cost} onChange={e => setF('landing_cost', e.target.value)} placeholder="0.00" />
               </Field>
             )}
