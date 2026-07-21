@@ -9,11 +9,15 @@
  *   2. `BseGateway`          → the client-side boundary the app depends on.
  *   3. Proxy config/endpoints→ how `liveGateway` will reach our proxy.
  *
- * WHY A PROXY (non-negotiable): BSE auth is a per-session `getPassword` token
- * (valid 5 min upload / 1 hr order), IP-whitelisted, over SOAP, with member
- * credentials. None of that can live in the browser. So:
+ * WHY A PROXY (non-negotiable): BSE member credentials, login-issued Bearer
+ * tokens (and optional JOSE payload encryption) must never live in the browser:
  *
- *   React → BseGateway (this app) → NIYOM proxy (creds, getPassword, SOAP) → BSE
+ *   React → BseGateway (this app) → NIYOM proxy (creds, login, Bearer/JOSE) → BSE
+ *
+ * CONFIRMED (21-Jul-2026, via BSE's StARMF 2.0 Integration Portal): NIYOM is on
+ * the **v2 REST (JSON) API**, not classic SOAP. See docs/bse-starmf-v2-api.md
+ * for the full extracted reference. The SOAP parameter types further down are
+ * retained for reference only and are superseded by the v2 shapes.
  */
 import type {
   FundScheme,
@@ -255,3 +259,95 @@ export interface BseProxyConfig {
   /** Base URL of the NIYOM BSE proxy (e.g. a Supabase Edge Function). */
   baseUrl: string | null;
 }
+
+/* ============================================================================
+ * 4. BSE StAR MF 2.0 (v2 REST) — CONFIRMED UPSTREAM API
+ *    The NIYOM proxy calls THESE; extracted from BSE's integration portal.
+ *    Full reference: docs/bse-starmf-v2-api.md
+ * ==========================================================================*/
+
+/** BSE v2 environments (proxy-side constants; the browser never calls these). */
+export const BSE_V2_ENV = {
+  demo: 'https://starmfv2demo.bseindia.com/api',
+  production: 'https://v2.bsestarmf.in/api',
+} as const;
+
+/**
+ * Upstream v2 endpoints (all POST, body wrapped as {"data":{…}}, auth =
+ * `POST /api/login` → access_token → `Authorization: Bearer`). Listed here so
+ * the proxy and gateway share one route vocabulary.
+ */
+export const BSE_V2_ROUTES = {
+  login: '/api/login',
+  // Orders — type: 'p' | 'r' | 's' (purchase / redemption / switch)
+  orderNew: '/v2/order_new',
+  orderGet: '/v2/order_get',
+  orderList: '/v2/order_list',
+  orderUpdate: '/v2/order_update',
+  orderCancel: '/v2/order_cancel',
+  // SXP — unified systematic plans: SIP / SWP / STP / TOPUP / SPROD
+  sxpRegister: '/v2/sxp_register',
+  sxpGet: '/v2/sxp_get',
+  sxpList: '/v2/sxp_list',
+  sxpHistory: '/v2/sxp_get_history',
+  sxpCancel: '/v2/sxp_cancel',
+  sxpPause: '/v2/sxp_set_pause',
+  sxpResume: '/v2/sxp_resume',
+  sxpTopup: '/v2/sxp_topup',
+  // Mandates
+  mandateRegister: '/mandate_register',
+  mandateGet: '/mandate_get',
+  mandateList: '/mandate_list',
+  mandateUpdate: '/mandate_update',
+  mandateCancel: '/mandate_cancel',
+  mandateDelink: '/mandate_delink',
+  mandateLink: '/link_mandate',
+  // UCC + KYC + 2FA links
+  uccAdd: '/v2/add_ucc',
+  uccGet: '/v2/get_ucc',
+  uccList: '/v2/list_ucc',
+  uccUpdate: '/v2/update_ucc',
+  twoFaLink: '/v2/get_2fa_link',
+  kycLink: '/v2/get_kyc_link',
+  // Non-financial transactions
+  nftBankChange: '/v2/nft_bank_account_change',
+  nftContactChange: '/v2/nft_contact_change',
+  nftNomineeChange: '/v2/nft_nominee_change',
+  // Payments (BSE PG)
+  paymentDetail: '/v2/get_payment_detail',
+  paymentList: '/v2/list_payment_detail',
+  paymentStatus: '/get_bse_pg_payment_status',
+  sendPaymentInfo: '/send_payment_info',
+  // Reference data
+  schemeMaster: '/v2/master_scheme_list',
+  navMaster: '/v2/nav_master_list',
+  misDetail: '/v2/get_mis_detail',
+} as const;
+
+/** SXP plan kinds accepted by `sxp_register`. */
+export type BseSxpType = 'SIP' | 'SWP' | 'STP' | 'TOPUP' | 'SPROD';
+/** SXP frequency codes: monthly/weekly/daily/fortnightly/quarterly/half-yearly/yearly. */
+export type BseSxpFreq = 'm' | 'w' | 'd' | 'f' | 'q' | 'h' | 'y';
+/** v2 order types. */
+export type BseV2OrderType = 'p' | 'r' | 's';
+
+/**
+ * v2 2FA events — every transactional action requires the INVESTOR to approve
+ * via a BSE-hosted 2FA link. The portal UX must surface this after placement.
+ */
+export type Bse2faEvent =
+  | 'verify_order_new'
+  | 'verify_order_update'
+  | 'verify_order_cancel'
+  | 'verify_sxp_reg'
+  | 'verify_sxp_topup'
+  | 'verify_sxp_cancel'
+  | 'verify_sxp_pause'
+  | 'verify_sxp_resume'
+  | 'verify_mandate_cancel'
+  | 'mandate_enach'
+  | 'ucc_elog'
+  | 'ucc_nom'
+  | 'nft_bank_acct_change'
+  | 'nft_contact_change'
+  | 'nft_nominee_change';
