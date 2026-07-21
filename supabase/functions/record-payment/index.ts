@@ -156,8 +156,12 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (!deal) return json({ success: false, error: "Deal not found." }, 404);
-    if (deal.acceptance_status !== "accepted") {
-      return json({ success: false, error: "Payments can only be recorded on accepted deals." }, 409);
+    // Payments may be recorded before the client digitally accepts — some
+    // clients stay out of reach yet pay, and that payment must be captured so
+    // the deal can later be transferred (admin override). Only rejected/expired
+    // deals are closed to new payments.
+    if (deal.acceptance_status === "rejected" || deal.acceptance_status === "expired") {
+      return json({ success: false, error: `Payments cannot be recorded on a ${deal.acceptance_status} deal.` }, 409);
     }
     const isAdmin = employee.role === "admin" || employee.role === "super_admin";
     if (!isAdmin && deal.employee_id !== employee.id) {
