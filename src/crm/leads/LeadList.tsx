@@ -55,6 +55,8 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
   // set (not just the visible page); holds the fetched full rows for bulk ops.
   const [allMatching, setAllMatching] = useState<NWLead[] | null>(null);
   const [selectingAll, setSelectingAll] = useState(false);
+  const [selectCount, setSelectCount] = useState(0);   // live progress while fetching
+  const [nInput, setNInput] = useState('');            // "select first N" field
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -145,9 +147,6 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
     setLoading(false);
   }, [buildQuery, page]);
 
-  // Cap on how many rows a single "select all matching" bulk action spans.
-  const SELECT_ALL_CAP = 2000;
-
   useEffect(() => { load(); }, [load, refreshKey]);
 
   // KPI strip — independent lightweight counts.
@@ -190,15 +189,28 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
 
   const clearSelection = () => { setAllMatching(null); setSelected(new Set()); };
 
-  // Fetch every lead matching the current filters (capped) and select them all.
-  const selectAllMatching = async () => {
+  // Fetch matching leads and select them. `limit` undefined = ALL matching (no
+  // cap); otherwise the first N. Fetched in chunks because Supabase caps rows
+  // per request, and so huge selections stay responsive.
+  const selectMatching = async (limit?: number) => {
     setSelectingAll(true);
-    const { data } = await buildQuery(false)
-      .order('created_at', { ascending: false })
-      .range(0, SELECT_ALL_CAP - 1);
-    const rows = (data as unknown as NWLead[]) || [];
-    setAllMatching(rows);
-    setSelected(new Set(rows.map(r => r.id)));
+    const CHUNK = 1000;
+    const target = limit && limit > 0 ? limit : Infinity;
+    let all: NWLead[] = [];
+    let from = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const to = from + CHUNK - 1;
+      const { data } = await buildQuery(false).order('created_at', { ascending: false }).range(from, to);
+      const rows = (data as unknown as NWLead[]) || [];
+      all = all.concat(rows);
+      setSelectCount(all.length);           // live progress
+      if (rows.length < CHUNK || all.length >= target) break;
+      from += CHUNK;
+    }
+    if (limit && all.length > limit) all = all.slice(0, limit);
+    setAllMatching(all);
+    setSelected(new Set(all.map(r => r.id)));
     setSelectingAll(false);
   };
 
@@ -401,22 +413,39 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
             onClear={clearSelection}
           />
           {/* Select-all-matching affordance */}
-          {(allMatching != null || (allOnPageSelected && total > leads.length)) && (
-            <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs" style={{ background: 'var(--bg-elevated)', border: '1px dashed var(--border)' }}>
-              {allMatching != null ? (
+          {(allMatching != null || selectingAll || (allOnPageSelected && total > leads.length)) && (
+            <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs flex-wrap" style={{ background: 'var(--bg-elevated)', border: '1px dashed var(--border)' }}>
+              {selectingAll ? (
+                <span className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Selecting… {selectCount.toLocaleString('en-IN')}
+                </span>
+              ) : allMatching != null ? (
                 <>
                   <span style={{ color: 'var(--text-secondary)' }}>
-                    All <strong style={{ color: 'var(--accent)' }}>{allMatching.length.toLocaleString('en-IN')}</strong> leads matching this filter are selected
-                    {total > SELECT_ALL_CAP && ` (capped at ${SELECT_ALL_CAP.toLocaleString('en-IN')})`}.
+                    <strong style={{ color: 'var(--accent)' }}>{allMatching.length.toLocaleString('en-IN')}</strong> lead{allMatching.length === 1 ? '' : 's'} selected across all pages.
                   </span>
                   <button onClick={clearSelection} className="font-semibold" style={{ color: 'var(--accent)' }}>Clear selection</button>
                 </>
               ) : (
                 <>
                   <span style={{ color: 'var(--text-secondary)' }}>All {leads.length} on this page selected.</span>
-                  <button onClick={selectAllMatching} disabled={selectingAll} className="font-semibold" style={{ color: 'var(--accent)' }}>
-                    {selectingAll ? 'Selecting…' : `Select all ${total.toLocaleString('en-IN')} matching`}
+                  <button onClick={() => selectMatching()} className="font-semibold" style={{ color: 'var(--accent)' }}>
+                    Select all {total.toLocaleString('en-IN')} matching
                   </button>
+                  <span style={{ color: 'var(--text-faint)' }}>·</span>
+                  <span className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
+                    Select first
+                    <input type="number" min={1} max={total} value={nInput}
+                      onChange={e => setNInput(e.target.value.replace(/\D/g, ''))}
+                      onKeyDown={e => { if (e.key === 'Enter' && nInput) selectMatching(Math.min(Number(nInput), total)); }}
+                      placeholder={String(Math.min(100, total))}
+                      className="w-20 px-2 py-1 rounded-lg text-xs outline-none"
+                      style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                    <button onClick={() => nInput && selectMatching(Math.min(Number(nInput), total))}
+                      disabled={!nInput || Number(nInput) < 1}
+                      className="font-semibold px-2 py-1 rounded-lg disabled:opacity-40"
+                      style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)' }}>Go</button>
+                  </span>
                 </>
               )}
             </div>

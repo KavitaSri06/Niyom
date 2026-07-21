@@ -25,13 +25,26 @@ export default function LeadBulkToolbar({ employee, leads, onAssign, onDone, onC
   const [mergeOpen, setMergeOpen] = useState(false);
   const ids = leads.map(l => l.id);
 
-  const logEach = (action: string, description: string) =>
-    supabase.from('nw_lead_activities').insert(ids.map(id => ({ lead_id: id, employee_id: employee.id, action, description })));
+  // Chunk id lists: PATCH `.in('id', ids)` rides the URL (keep it short), while
+  // activity INSERTs go in the POST body (larger chunks are fine).
+  const chunk = <T,>(arr: T[], n: number): T[][] => {
+    const out: T[][] = [];
+    for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+    return out;
+  };
+
+  const logEach = async (action: string, description: string) => {
+    for (const c of chunk(ids, 500)) {
+      await supabase.from('nw_lead_activities').insert(c.map(id => ({ lead_id: id, employee_id: employee.id, action, description })));
+    }
+  };
 
   const patch = async (p: Record<string, unknown>, action: string, desc: string) => {
     setBusy(true); setMenu(null);
-    const { error } = await supabase.from('nw_leads').update(p).in('id', ids);
-    if (!error) await logEach(action, desc);
+    for (const c of chunk(ids, 100)) {
+      await supabase.from('nw_leads').update(p).in('id', c);
+    }
+    await logEach(action, desc);
     setBusy(false);
     onDone();
   };
@@ -138,11 +151,15 @@ function BulkFollowupModal({ employee, ids, onClose, onDone }:
     if (!when) { setErr('Pick a date & time.'); return; }
     setBusy(true); setErr('');
     const iso = new Date(when).toISOString();
-    const { error } = await supabase.from('nw_lead_followups').insert(
-      ids.map(id => ({ lead_id: id, employee_id: employee.id, scheduled_at: iso, priority, mode, purpose: purpose.trim(), reminder_minutes: 30 })));
-    if (error) { setErr(error.message); setBusy(false); return; }
-    await supabase.from('nw_lead_activities').insert(
-      ids.map(id => ({ lead_id: id, employee_id: employee.id, action: 'Follow-up Added', description: `Bulk follow-up · ${new Date(when).toLocaleString('en-IN')}` })));
+    const desc = `Bulk follow-up · ${new Date(when).toLocaleString('en-IN')}`;
+    for (let i = 0; i < ids.length; i += 500) {
+      const c = ids.slice(i, i + 500);
+      const { error } = await supabase.from('nw_lead_followups').insert(
+        c.map(id => ({ lead_id: id, employee_id: employee.id, scheduled_at: iso, priority, mode, purpose: purpose.trim(), reminder_minutes: 30 })));
+      if (error) { setErr(error.message); setBusy(false); return; }
+      await supabase.from('nw_lead_activities').insert(
+        c.map(id => ({ lead_id: id, employee_id: employee.id, action: 'Follow-up Added', description: desc })));
+    }
     setBusy(false); onDone();
   };
 
