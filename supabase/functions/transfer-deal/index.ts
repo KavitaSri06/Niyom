@@ -58,8 +58,11 @@ function mapRpcError(err: { code?: string; message?: string; details?: string } 
   if (code === "42501" || msg.includes("Not authorised")) {
     return { message: "Only administrators can approve a transfer.", status: 403 };
   }
+  if (msg.includes("rejected or expired deal cannot be transferred")) {
+    return { message: "This deal was rejected or expired and cannot be transferred.", status: 409 };
+  }
   if (msg.includes("Deal is no longer accepted")) {
-    return { message: "Deal is no longer eligible — its acceptance state has changed. Please reload.", status: 409 };
+    return { message: "This deal has not been accepted by the client yet. Use the admin override to transfer it without a signature (payment is still required).", status: 409 };
   }
   if (msg.includes("Deal is not fully paid")) {
     return { message: "Deal is no longer eligible — the payment ledger has changed. Please reload.", status: 409 };
@@ -115,6 +118,10 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const dealId = typeof body?.dealId === "string" ? body.dealId : null;
     const remarks = sanitiseRemarks(body?.remarks);
+    // Admin override: transfer a PAID deal into MIS without the client's digital
+    // acceptance. Payment is still enforced by the RPC. Admin role already
+    // checked above, so this flag only reaches the RPC from an authorised admin.
+    const overrideAcceptance = body?.override === true;
 
     if (!dealId) return json({ success: false, error: "dealId is required." }, 400);
 
@@ -122,10 +129,11 @@ Deno.serve(async (req: Request) => {
     //    the actual state transition; it re-verifies everything under
     //    FOR UPDATE and returns idempotent results on re-invocation.
     const { data: rpcResult, error: rpcErr } = await db.rpc("nw_transfer_deal", {
-      p_deal_id:     dealId,
-      p_admin_id:    employee.id,
-      p_remarks:     remarks,
-      p_app_version: APPLICATION_VERSION,
+      p_deal_id:             dealId,
+      p_admin_id:            employee.id,
+      p_remarks:             remarks,
+      p_app_version:         APPLICATION_VERSION,
+      p_override_acceptance: overrideAcceptance,
     });
 
     if (rpcErr || !rpcResult) {
@@ -136,11 +144,12 @@ Deno.serve(async (req: Request) => {
 
     // Cast RPC jsonb payload
     const result = rpcResult as {
-      transaction_id:     string;
-      transfer_audit_id:  string | null;
-      transfer_reference: string;
-      idempotent:         boolean;
-      transferred_at:     string;
+      transaction_id:      string;
+      transfer_audit_id:   string | null;
+      transfer_reference:  string;
+      idempotent:          boolean;
+      transferred_at:      string;
+      acceptance_overridden?: boolean;
     };
 
     // 5. Best-effort closure email. Never rolls back the transfer.
@@ -207,6 +216,7 @@ Deno.serve(async (req: Request) => {
       transfer_reference: result.transfer_reference,
       transferred_at:     result.transferred_at,
       idempotent:         result.idempotent,
+      acceptance_overridden: result.acceptance_overridden ?? false,
       email_status:       emailStatus,
       email_provider_id:  emailProviderId,
       email_error:        emailError,
