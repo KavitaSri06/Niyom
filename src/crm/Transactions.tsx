@@ -536,7 +536,11 @@ export default function Transactions({ employee }: Props) {
 
     let txnId: string;
     if (editTxn) {
-      const { error: err } = await supabase.from('nw_transactions').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editTxn.id);
+      // Never reassign ownership on edit — keep the original employee_id. Sending
+      // the current user's id would also falsely trip the post-transfer
+      // immutability guard (it compares every non-revenue field for changes).
+      const { employee_id: _keepOwner, ...updatePayload } = payload;
+      const { error: err } = await supabase.from('nw_transactions').update({ ...updatePayload, updated_at: new Date().toISOString() }).eq('id', editTxn.id);
       if (err) { setError(err.message); setSaving(false); return; }
       txnId = editTxn.id;
     } else {
