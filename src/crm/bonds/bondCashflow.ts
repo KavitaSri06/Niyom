@@ -93,11 +93,20 @@ function normFrequency(hint: string | null | undefined, ipDates: string | null |
   return null;
 }
 
-// Best-effort partial-redemption schedule → { couponDateISO: faceRedeemed }.
+interface RedemptionPlan {
+  events: { date: Date; amount: number }[]; // future tranches (after settlement)
+  preSettlementRedeemed: number;            // principal already returned before settlement
+}
+
+// Best-effort partial-redemption schedule parsed from the maturity text, e.g.
+// "25% PARTIAL REDEMPTION STARTING FROM 28 FEB 2029 QUATERLY TILL MATURITY"
+// → 25% of the ORIGINAL face returned each quarter from that date. Tranches are
+// generated on their OWN cadence (not snapped to coupon dates), so interest can
+// be computed on the reducing balance regardless of the payout frequency.
 // Returns null when the text is not a recognised partial-redemption pattern.
 function parseRedemption(
-  text: string | null | undefined, couponDates: Date[], totalFace: number,
-): Record<string, number> | null {
+  text: string | null | undefined, maturity: Date, settlement: Date, totalFace: number,
+): RedemptionPlan | null {
   const t = (text ?? '').trim();
   const pctM = /(\d+(?:\.\d+)?)\s*%\s*(?:partial\s*)?redemption/i.exec(t)
     || /partial\s*redemption[^0-9]*(\d+(?:\.\d+)?)\s*%/i.exec(t);
@@ -109,29 +118,28 @@ function parseRedemption(
   const startISO = startM ? parseLeadingDateToISO(startM[1]) : null;
   if (!startISO) return null;
 
+  // Cadence — tolerant of the common "QUATERLY" misspelling and "qtr".
   const cadence: Frequency = /month/i.test(t) ? 'Monthly'
-    : /quarter/i.test(t) ? 'Quarterly'
+    : /quart|quater|qtr/i.test(t) ? 'Quarterly'
     : /half|semi/i.test(t) ? 'Half-Yearly' : 'Annual';
   const step = freqMonths(cadence);
 
-  const perTranche = totalFace * (pct / 100);
-  const maturity = couponDates[couponDates.length - 1];
-  const map: Record<string, number> = {};
+  const perTranche = +(totalFace * (pct / 100)).toFixed(2);
+  const events: { date: Date; amount: number }[] = [];
   let cursor = toDate(startISO);
   let redeemed = 0;
+  let preSettlementRedeemed = 0;
   let guard = 0;
-  while (cursor <= maturity && redeemed < totalFace - 0.01 && guard < 200) {
-    // snap this tranche to the first coupon date on/after the scheduled date
-    const cd = couponDates.find(d => d >= cursor);
-    if (!cd) break;
-    const amt = Math.min(perTranche, totalFace - redeemed);
-    map[toISO(cd)] = (map[toISO(cd)] ?? 0) + amt;
-    redeemed += amt;
+  while (cursor <= maturity && redeemed < totalFace - 0.01 && guard < 600) {
+    const amount = +Math.min(perTranche, totalFace - redeemed).toFixed(2);
+    if (cursor > settlement) events.push({ date: new Date(cursor.getTime()), amount });
+    else preSettlementRedeemed += amount; // already returned to the prior holder
+    redeemed += amount;
     cursor = addMonths(cursor, step);
     guard++;
   }
   if (redeemed <= 0) return null;
-  return map;
+  return { events, preSettlementRedeemed: +preSettlementRedeemed.toFixed(2) };
 }
 
 export function buildCashflow(input: CashflowInput): CashflowResult {
@@ -163,8 +171,14 @@ export function buildCashflow(input: CashflowInput): CashflowResult {
   if (couponDates.length === 0) couponDates.push(maturity);
   const lastCoupon = addMonths(couponDates[0], -step); // on/before settlement
 
-  const totalFace = face * qty;
+  const totalFace = face * qty;                       // notional at issue
   const cleanPer100 = input.cleanPricePer100 ?? null;
+
+  // Partial redemption plan (tranches on their own cadence) — or bullet.
+  const plan = parseRedemption(input.redemptionText, maturity, settlement, totalFace);
+  const assumedBullet = !plan;
+  // Face outstanding at purchase = original less anything already redeemed.
+  const outstandingAtBuy = +(totalFace - (plan?.preSettlementRedeemed ?? 0)).toFixed(2);
 
   // Record-date / ex-interest test: is settlement inside the freeze window before
   // the next coupon? If so the seller (registered holder on the record date)
@@ -174,47 +188,80 @@ export function buildCashflow(input: CashflowInput): CashflowResult {
   const daysToNext = days(settlement, nextCoupon);
   const exInterest = daysToNext >= 0 && daysToNext <= RECORD_DATE_FREEZE_DAYS;
 
+  // Accrued interest is on the CURRENT outstanding balance.
   const accruedInterest = exInterest
-    ? -(+(totalFace * (coupon / 100) * (daysToNext / 365)).toFixed(2))
-    : +(totalFace * (coupon / 100) * (Math.max(0, days(lastCoupon, settlement)) / 365)).toFixed(2);
+    ? -(+(outstandingAtBuy * (coupon / 100) * (daysToNext / 365)).toFixed(2))
+    : +(outstandingAtBuy * (coupon / 100) * (Math.max(0, days(lastCoupon, settlement)) / 365)).toFixed(2);
 
-  // Partial redemption schedule (or bullet).
-  const redemptionMap = parseRedemption(input.redemptionText, couponDates, totalFace);
-  const assumedBullet = !redemptionMap;
+  // Assign each redemption tranche to the nearest coupon date (within half a
+  // coupon period) so principal + interest land on one row; a tranche with no
+  // nearby coupon keeps its own date. Interest is then computed on the reducing
+  // balance across the merged timeline — independent of the payout frequency.
+  const couponSet = new Set(couponDates.map(toISO));
+  const redMap: Record<string, number> = {};
+  const extraDates: Date[] = [];
+  const halfPeriod = (step * 30) / 2 + 5;
+  if (plan) {
+    for (const ev of plan.events) {
+      let best: Date | null = null; let bestDiff = Infinity;
+      for (const cd of couponDates) {
+        const diff = Math.abs(days(cd, ev.date));
+        if (diff < bestDiff) { bestDiff = diff; best = cd; }
+      }
+      const key = best && bestDiff <= halfPeriod ? toISO(best) : toISO(ev.date);
+      if (!couponSet.has(key)) extraDates.push(ev.date);
+      redMap[key] = +((redMap[key] ?? 0) + ev.amount).toFixed(2);
+    }
+  }
+
+  const eventISO = Array.from(new Set([...couponDates.map(toISO), ...extraDates.map(toISO)])).sort();
+  const maturityISOstr = toISO(maturity);
 
   const rows: CashflowRow[] = [];
-  let currentFace = totalFace;
+  let outstanding = outstandingAtBuy;
   let prev = lastCoupon;
+  let interestAccum = 0;
   let totalInterest = 0;
   let totalPrincipalReturned = 0;
-  couponDates.forEach((cd, i) => {
-    const isMaturity = i === couponDates.length - 1;
+
+  eventISO.forEach((iso, i) => {
+    const ev = toDate(iso);
+    const isMaturity = iso === maturityISOstr || i === eventISO.length - 1;
+    const isCoupon = couponSet.has(iso) || isMaturity;
+    interestAccum += outstanding * (coupon / 100) * (days(prev, ev) / 365);
+
     // Ex-interest: the first coupon's interest is paid to the registered holder
     // on the record date (the seller), not the buyer.
-    const toSeller = i === 0 && exInterest;
-    const interest = toSeller ? 0 : +(currentFace * (coupon / 100) * (days(prev, cd) / 365)).toFixed(2);
-    let redeemed = redemptionMap ? (redemptionMap[toISO(cd)] ?? 0) : 0;
-    if (isMaturity) redeemed = currentFace; // return whatever principal remains
-    redeemed = +Math.min(redeemed, currentFace).toFixed(2);
+    const toSeller = i === 0 && exInterest && isCoupon;
+    let interest = 0;
+    if (toSeller) { interestAccum = 0; }                  // coupon taken by the seller
+    else if (isCoupon) { interest = +interestAccum.toFixed(2); interestAccum = 0; }
+    // else: a redemption-only date — interest carries to the next coupon.
+
+    let redeemed = redMap[iso] ?? 0;
+    if (isMaturity) redeemed = outstanding;               // return remaining principal
+    redeemed = +Math.min(redeemed, outstanding).toFixed(2);
+
     const total = +(interest + redeemed).toFixed(2);
     const net = +(total - interest * TDS_RATE).toFixed(2);
     let remark = '';
     if (toSeller) remark = 'Interest to registered holder (record date)';
-    else if (isMaturity) remark = 'Maturity : Principal Redemption';
-    else if (redeemed > 0) remark = `Part Maturity : Principal Redemption`;
-    rows.push({ date: toISO(cd), faceRedeemed: redeemed, interest, total, netAfterTds: net, remark });
+    else if (isMaturity) remark = totalPrincipalReturned > 0 ? 'Final Redemption' : 'Maturity : Principal Redemption';
+    else if (redeemed > 0) remark = 'Part Redemption';
+
+    rows.push({ date: iso, faceRedeemed: redeemed, interest, total, netAfterTds: net, remark });
     totalInterest += interest;
     totalPrincipalReturned += redeemed;
-    currentFace = +(currentFace - redeemed).toFixed(2);
-    prev = cd;
+    outstanding = +(outstanding - redeemed).toFixed(2);
+    prev = ev;
   });
 
-  const principalAmount = cleanPer100 !== null ? +(totalFace * (cleanPer100 / 100)).toFixed(2) : 0;
+  const principalAmount = cleanPer100 !== null ? +(outstandingAtBuy * (cleanPer100 / 100)).toFixed(2) : 0;
   const investmentAmount = +(principalAmount + accruedInterest).toFixed(2);
 
   return {
     ok: true, frequency, settlementDate: settlementISO, maturityDate: input.maturityISO,
-    totalFace, rows, accruedInterest, principalAmount, investmentAmount,
+    totalFace: outstandingAtBuy, rows, accruedInterest, principalAmount, investmentAmount,
     totalInterest: +totalInterest.toFixed(2), totalPrincipalReturned: +totalPrincipalReturned.toFixed(2),
     assumedBullet, exInterest,
   };

@@ -82,15 +82,19 @@ export function inferFrequency(
   const s = (ipDates ?? '').toLowerCase();
   if (!s || s === 'na') return '';
   if (s.includes('every month') || s.includes('monthly')) return 'Monthly';
-  if (s.includes('quarter')) return 'Quarterly';
+  if (s.includes('quarter') || s.includes('quater') || s.includes('qtr')) return 'Quarterly';
   if (s.includes('semi') || s.includes('half')) return 'Half-Yearly';
   if (s.includes('annual') || s.includes('yearly')) return 'Annual';
-  // Fall back to counting distinct payment-date tokens across a year.
-  const tokens = s.split(/[,/\n]/).map(t => t.trim()).filter(Boolean);
-  if (tokens.length >= 4) return 'Quarterly';
-  if (tokens.length === 3) return 'Quarterly';
-  if (tokens.length === 2) return 'Half-Yearly';
-  if (tokens.length === 1) return 'Annual';
+  // No keyword — infer the count of payments per year from the payment-date list.
+  // These come in two shapes: month-name lists ("15 MAR 15 JUNE 15 SEPT 15 DEC")
+  // and numeric date lists ("27-02, 27-05, 27-08, 27-11"). Count whichever wins.
+  const monthCount = (s.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/g) ?? []).length;
+  const tokenCount = s.split(/[,/\n]|\s{2,}/).map(t => t.trim()).filter(Boolean).length;
+  const n = Math.max(monthCount, monthCount === 0 ? tokenCount : 0);
+  if (n >= 12) return 'Monthly';
+  if (n >= 3) return 'Quarterly';   // 3 or 4 dated payments a year
+  if (n === 2) return 'Half-Yearly';
+  if (n === 1) return 'Annual';
   return '';
 }
 
