@@ -76,10 +76,10 @@ function buildHtml(bond: NWBondCatalog, opts: PromoOptions): string {
     </div>
 
     <!-- headline coupon (solid fill — html2canvas-safe) -->
-    <div style="text-align:center;margin-top:64px;position:relative;">
+    <div style="text-align:center;margin-top:60px;position:relative;">
       <div style="font-size:20px;letter-spacing:0.28em;text-transform:uppercase;color:${goldSoft};font-weight:700;">Earn up to</div>
-      <div style="font-size:128px;font-weight:900;line-height:1;margin-top:14px;color:#F2DB99;text-shadow:0 3px 18px rgba(200,162,75,0.35);">${coupon}</div>
-      <div style="font-size:20px;letter-spacing:0.22em;text-transform:uppercase;color:#cfd8ea;font-weight:600;margin-top:16px;">per annum</div>
+      <div style="font-size:124px;font-weight:900;line-height:1.12;margin-top:16px;padding-bottom:6px;color:#F2DB99;text-shadow:0 3px 18px rgba(200,162,75,0.35);">${coupon}</div>
+      <div style="font-size:20px;letter-spacing:0.22em;text-transform:uppercase;color:#cfd8ea;font-weight:600;margin-top:40px;">per annum</div>
     </div>
 
     <!-- issuer + badges -->
