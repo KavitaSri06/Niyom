@@ -175,9 +175,6 @@ export default function TransferQueue({ employee }: Props) {
   const [search, setSearch] = useState('');
   const [filterMonth, setFilterMonth] = useState<string>(''); // '' = all, else '0'..'11'
   const [filterYear, setFilterYear] = useState<string>('');   // '' = all, else e.g. '2026'
-  // false = normal queue (client-accepted + paid). true = admin override bucket:
-  // PAID deals the client hasn't signed/accepted yet, transferable by override.
-  const [overrideMode, setOverrideMode] = useState(false);
 
   const [preview, setPreview] = useState<EligibleDeal | null>(null);
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
@@ -226,14 +223,12 @@ export default function TransferQueue({ employee }: Props) {
     const from = page * PAGE_SIZE;
     const to   = from + PAGE_SIZE - 1;
 
-    // In override mode the deal is not yet accepted (accepted_at is null), so we
-    // order + filter by deal_date instead, and read the pending-acceptance view.
-    const dateField = overrideMode ? 'deal_date' : 'accepted_at';
-
+    // A deal is transfer-ready once paid — order/filter by deal_date (there is
+    // no acceptance step, so accepted_at may be null).
     let q = supabase
-      .from(overrideMode ? 'nw_deal_transfer_pending_acceptance' : 'nw_deal_transfer_eligible')
+      .from('nw_deal_transfer_eligible')
       .select('*', { count: 'exact' })
-      .order(dateField, { ascending: false })
+      .order('deal_date', { ascending: false })
       .range(from, to);
 
     if (search.trim()) {
@@ -245,17 +240,17 @@ export default function TransferQueue({ employee }: Props) {
         `isin.ilike.${s}`,
       ].join(','));
     }
-    // Month + Year filter. Year alone = whole year; Year+Month = that month.
+    // Month + Year filter on deal date. Year alone = whole year; Year+Month = that month.
     if (filterYear) {
       const y = Number(filterYear);
       const pad = (n: number) => String(n).padStart(2, '0');
       if (filterMonth !== '') {
         const m = Number(filterMonth); // 0-11
         const lastDay = new Date(y, m + 1, 0).getDate();
-        q = q.gte(dateField, `${y}-${pad(m + 1)}-01`)
-             .lte(dateField, `${y}-${pad(m + 1)}-${pad(lastDay)}T23:59:59`);
+        q = q.gte('deal_date', `${y}-${pad(m + 1)}-01`)
+             .lte('deal_date', `${y}-${pad(m + 1)}-${pad(lastDay)}`);
       } else {
-        q = q.gte(dateField, `${y}-01-01`).lte(dateField, `${y}-12-31T23:59:59`);
+        q = q.gte('deal_date', `${y}-01-01`).lte('deal_date', `${y}-12-31`);
       }
     }
 
@@ -263,7 +258,7 @@ export default function TransferQueue({ employee }: Props) {
     setDeals((data as EligibleDeal[]) ?? []);
     setCount(c ?? 0);
     setLoading(false);
-  }, [page, search, filterMonth, filterYear, overrideMode]);
+  }, [page, search, filterMonth, filterYear]);
 
   useEffect(() => { loadList(); }, [loadList]);
 
@@ -320,7 +315,8 @@ export default function TransferQueue({ employee }: Props) {
     setError('');
     try {
       const { data, error: fnErr } = await supabase.functions.invoke('transfer-deal', {
-        body: { dealId: preview.deal_id, remarks: remarks.trim() || null, override: overrideMode },
+        // Acceptance is not required in this flow; always transfer a paid deal.
+        body: { dealId: preview.deal_id, remarks: remarks.trim() || null, override: true },
       });
       if (fnErr || !data?.success) {
         throw new Error(data?.error || fnErr?.message || 'Could not complete transfer.');
@@ -689,7 +685,6 @@ export default function TransferQueue({ employee }: Props) {
         {showConfirm && (
           <ConfirmDialog
             deal={preview}
-            overrideMode={overrideMode}
             checks={checks}
             setChecks={setChecks}
             remarks={remarks}
@@ -713,37 +708,9 @@ export default function TransferQueue({ employee }: Props) {
         <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Operations</p>
         <h1 className="text-2xl font-bold text-text-primary">Transfer Queue</h1>
         <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-          {overrideMode
-            ? `Paid deals (within ₹${SETTLEMENT_TOLERANCE}) the client has NOT signed/accepted yet — transfer by admin override to assign revenue.`
-            : `Accepted deals whose payment is settled (within ₹${SETTLEMENT_TOLERANCE}), awaiting operations approval to close.`}
+          Paid deals (settled within ₹{SETTLEMENT_TOLERANCE}) awaiting review &amp; transfer.
         </p>
       </div>
-
-      {/* Queue mode toggle: normal (client-accepted) vs admin override bucket */}
-      <div className="inline-flex rounded-xl p-1" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-        {[
-          { key: false, label: 'Accepted & paid' },
-          { key: true,  label: 'Awaiting acceptance (paid)' },
-        ].map(t => (
-          <button key={String(t.key)} type="button"
-            onClick={() => { setOverrideMode(t.key); setPage(0); }}
-            className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-            style={overrideMode === t.key
-              ? { background: 'var(--accent)', color: 'var(--on-accent, #000)' }
-              : { background: 'transparent', color: 'var(--text-muted)' }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {overrideMode && (
-        <div className="flex items-start gap-3 rounded-xl p-4" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)' }}>
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            <strong>Admin override.</strong> These deals are fully paid but the client has not digitally signed or accepted them. Transferring here books the revenue into MIS and assigns it to the employee <em>without</em> the client's signature. Each transfer is recorded as an override in the audit trail. Payment is still required.
-          </p>
-        </div>
-      )}
 
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -788,12 +755,10 @@ export default function TransferQueue({ employee }: Props) {
           <div className="text-center py-16">
             <ShieldCheck className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--border-strong)' }} />
             <p className="text-sm font-semibold" style={{ color: 'var(--text-faint)' }}>
-              {overrideMode ? 'No paid deals awaiting acceptance' : 'No deals awaiting transfer'}
+              No deals awaiting transfer
             </p>
             <p className="text-xs mt-1" style={{ color: 'var(--border-strong)' }}>
-              {overrideMode
-                ? `Paid but unsigned deals appear here (settled within ₹${SETTLEMENT_TOLERANCE}).`
-                : `Deals appear here once accepted by the client and settled (within ₹${SETTLEMENT_TOLERANCE}).`}
+              Deals appear here once their payment is settled (within ₹{SETTLEMENT_TOLERANCE}).
             </p>
           </div>
         ) : (
@@ -961,11 +926,10 @@ function FieldRow({
 }
 
 function ConfirmDialog({
-  deal, overrideMode, checks, setChecks, remarks, setRemarks,
+  deal, checks, setChecks, remarks, setRemarks,
   error, submitting, allChecked, onCancel, onConfirm,
 }: {
   deal: EligibleDeal;
-  overrideMode: boolean;
   checks: Record<ChecklistKey, boolean>;
   setChecks: React.Dispatch<React.SetStateAction<Record<ChecklistKey, boolean>>>;
   remarks: string;
@@ -998,14 +962,6 @@ function ConfirmDialog({
         </div>
 
         <div className="p-6 space-y-4">
-          {overrideMode && (
-            <div className="flex items-start gap-3 rounded-xl p-3.5" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)' }}>
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                <strong>Acceptance override.</strong> The client has not signed/accepted this deal digitally. You are booking its revenue into MIS ahead of the signature. This is recorded as an admin override in the audit trail.
-              </p>
-            </div>
-          )}
           <div>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
               You are about to close deal <strong className="font-mono" style={{ color: 'var(--accent)' }}>{deal.confirmation_number}</strong>{' '}

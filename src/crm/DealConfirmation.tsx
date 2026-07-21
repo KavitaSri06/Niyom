@@ -571,7 +571,6 @@ export default function DealConfirmation({ employee }: Props) {
 
   // ===================== PREVIEW ======================
   if (view === 'preview' && previewDeal) {
-    const alreadyAccepted = previewDeal.acceptance_status === 'accepted';
     const pdfOpt = buildPdfOpts(previewDeal.confirmation_number, previewDeal.deal_date, 3);
 
     return (
@@ -594,84 +593,33 @@ export default function DealConfirmation({ employee }: Props) {
           >
             <Download className="w-4 h-4" /> Download PDF
           </button>
-          {/* Secure Link / Locked actions */}
-          {alreadyAccepted ? (
-            <>
-              <span
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold"
-                style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.25)' }}
-              >
-                <Lock className="w-4 h-4" /> Accepted & Locked
-              </span>
-              {previewDeal.signed_pdf_path && (
-                <button
-                  onClick={() => handleDownloadSigned(previewDeal)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent"
-                  style={{ background: 'linear-gradient(135deg, var(--success), var(--success-deep))' }}
-                >
-                  <Download className="w-4 h-4" /> Signed PDF
-                </button>
-              )}
-              <button
-                onClick={() => setView('payments')}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent"
-                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}
-              >
-                <Wallet className="w-4 h-4" /> Manage Payments
-              </button>
-            </>
-          ) : (
-            <>
-              {/* Admin may record payment before the client accepts (out-of-reach
-                  clients who have paid) — except on rejected/expired deals. */}
-              {previewDeal.acceptance_status !== 'rejected' && previewDeal.acceptance_status !== 'expired' && (
-                <button
-                  onClick={() => setView('payments')}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold"
-                  style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.3)' }}
-                >
-                  <Wallet className="w-4 h-4" /> Manage Payments
-                </button>
-              )}
-              <button
-                onClick={() => handleSendSecureLink(previewDeal)}
-                disabled={emailSending}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent transition-all disabled:cursor-not-allowed"
-                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', opacity: emailSending ? 0.75 : 1 }}
-              >
-                {emailSending ? (
-                  <>
-                    <div className="w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    {previewDeal.email_status === 'sent' ? 'Resend Secure Link' : 'Send Secure Link'}
-                  </>
-                )}
-              </button>
-            </>
-          )}
+          {/* Email the deal confirmation to the client, and manage its payments. */}
+          <button
+            onClick={() => handleSendSecureLink(previewDeal)}
+            disabled={emailSending}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent transition-all disabled:cursor-not-allowed"
+            style={{ background: 'linear-gradient(135deg, var(--accent-strong), var(--accent-strong-deep))', opacity: emailSending ? 0.75 : 1 }}
+          >
+            {emailSending ? (
+              <>
+                <div className="w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                {previewDeal.email_status === 'sent' ? 'Resend Mail' : 'Send Mail'}
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => setView('payments')}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent"
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}
+          >
+            <Wallet className="w-4 h-4" /> Manage Payments
+          </button>
         </div>
-
-        {/* Acceptance audit banner */}
-        {previewDeal.acceptance_status === 'accepted' && (
-          <div className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs"
-            style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
-            <span style={{ color: 'var(--success)' }} className="font-semibold">Accepted &amp; locked</span>
-            {previewDeal.accepted_at && <span style={{ color: 'var(--text-secondary)' }}>On: {new Date(previewDeal.accepted_at).toLocaleString('en-IN')}</span>}
-            {previewDeal.signer_email && <span style={{ color: 'var(--text-secondary)' }}>By: {previewDeal.signer_email}</span>}
-          </div>
-        )}
-        {previewDeal.acceptance_status === 'rejected' && (
-          <div className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs"
-            style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <span style={{ color: 'var(--danger)' }} className="font-semibold">Rejected by client</span>
-            {previewDeal.rejected_at && <span style={{ color: 'var(--text-secondary)' }}>On: {new Date(previewDeal.rejected_at).toLocaleString('en-IN')}</span>}
-            {previewDeal.rejection_reason && <span style={{ color: 'var(--text-secondary)' }}>Reason: {previewDeal.rejection_reason}</span>}
-          </div>
-        )}
 
         {/* ===== Deal Note (shared 2-page A4 layout) ===== */}
         <DealDocument deal={previewDeal} />
@@ -907,9 +855,9 @@ export default function DealConfirmation({ employee }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: 'Total', value: deals.length, color: 'var(--accent)' },
-          { label: 'Accepted', value: deals.filter(d => d.acceptance_status === 'accepted').length, color: 'var(--success)' },
-          { label: 'Rejected', value: deals.filter(d => d.acceptance_status === 'rejected').length, color: 'var(--danger)' },
-          { label: 'Awaiting Client', value: deals.filter(d => d.acceptance_status === 'pending' || d.acceptance_status === 'viewed').length, color: 'rgb(var(--info-soft-rgb))' },
+          { label: 'Fully Paid', value: deals.filter(d => ['fully_paid', 'over_paid'].includes(paySummaries[d.id]?.payment_status ?? 'not_paid')).length, color: 'var(--success)' },
+          { label: 'Partially Paid', value: deals.filter(d => (paySummaries[d.id]?.payment_status ?? 'not_paid') === 'partially_paid').length, color: 'var(--warning)' },
+          { label: 'Awaiting Payment', value: deals.filter(d => (paySummaries[d.id]?.payment_status ?? 'not_paid') === 'not_paid').length, color: 'rgb(var(--info-soft-rgb))' },
         ].map(s => (
           <div key={s.label} className="rounded-2xl p-5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
             <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-faint)' }}>{s.label}</p>
@@ -943,7 +891,7 @@ export default function DealConfirmation({ employee }: Props) {
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  {['Reference', 'Client', 'Security', 'Type', 'Date', 'Settlement', 'Deal Status', 'Acceptance', 'Payment Status', ''].map(h => (
+                  {['Reference', 'Client', 'Security', 'Type', 'Date', 'Settlement', 'Deal Status', 'Payment Status', ''].map(h => (
                     <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{h}</th>
                   ))}
                 </tr>
@@ -977,17 +925,10 @@ export default function DealConfirmation({ employee }: Props) {
                         {d.status === 'confirmed' ? 'Confirmed' : 'Draft'}
                       </span>
                     </td>
-                    {/* Acceptance lifecycle (unchanged) */}
+                    {/* Payment Status — derived from nw_deal_payment_summary.
+                        Clicking navigates to Manage Payments to reduce clicks. */}
                     <td className="px-5 py-3.5">
-                      <AcceptanceBadge status={d.acceptance_status ?? 'pending'} />
-                    </td>
-                    {/* Payment Status — derived from nw_deal_payment_summary; only
-                        meaningful for accepted deals. Clicking navigates to
-                        Manage Payments to reduce clicks. */}
-                    <td className="px-5 py-3.5">
-                      {(d.acceptance_status === 'rejected' || d.acceptance_status === 'expired') ? (
-                        <span className="text-xs" style={{ color: 'var(--text-faint)' }}>—</span>
-                      ) : !paySummariesLoaded ? (
+                      {!paySummariesLoaded ? (
                         <span
                           className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider"
                           style={{ background: 'rgba(107,107,107,0.10)', color: 'var(--text-faint)', border: '1px solid rgba(107,107,107,0.20)' }}
@@ -1012,52 +953,32 @@ export default function DealConfirmation({ employee }: Props) {
                           onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
                           <Eye className="w-4 h-4" />
                         </button>
-                        {d.acceptance_status === 'accepted' ? (
-                          <>
-                            <span className="p-1.5" title="Accepted & locked" style={{ color: 'var(--success)' }}>
-                              <Lock className="w-4 h-4" />
-                            </span>
-                            {d.signed_pdf_path && (
-                              <button
-                                onClick={() => handleDownloadSigned(d)}
-                                className="p-1.5 rounded-lg transition-colors" title="Download signed PDF"
-                                style={{ color: 'var(--text-faint)' }}
-                                onMouseEnter={e => (e.currentTarget.style.color = 'var(--success)')}
-                                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
-                                <Download className="w-4 h-4" />
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => handleSendSecureLink(d)}
-                              disabled={emailSending}
-                              className="p-1.5 rounded-lg transition-colors disabled:opacity-40"
-                              title={d.email_status === 'sent' ? 'Resend secure link' : 'Send secure link'}
-                              style={{ color: 'var(--text-faint)' }}
-                              onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
-                              <Send className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => openEdit(d)}
-                              className="p-1.5 rounded-lg transition-colors" title="Edit"
-                              style={{ color: 'var(--text-faint)' }}
-                              onMouseEnter={e => (e.currentTarget.style.color = 'rgb(var(--info-soft-rgb))')}
-                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteDeal(d)}
-                              className="p-1.5 rounded-lg transition-colors" title="Delete"
-                              style={{ color: 'var(--text-faint)' }}
-                              onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
-                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
+                        <button
+                          onClick={() => handleSendSecureLink(d)}
+                          disabled={emailSending}
+                          className="p-1.5 rounded-lg transition-colors disabled:opacity-40"
+                          title={d.email_status === 'sent' ? 'Resend mail' : 'Send mail'}
+                          style={{ color: 'var(--text-faint)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
+                          <Send className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openEdit(d)}
+                          className="p-1.5 rounded-lg transition-colors" title="Edit"
+                          style={{ color: 'var(--text-faint)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'rgb(var(--info-soft-rgb))')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteDeal(d)}
+                          className="p-1.5 rounded-lg transition-colors" title="Delete"
+                          style={{ color: 'var(--text-faint)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
