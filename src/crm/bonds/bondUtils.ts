@@ -62,6 +62,38 @@ export function parseIndianAmount(text: string | number | null | undefined): num
   return n;
 }
 
+// Resolve a human payout frequency for a bond, filling the gap when the sheet
+// left "interest_frequency" blank by inferring it from the interest-payment-date
+// text. Used both at parse time and at display time (so already-saved bonds also
+// show a payout). Returns '' only when nothing can be inferred.
+export function inferFrequency(
+  interestFrequency: string | null | undefined,
+  ipDates: string | null | undefined,
+): string {
+  const f = (interestFrequency ?? '').trim();
+  if (f && f.toUpperCase() !== 'NA') {
+    const s = f.toLowerCase();
+    if (s.includes('month')) return 'Monthly';
+    if (s.includes('quarter')) return 'Quarterly';
+    if (s.includes('half') || s.includes('semi')) return 'Half-Yearly';
+    if (s.includes('annual') || s.includes('year')) return 'Annual';
+    return f;
+  }
+  const s = (ipDates ?? '').toLowerCase();
+  if (!s || s === 'na') return '';
+  if (s.includes('every month') || s.includes('monthly')) return 'Monthly';
+  if (s.includes('quarter')) return 'Quarterly';
+  if (s.includes('semi') || s.includes('half')) return 'Half-Yearly';
+  if (s.includes('annual') || s.includes('yearly')) return 'Annual';
+  // Fall back to counting distinct payment-date tokens across a year.
+  const tokens = s.split(/[,/\n]/).map(t => t.trim()).filter(Boolean);
+  if (tokens.length >= 4) return 'Quarterly';
+  if (tokens.length === 3) return 'Quarterly';
+  if (tokens.length === 2) return 'Half-Yearly';
+  if (tokens.length === 1) return 'Annual';
+  return '';
+}
+
 // A coupon/yield in the source may be a fraction (0.087) or a percent (8.7).
 // Normalize to a PERCENT number (8.70). Values <= 1 are treated as fractions.
 export function normalizeRateToPercent(v: number | string | null | undefined): number | null {

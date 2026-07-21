@@ -20,7 +20,7 @@ import {
 } from './bondTypes';
 import {
   normalizeRateToPercent, excelSerialToISO, parseLeadingDateToISO,
-  parseIndianAmount, formatDate,
+  parseIndianAmount, formatDate, inferFrequency,
 } from './bondUtils';
 
 type Row = (string | number)[];
@@ -155,20 +155,6 @@ function deriveIssuer(name: string): string {
   );
 }
 
-function inferFrequency(ipDates: string): string {
-  const s = ipDates.toLowerCase();
-  if (!s || s === 'na') return '';
-  if (s.includes('every month')) return 'Monthly';
-  if (s.includes('quarter')) return 'Quarterly';
-  if (s.includes('annual')) return 'Annual';
-  // Count comma/space separated date tokens as a hint.
-  const tokens = s.split(/[,/\n]/).map(t => t.trim()).filter(Boolean);
-  if (tokens.length >= 4) return 'Quarterly';
-  if (tokens.length === 2) return 'Half-Yearly';
-  if (tokens.length === 1) return 'Annual';
-  return '';
-}
-
 function parseQuantum(raw: string): { multiples: string; minimum: string; available: string } {
   const text = norm(raw);
   const multiples = /multiple of ([^/()]+)/i.exec(text)?.[1]?.trim() ?? '';
@@ -247,7 +233,7 @@ function extractBonds(rows: Row[]): BondParseResult {
       tenure: '',
       rating,
       rating_agency: agency,
-      interest_frequency: inferFrequency(ipDates),
+      interest_frequency: inferFrequency('', ipDates),
       interest_payment_dates: ipDates,
       put_option: /put/i.test(putCall) ? putCall : '',
       call_option: /call/i.test(putCall) ? putCall : (putCall && putCall.toUpperCase() !== 'NA' ? putCall : ''),

@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowLeft, ImageDown, FileText, Pencil, Archive, ArchiveRestore, Loader2, History,
+  ArrowLeft, ImageDown, FileText, Megaphone, ReceiptText, Pencil, Archive, ArchiveRestore, Loader2, History,
   RotateCcw, Trash2, ChevronDown, Minus, Plus, AlertTriangle,
 } from 'lucide-react';
 import { NWEmployee } from '../types';
@@ -13,12 +13,15 @@ import { NWBond, NWBondCatalog, NWBondVersion, BondStatus } from './bondTypes';
 import { BOND_SECTIONS, BOND_STATUSES, bondStatusRgb } from './bondConstants';
 import {
   isAdminRole, formatINR, formatINRFull, formatPercent, formatDate, timeAgo,
-  bondMinInvestment, minUnitsFor, computeBondInvestment,
+  bondMinInvestment, minUnitsFor, computeBondInvestment, inferFrequency,
 } from './bondUtils';
+import { buildCashflow, yieldFromPrice, CashflowInput } from './bondCashflow';
 import {
   getBond, listVersions, restoreVersion, archiveBond, unarchiveBond, deleteBond, setStatus, logMarketingPdf,
 } from './bondService';
 import { generateMarketingImage, generateMarketingPdf } from './marketingPdf';
+import { generateCashflowPdf, EmployeeContact } from './cashflowPdf';
+import { generatePromoImage } from './promoImage';
 import BondMarginCalculator, { MarginState } from './BondMarginCalculator';
 
 interface Props {
@@ -36,7 +39,8 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
   const [loading, setLoading] = useState(true);
   const [margin, setMargin] = useState<MarginState>({ marginType: 'percent', marginValue: 2, sellingPrice: null });
   const [quantity, setQuantity] = useState<number>(1);
-  const [generating, setGenerating] = useState<false | 'image' | 'pdf'>(false);
+  const [generating, setGenerating] = useState<false | 'image' | 'pdf' | 'cashflow' | 'promo'>(false);
+  const [notice, setNotice] = useState<string>('');
   const [versions, setVersions] = useState<NWBondVersion[]>([]);
   const [showVersions, setShowVersions] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -65,16 +69,59 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
     setShowVersions(true);
   };
 
+  // Relationship-manager contact printed on every client output.
+  const contact: EmployeeContact = {
+    name: employee.full_name, phone: employee.phone || undefined,
+    email: employee.email || undefined, designation: employee.designation || undefined,
+  };
+
+  // Shared cashflow-engine input for the current price + quantity.
+  const cfInput = (price: number | null): CashflowInput => ({
+    faceValuePerUnit: bond?.face_value, coupon: bond?.coupon, maturityISO: bond?.maturity_date,
+    frequencyHint: bond?.interest_frequency, ipDates: bond?.interest_payment_dates,
+    redemptionText: bond?.maturity_text, quantity, cleanPricePer100: price,
+  });
+
+  const flash = (msg: string) => { setNotice(msg); setTimeout(() => setNotice(''), 4000); };
+
   const doGenerate = async (format: 'image' | 'pdf') => {
     if (!bond) return;
     setGenerating(format);
     try {
       const price = margin.sellingPrice ?? bond.selling_price ?? null;
-      const opts = { sellingPrice: price, quantity, generatedByName: employee.full_name };
+      const cf = buildCashflow(cfInput(price));
+      const opts = {
+        sellingPrice: price, quantity, contact, generatedByName: employee.full_name,
+        accruedInterest: cf.ok ? cf.accruedInterest : null,
+        investmentAmount: cf.ok ? cf.investmentAmount : null,
+        yieldAtPrice: yieldFromPrice({ ...cfInput(price), pricePer100: price }),
+      };
       // marketingPdf only reads confidential-safe fields; NWBond is a superset.
       if (format === 'image') await generateMarketingImage(bond as NWBondCatalog, opts);
       else await generateMarketingPdf(bond as NWBondCatalog, opts);
       await logMarketingPdf(bondId, margin.marginType, margin.marginValue, price);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const doCashflow = async () => {
+    if (!bond) return;
+    setGenerating('cashflow');
+    try {
+      const price = margin.sellingPrice ?? bond.selling_price ?? null;
+      const cf = await generateCashflowPdf(bond as NWBondCatalog, { quantity, pricePer100: price, contact });
+      if (!cf.ok) flash(`Cashflow needs more data: ${cf.reason ?? 'missing coupon / maturity'}.`);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const doPromo = async () => {
+    if (!bond) return;
+    setGenerating('promo');
+    try {
+      await generatePromoImage(bond as NWBondCatalog, { contact, newlyLaunched: bond.status === 'Available' });
     } finally {
       setGenerating(false);
     }
@@ -110,6 +157,11 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
   const record = bond as unknown as Record<string, unknown>;
 
   const renderValue = (key: string, type?: string): string => {
+    // Payout frequency is often blank in the sheet — infer it from the IP dates
+    // so every bond shows a payout.
+    if (key === 'interest_frequency') {
+      return inferFrequency(bond.interest_frequency, bond.interest_payment_dates);
+    }
     const v = record[key];
     if (v === null || v === undefined || v === '') return '';
     if (type === 'currency') return formatINR(v as number);
@@ -201,10 +253,13 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
             </div>
             <BondMarginCalculator bondId={bondId} isAdmin={isAdmin} basePrice={basePrice} defaultSellingPrice={bond.selling_price} onChange={setMargin} />
 
-            {/* Quantity → precise investment */}
+            {/* Quantity → precise investment (incl. accrued interest) */}
             {(() => {
               const per100 = margin.sellingPrice ?? bond.selling_price ?? null;
               const inv = computeBondInvestment({ faceValue: bond.face_value, sellingPricePer100: per100, coupon: bond.coupon, quantity });
+              const cf = buildCashflow(cfInput(per100));
+              const exactInvestment = cf.ok ? cf.investmentAmount : inv.investmentAmount;
+              const adjYield = yieldFromPrice({ ...cfInput(per100), pricePer100: per100 }) ?? bond.yield_ytm;
               const belowMin = bond.face_value != null && minInvestment != null && quantity * bond.face_value < minInvestment;
               const stat = (label: string, value: string, sub?: string) => (
                 <div className="flex flex-col">
@@ -234,10 +289,10 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                    {stat('Total Investment', inv.investmentAmount !== null ? formatINRFull(inv.investmentAmount) : '—', inv.pricePerUnit !== null ? `${formatINRFull(inv.pricePerUnit)}/unit` : undefined)}
+                    {stat('Total Investment', exactInvestment !== null ? formatINRFull(exactInvestment) : '—', cf.ok && cf.accruedInterest > 0 ? `incl. ${formatINRFull(cf.accruedInterest)} accrued` : (inv.pricePerUnit !== null ? `${formatINRFull(inv.pricePerUnit)}/unit` : undefined))}
                     {stat('Annual Income', inv.annualIncome !== null ? formatINRFull(inv.annualIncome) : '—', bond.coupon !== null ? `at ${formatPercent(bond.coupon)}` : undefined)}
                     {stat('Face Value', inv.faceValueAmount !== null ? formatINR(inv.faceValueAmount) : (bond.face_value_text || '—'))}
-                    {stat('Yield (YTM)', formatPercent(bond.yield_ytm))}
+                    {stat('Yield at this price', formatPercent(adjYield), bond.yield_ytm !== null && adjYield !== null && Math.abs((adjYield ?? 0) - bond.yield_ytm) >= 0.01 ? `sheet ${formatPercent(bond.yield_ytm)}` : undefined)}
                   </div>
                 </div>
               );
@@ -248,12 +303,23 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
                 {generating === 'image' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageDown className="w-4 h-4" />}
                 {generating === 'image' ? 'Generating…' : 'Marketing Image'}
               </button>
-              <button onClick={() => doGenerate('pdf')} disabled={!!generating} title="Download as PDF instead" className="px-3 py-3 rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+              <button onClick={() => doGenerate('pdf')} disabled={!!generating} title="Download brochure as PDF instead" className="px-3 py-3 rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
                 {generating === 'pdf' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                 PDF
               </button>
             </div>
-            <p className="text-[11px] mt-2 text-center" style={{ color: 'var(--text-faint)' }}>Client-facing brochure — landing cost is never included.</p>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <button onClick={doPromo} disabled={!!generating} title="Promotional image — core details only, no price" className="px-3 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                {generating === 'promo' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Megaphone className="w-4 h-4" />}
+                Promo Image
+              </button>
+              <button onClick={doCashflow} disabled={!!generating} title="Download the full cashflow schedule (PDF)" className="px-3 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                {generating === 'cashflow' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ReceiptText className="w-4 h-4" />}
+                Cashflow
+              </button>
+            </div>
+            {notice && <p className="text-[11px] mt-2 text-center" style={{ color: 'rgb(180,120,10)' }}>{notice}</p>}
+            <p className="text-[11px] mt-2 text-center" style={{ color: 'var(--text-faint)' }}>Client-facing — landing cost is never included. Figures indicative.</p>
           </div>
 
           {bond.needs_review && (

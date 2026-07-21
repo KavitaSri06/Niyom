@@ -14,7 +14,8 @@ import html2pdf from 'html2pdf.js';
 import html2canvas from 'html2canvas';
 import { NWBondCatalog } from './bondTypes';
 import { NIYOM_BRAND, BOND_PDF_DISCLAIMER } from './bondConstants';
-import { formatPercent, formatDate, formatINRFull, formatINR, computeBondInvestment } from './bondUtils';
+import { formatPercent, formatDate, formatINRFull, formatINR, computeBondInvestment, inferFrequency } from './bondUtils';
+import { EmployeeContact } from './cashflowPdf';
 
 const NIYOM_LOGO = '/niyomlogo.png';
 
@@ -29,6 +30,10 @@ const NIYOM = {
 export interface MarketingPdfOptions {
   sellingPrice: number | null;   // client-facing price per ₹100 (already computed; NO cost)
   quantity?: number | null;      // whole units, drives the precise investment figures
+  accruedInterest?: number | null;   // added to the clean investment for the exact payable
+  investmentAmount?: number | null;  // exact payable (principal + accrued); overrides the clean calc
+  yieldAtPrice?: number | null;      // YTM re-solved at this price (falls back to sheet YTM)
+  contact?: EmployeeContact;
   generatedByName?: string;
 }
 
@@ -72,12 +77,14 @@ function buildHtml(bond: NWBondCatalog, opts: MarketingPdfOptions): string {
   });
 
   const couponStr = bond.coupon !== null ? formatPercent(bond.coupon) : (safe(bond.coupon_text) || '—');
-  const ytmStr = formatPercent(bond.yield_ytm);
+  const ytmStr = formatPercent(opts.yieldAtPrice ?? bond.yield_ytm);
   const maturityStr = bond.maturity_date ? formatDate(bond.maturity_date) : (safe(bond.maturity_text).split('(')[0].trim() || '—');
+  const payoutStr = inferFrequency(bond.interest_frequency, bond.interest_payment_dates) || '—';
 
-  // Headline investment figures (precise ₹). Falls back gracefully when quantity
-  // or face value is unknown.
-  const investAmount = inv.investmentAmount !== null ? formatINRFull(inv.investmentAmount)
+  // Headline investment figures (precise ₹). The exact payable includes accrued
+  // interest when supplied; otherwise falls back to the clean amount.
+  const exactInvestment = opts.investmentAmount ?? inv.investmentAmount;
+  const investAmount = exactInvestment !== null && exactInvestment !== undefined ? formatINRFull(exactInvestment)
     : (per100 !== null ? `${formatINRFull(per100)} / ₹100` : 'On Request');
   const annualIncome = inv.annualIncome !== null ? formatINRFull(inv.annualIncome) : '—';
   const qtyStr = opts.quantity ? `${opts.quantity.toLocaleString('en-IN')} unit${opts.quantity === 1 ? '' : 's'}` : '—';
@@ -88,7 +95,7 @@ function buildHtml(bond: NWBondCatalog, opts: MarketingPdfOptions): string {
     chip('Yield (YTM)', ytmStr),
     chip('Maturity', maturityStr),
     chip('Rating', safe(bond.rating) || '—'),
-    chip('Payout', safe(bond.interest_frequency) || '—'),
+    chip('Payout', payoutStr),
   ].join('<div style="width:1px;background:rgba(200,162,75,0.3);align-self:stretch;"></div>');
 
   const overview = [
@@ -165,7 +172,10 @@ function buildHtml(bond: NWBondCatalog, opts: MarketingPdfOptions): string {
     <div style="margin:20px 42px 0;background:linear-gradient(135deg,${darkBlue},${navy});border:1px solid ${gold};border-radius:16px;padding:20px 24px;box-shadow:0 10px 24px rgba(11,31,58,0.18);">
       <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:${gold};font-weight:800;margin-bottom:14px;">Investment Summary</div>
       <div style="display:flex;gap:18px;flex-wrap:wrap;">
-        ${summaryCell('Total Investment', investAmount, qtyStr !== '—' ? `${qtyStr} · Face ${notionalStr}` : '')}
+        ${summaryCell('Total Investment', investAmount,
+          [qtyStr !== '—' ? `${qtyStr} · Face ${notionalStr}` : '',
+           opts.accruedInterest ? `incl. ${formatINRFull(opts.accruedInterest)} accrued interest` : '']
+            .filter(Boolean).join('<br/>'))}
         <div style="width:1px;background:rgba(200,162,75,0.3);"></div>
         ${summaryCell('Indicative Annual Income', annualIncome, bond.coupon !== null ? `at ${couponStr} coupon` : '')}
         <div style="width:1px;background:rgba(200,162,75,0.3);"></div>
@@ -207,16 +217,22 @@ function buildHtml(bond: NWBondCatalog, opts: MarketingPdfOptions): string {
     </div>
 
     <!-- Footer -->
-    <div style="margin-top:18px;background:linear-gradient(135deg,${darkBlue} 0%,${navy} 100%);color:${white};padding:16px 42px;display:flex;justify-content:space-between;align-items:center;">
+    <div style="margin-top:18px;background:linear-gradient(135deg,${darkBlue} 0%,${navy} 100%);color:${white};padding:16px 42px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;">
       <div style="font-size:9px;line-height:1.5;color:#cfd8ea;">
         <div style="font-weight:800;color:${white};font-size:11px;">${NIYOM.name}</div>
         <div>${NIYOM.address}</div>
         <div>${NIYOM.email} &nbsp;•&nbsp; ${NIYOM.web}</div>
       </div>
-      <div style="text-align:right;font-size:8px;color:${goldSoft};">
+      ${opts.contact ? `<div style="text-align:right;font-size:9.5px;color:#e7eefb;line-height:1.5;">
+        <div style="font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:${goldSoft};">Your Relationship Manager</div>
+        <div style="font-weight:800;color:${white};font-size:11.5px;margin-top:1px;">${esc(opts.contact.name)}</div>
+        ${opts.contact.designation ? `<div style="color:${goldSoft};">${esc(opts.contact.designation)}</div>` : ''}
+        ${opts.contact.phone ? `<div>${esc(opts.contact.phone)}</div>` : ''}
+        ${opts.contact.email ? `<div>${esc(opts.contact.email)}</div>` : ''}
+      </div>` : `<div style="text-align:right;font-size:8px;color:${goldSoft};">
         <div>Generated ${formatDate(new Date().toISOString())}</div>
         ${opts.generatedByName ? `<div>by ${esc(opts.generatedByName)}</div>` : ''}
-      </div>
+      </div>`}
     </div>
   </div>`;
 }
