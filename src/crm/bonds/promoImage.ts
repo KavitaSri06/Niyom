@@ -34,7 +34,9 @@ function tenureLabel(bond: NWBondCatalog): string {
 
 function pill(text: string): string {
   const { gold, goldSoft } = NIYOM_BRAND;
-  return `<span style="display:inline-block;background:rgba(200,162,75,0.16);border:1px solid ${gold};color:${goldSoft};font-size:15px;font-weight:700;padding:6px 16px;border-radius:999px;">${text}</span>`;
+  // inline-flex + align-items:center + line-height:1 centres the text vertically
+  // and horizontally in the pill (html2canvas-safe).
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;line-height:1;background:rgba(200,162,75,0.16);border:1px solid ${gold};color:${goldSoft};font-size:15px;font-weight:700;letter-spacing:0.02em;padding:10px 18px;border-radius:999px;">${text}</span>`;
 }
 
 function stat(label: string, value: string): string {
