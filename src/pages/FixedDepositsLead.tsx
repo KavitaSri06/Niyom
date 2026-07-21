@@ -2,6 +2,7 @@ import { ArrowLeft, Landmark, User, Mail, Phone, DollarSign, Clock, Target, File
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Logo } from '../components/Logo';
+import { HeroBackground } from '../components/HeroBackground';
 
 interface FixedDepositsLeadProps {
   onBack: () => void;
@@ -145,33 +146,36 @@ export function FixedDepositsLead({ onBack }: FixedDepositsLeadProps) {
       </nav>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-        <div className="bg-gradient-to-r from-green-600 to-green-800 text-white p-8 rounded-2xl shadow-xl mb-8">
+        <div data-theme="dark" className="relative overflow-hidden text-white p-8 rounded-2xl shadow-xl mb-8 border border-white/10">
+          <HeroBackground />
+          <div className="relative z-10">
           <div className="flex items-center gap-4 mb-4">
-            <div className="bg-bg-elevated/20 p-4 rounded-full">
-              <Landmark className="w-10 h-10" />
+            <div className="bg-white/10 border border-white/15 p-4 rounded-full">
+              <Landmark className="w-10 h-10 text-accent-soft" />
             </div>
             <div>
               <h2 className="text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
                 Invest in Fixed Deposits
               </h2>
-              <p className="text-green-100 text-lg">
+              <p className="text-gray-300 text-lg">
                 Safe and secure investments with guaranteed returns
               </p>
             </div>
           </div>
           <div className="grid md:grid-cols-3 gap-4 mt-6">
-            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
-              <p className="text-sm text-green-100 mb-1">Capital Safety</p>
+            <div className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-lg">
+              <p className="text-sm text-gray-300 mb-1">Capital Safety</p>
               <p className="font-bold text-lg">100% Secure</p>
             </div>
-            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
-              <p className="text-sm text-green-100 mb-1">Fixed Returns</p>
+            <div className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-lg">
+              <p className="text-sm text-gray-300 mb-1">Fixed Returns</p>
               <p className="font-bold text-lg">Guaranteed</p>
             </div>
-            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
-              <p className="text-sm text-green-100 mb-1">Flexibility</p>
+            <div className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-lg">
+              <p className="text-sm text-gray-300 mb-1">Flexibility</p>
               <p className="font-bold text-lg">Multiple Tenures</p>
             </div>
+          </div>
           </div>
         </div>
 
@@ -319,7 +323,7 @@ export function FixedDepositsLead({ onBack }: FixedDepositsLeadProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-green-600 to-green-800 hover:from-green-700 hover:to-green-900 text-white font-bold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-accent hover:bg-accent-strong text-on-accent font-bold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Submitting...' : 'Submit Interest'}
             </button>

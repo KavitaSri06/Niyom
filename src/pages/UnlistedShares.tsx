@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Logo } from '../components/Logo';
+import { HeroBackground } from '../components/HeroBackground';
 
 interface UnlistedSharesProps {
   onBack: () => void;
@@ -166,13 +167,16 @@ export function UnlistedShares({ onBack, onNavigateToSignUp, onNavigateToKYC, in
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="bg-gradient-to-r from-black to-gray-900 text-white p-6 rounded-xl shadow-lg mb-8">
-          <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
-            Alternative Investment Products
-          </h2>
-          <p className="text-text-faint">
-            View and access unlisted shares and secondary market bonds. All investments carry high risk.
-          </p>
+        <div data-theme="dark" className="relative overflow-hidden text-white p-6 rounded-xl shadow-lg mb-8 border border-white/10">
+          <HeroBackground />
+          <div className="relative z-10">
+            <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+              Alternative Investment Products
+            </h2>
+            <p className="text-gray-300">
+              View and access unlisted shares and secondary market bonds. All investments carry high risk.
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-6">

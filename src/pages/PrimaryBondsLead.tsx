@@ -2,6 +2,7 @@ import { ArrowLeft, Shield, User, Mail, Phone, DollarSign, Clock, Target, FileTe
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Logo } from '../components/Logo';
+import { HeroBackground } from '../components/HeroBackground';
 
 interface PrimaryBondsLeadProps {
   onBack: () => void;
@@ -145,10 +146,12 @@ export function PrimaryBondsLead({ onBack }: PrimaryBondsLeadProps) {
       </nav>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-        <div className="bg-gradient-to-r from-gray-800 to-black text-white p-8 rounded-2xl shadow-xl mb-8">
+        <div data-theme="dark" className="relative overflow-hidden text-white p-8 rounded-2xl shadow-xl mb-8 border border-white/10">
+          <HeroBackground />
+          <div className="relative z-10">
           <div className="flex items-center gap-4 mb-4">
-            <div className="bg-bg-elevated/20 p-4 rounded-full">
-              <Shield className="w-10 h-10" />
+            <div className="bg-white/10 border border-white/15 p-4 rounded-full">
+              <Shield className="w-10 h-10 text-accent-soft" />
             </div>
             <div>
               <h2 className="text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
@@ -160,18 +163,19 @@ export function PrimaryBondsLead({ onBack }: PrimaryBondsLeadProps) {
             </div>
           </div>
           <div className="grid md:grid-cols-3 gap-4 mt-6">
-            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
+            <div className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-lg">
               <p className="text-sm text-text-faint mb-1">Fixed Returns</p>
               <p className="font-bold text-lg">Predictable Income</p>
             </div>
-            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
+            <div className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-lg">
               <p className="text-sm text-text-faint mb-1">Lower Risk</p>
               <p className="font-bold text-lg">Stable Investment</p>
             </div>
-            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
+            <div className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-lg">
               <p className="text-sm text-text-faint mb-1">Diversification</p>
               <p className="font-bold text-lg">Portfolio Balance</p>
             </div>
+          </div>
           </div>
         </div>
 
@@ -318,7 +322,7 @@ export function PrimaryBondsLead({ onBack }: PrimaryBondsLeadProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-gray-800 to-black hover:from-gray-900 hover:to-gray-800 text-white font-bold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-accent hover:bg-accent-strong text-on-accent font-bold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Submitting...' : 'Submit Interest'}
             </button>

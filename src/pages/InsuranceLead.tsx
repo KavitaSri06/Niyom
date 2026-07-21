@@ -2,6 +2,7 @@ import { ArrowLeft, Heart, User, Mail, Phone, DollarSign, Clock, Target, FileTex
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Logo } from '../components/Logo';
+import { HeroBackground } from '../components/HeroBackground';
 
 interface InsuranceLeadProps {
   onBack: () => void;
@@ -145,33 +146,36 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
       </nav>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-        <div className="bg-gradient-to-r from-red-500 to-red-700 text-white p-8 rounded-2xl shadow-xl mb-8">
+        <div data-theme="dark" className="relative overflow-hidden text-white p-8 rounded-2xl shadow-xl mb-8 border border-white/10">
+          <HeroBackground />
+          <div className="relative z-10">
           <div className="flex items-center gap-4 mb-4">
-            <div className="bg-bg-elevated/20 p-4 rounded-full">
-              <Heart className="w-10 h-10" />
+            <div className="bg-white/10 border border-white/15 p-4 rounded-full">
+              <Heart className="w-10 h-10 text-accent-soft" />
             </div>
             <div>
               <h2 className="text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
                 Protect What Matters Most
               </h2>
-              <p className="text-red-100 text-lg">
+              <p className="text-gray-300 text-lg">
                 Comprehensive insurance solutions for you and your family
               </p>
             </div>
           </div>
           <div className="grid md:grid-cols-3 gap-4 mt-6">
-            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
-              <p className="text-sm text-red-100 mb-1">Life Protection</p>
+            <div className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-lg">
+              <p className="text-sm text-gray-300 mb-1">Life Protection</p>
               <p className="font-bold text-lg">Family Security</p>
             </div>
-            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
-              <p className="text-sm text-red-100 mb-1">Health Cover</p>
+            <div className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-lg">
+              <p className="text-sm text-gray-300 mb-1">Health Cover</p>
               <p className="font-bold text-lg">Medical Safety</p>
             </div>
-            <div className="bg-bg-elevated/10 backdrop-blur-sm p-4 rounded-lg">
-              <p className="text-sm text-red-100 mb-1">Wealth Protection</p>
+            <div className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-lg">
+              <p className="text-sm text-gray-300 mb-1">Wealth Protection</p>
               <p className="font-bold text-lg">Asset Safety</p>
             </div>
+          </div>
           </div>
         </div>
 
@@ -319,7 +323,7 @@ export function InsuranceLead({ onBack }: InsuranceLeadProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-accent hover:bg-accent-strong text-on-accent font-bold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Submitting...' : 'Submit Interest'}
             </button>

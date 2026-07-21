@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, X } from 'lucide-react';
 import { Logo } from '../components/Logo';
+import { HeroBackground } from '../components/HeroBackground';
 
 interface LoginProps {
   onSwitchToSignup: () => void;
@@ -30,14 +31,8 @@ export function Login({ onSwitchToSignup, onClose }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-20">
-        <img
-          src="https://images.pexels.com/photos/6801647/pexels-photo-6801647.jpeg?auto=compress&cs=tinysrgb&w=1920"
-          alt="Background"
-          className="w-full h-full object-cover"
-        />
-      </div>
+    <div data-theme="dark" className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      <HeroBackground />
       <div className="w-full max-w-md relative z-10">
         <div className="bg-bg-elevated rounded-2xl shadow-2xl p-10 border-t-4 border-accent relative">
           <button

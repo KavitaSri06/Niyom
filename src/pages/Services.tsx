@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ArrowLeft, TrendingUp, Target, Shield, Users, Award, Zap, Menu, X } from 'lucide-react';
 import { Logo } from '../components/Logo';
+import { HeroBackground } from '../components/HeroBackground';
+import { Reveal } from '../components/Reveal';
 
 interface ServicesProps {
   onBack: () => void;
@@ -33,8 +35,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
         'Facilitate smooth execution of your investment transactions',
         'Offer general information on tax implications of different products',
         'Support with ongoing transaction and documentation needs'
-      ],
-      image: 'https://images.pexels.com/photos/7567443/pexels-photo-7567443.jpeg?auto=compress&cs=tinysrgb&w=800'
+      ]
     },
     {
       id: 'financial' as ServiceTab,
@@ -55,8 +56,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
         'Offer calculators and tools for your self-assessment',
         'Connect you with relevant financial information resources',
         'Facilitate access to professional advisors when needed'
-      ],
-      image: 'https://images.pexels.com/photos/6694543/pexels-photo-6694543.jpeg?auto=compress&cs=tinysrgb&w=800'
+      ]
     },
     {
       id: 'risk' as ServiceTab,
@@ -77,8 +77,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
         'Assist with policy documentation and application process',
         'Support with claims documentation and procedures',
         'Share general information on insurance planning'
-      ],
-      image: 'https://images.pexels.com/photos/7567434/pexels-photo-7567434.jpeg?auto=compress&cs=tinysrgb&w=800'
+      ]
     },
     {
       id: 'wealth' as ServiceTab,
@@ -99,8 +98,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
         'Assist with documentation and paperwork procedures',
         'Share educational resources on transfer planning',
         'Support coordination with your professional advisors'
-      ],
-      image: 'https://images.pexels.com/photos/6963944/pexels-photo-6963944.jpeg?auto=compress&cs=tinysrgb&w=800'
+      ]
     },
     {
       id: 'tax' as ServiceTab,
@@ -121,8 +119,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
         'Refer you to qualified tax professionals for personalized advice',
         'Offer information on tax-saving investment schemes',
         'Support with tax-related documentation for investments'
-      ],
-      image: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=800'
+      ]
     },
     {
       id: 'alternative' as ServiceTab,
@@ -143,8 +140,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
         'Facilitate transaction execution for eligible investors',
         'Provide documentation support for alternative investments',
         'Share educational content on risks and characteristics of alternative products'
-      ],
-      image: 'https://images.pexels.com/photos/7567565/pexels-photo-7567565.jpeg?auto=compress&cs=tinysrgb&w=800'
+      ]
     }
   ];
 
@@ -253,13 +249,9 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
             })}
           </div>
 
-          <div className="bg-bg-elevated rounded-2xl shadow-2xl overflow-hidden border-t-4 border-accent">
-            <div className="h-80 overflow-hidden relative">
-              <img
-                src={activeService.image}
-                alt={activeService.title}
-                className="w-full h-full object-cover"
-              />
+          <Reveal key={activeTab} className="bg-bg-elevated rounded-2xl shadow-2xl overflow-hidden border-t-4 border-accent">
+            <div data-theme="dark" className="h-80 overflow-hidden relative">
+              <HeroBackground />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
               <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
                 <div className="flex items-center gap-4 mb-3">
@@ -320,7 +312,7 @@ export function Services({ onBack, onGetStarted }: ServicesProps) {
                 </button>
               </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 

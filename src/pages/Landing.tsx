@@ -1,8 +1,10 @@
-import { ArrowRight, Shield, Target, Zap, TrendingUp, Users, Award, Instagram, Linkedin, ChevronRight, Phone, Mail, MessageCircle, Menu, X, ChevronDown, MapPin } from 'lucide-react';
+import { ArrowRight, Shield, Target, Zap, TrendingUp, Users, Award, Instagram, Linkedin, ChevronRight, Phone, Mail, MessageCircle, Menu, X, ChevronDown, MapPin, Layers, FileCheck, Clock, ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Logo } from '../components/Logo';
 import { RegulatoryInfo } from '../components/RegulatoryInfo';
 import { ThemeToggle } from '../theme/ThemeToggle';
+import { HeroBackground } from '../components/HeroBackground';
+import { Reveal, Counter } from '../components/Reveal';
 
 interface LandingProps {
   onGetStarted: () => void;
@@ -339,37 +341,65 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
         )}
       </nav>
 
-      {/* Inherently dark: sits on a dark photo, so it pins the dark token set
-          regardless of the active theme — otherwise the light theme's
-          dark-on-light gold would render muted brown on a black image. */}
-      <section id="home" data-theme="dark" className="relative bg-black text-white py-32 px-6 overflow-hidden">
-        <div className="absolute inset-0 opacity-30">
-          <img
-            src="https://images.pexels.com/photos/7567443/pexels-photo-7567443.jpeg?auto=compress&cs=tinysrgb&w=1920"
-            alt="Wealth Management"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        {/* Navy gradient scrim — deepens the brand tone and lifts headline
-            contrast over the photo. A soft gold glow warms the centre. */}
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'linear-gradient(180deg, rgba(7,21,36,0.55) 0%, rgba(7,21,36,0.35) 45%, rgba(7,21,36,0.88) 100%)' }} />
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(60% 55% at 50% 40%, rgba(200,164,93,0.10) 0%, transparent 70%)' }} />
+      {/* Inherently dark: the animated network backdrop renders in navy + gold,
+          so it pins the dark token set regardless of the active theme —
+          otherwise the light theme's dark-on-light gold would render muted. */}
+      <section id="home" data-theme="dark" className="relative text-white py-32 px-6 overflow-hidden">
+        {/* Original animated fintech backdrop — replaces the old stock photo. */}
+        <HeroBackground />
         <div className="relative max-w-6xl mx-auto text-center">
-          <h2 className={`text-6xl font-bold mb-6 leading-tight ${isLoaded ? 'animate-fadeInUp' : 'opacity-0'}`} style={{ fontFamily: 'var(--font-display)' }}>
+          <div
+            className={`inline-flex items-center gap-2 mb-8 px-4 py-1.5 rounded-full text-sm font-medium text-accent-soft ${isLoaded ? 'animate-fadeInUp' : 'opacity-0'}`}
+            style={{ background: 'rgba(200,164,93,0.10)', border: '1px solid rgba(200,164,93,0.28)', backdropFilter: 'blur(6px)' }}
+          >
+            <ShieldCheck size={15} />
+            AMFI-registered distribution · Built on trust
+          </div>
+          <h2 className={`text-5xl md:text-7xl font-bold mb-6 leading-[1.05] tracking-tight ${isLoaded ? 'animate-fadeInUp animate-delay-100' : 'opacity-0'}`} style={{ fontFamily: 'var(--font-display)' }}>
             Your Financial Success<br />
             <span className="text-accent-soft">is Our Priority</span>
           </h2>
-          <p className={`text-xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed ${isLoaded ? 'animate-fadeInUp animate-delay-200' : 'opacity-0'}`}>
-            Comprehensive financial product distribution and information services to help you make informed investment decisions.
+          <p className={`text-lg md:text-xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed ${isLoaded ? 'animate-fadeInUp animate-delay-200' : 'opacity-0'}`}>
+            One premium platform for mutual funds, bonds, fixed deposits, insurance and unlisted shares — with the information and tools to invest with confidence.
           </p>
-          <button
-            onClick={() => onNavigate('client-login')}
-            className={`lift press bg-accent-soft hover:bg-accent-soft-deep text-black font-bold py-4 px-10 rounded-xl flex items-center gap-3 mx-auto shadow-lg text-lg ${isLoaded ? 'animate-fadeInUp animate-delay-400' : 'opacity-0'}`}
-          >
-            Get Started <ArrowRight size={24} />
-          </button>
+          <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 ${isLoaded ? 'animate-fadeInUp animate-delay-400' : 'opacity-0'}`}>
+            <button
+              onClick={() => onNavigate('client-login')}
+              className="lift press bg-accent-soft hover:bg-accent-soft-deep text-black font-bold py-4 px-10 rounded-xl flex items-center gap-3 shadow-lg text-lg"
+            >
+              Get Started <ArrowRight size={22} />
+            </button>
+            <button
+              onClick={() => scrollToSection('services')}
+              className="press text-white font-semibold py-4 px-8 rounded-xl text-lg transition-colors"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)' }}
+            >
+              Explore Services
+            </button>
+          </div>
+
+          {/* Trust strip — factual platform stats (no performance/AUM claims),
+              counters animate up when the hero first paints. */}
+          <div className={`mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto ${isLoaded ? 'animate-fadeInUp animate-delay-500' : 'opacity-0'}`}>
+            {[
+              { icon: Layers, value: 5, suffix: '+', label: 'Investment verticals' },
+              { icon: FileCheck, value: 100, suffix: '%', label: 'Paperless onboarding' },
+              { icon: Clock, value: 24, suffix: '×7', label: 'Client portal access' },
+              { icon: ShieldCheck, value: 0, custom: 'AMFI', label: 'Registered distributor' },
+            ].map((stat, i) => (
+              <div
+                key={i}
+                className="rounded-2xl px-4 py-5 text-center"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)', backdropFilter: 'blur(8px)' }}
+              >
+                <stat.icon size={20} className="mx-auto mb-2 text-accent-soft" />
+                <div className="text-3xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+                  {stat.custom ? stat.custom : <Counter value={stat.value} suffix={stat.suffix} />}
+                </div>
+                <div className="text-xs text-gray-400 mt-1 tracking-wide uppercase">{stat.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -381,43 +411,51 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
           <div className={`w-24 h-1 bg-accent-soft mx-auto mb-16 ${isLoaded ? 'animate-scaleIn animate-delay-200' : 'opacity-0'}`}></div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { icon: TrendingUp, title: 'Investment Products Distribution', desc: 'Access to mutual funds, stocks, and other investment products', img: 'https://images.pexels.com/photos/7567443/pexels-photo-7567443.jpeg?auto=compress&cs=tinysrgb&w=400' },
-              { icon: Target, title: 'Financial Information', desc: 'Educational resources and market information to help you decide', img: 'https://images.pexels.com/photos/6694543/pexels-photo-6694543.jpeg?auto=compress&cs=tinysrgb&w=400' },
-              { icon: Shield, title: 'Insurance Products', desc: 'Distribution of insurance solutions for asset protection', img: 'https://images.pexels.com/photos/7567434/pexels-photo-7567434.jpeg?auto=compress&cs=tinysrgb&w=400' },
-              { icon: Users, title: 'Documentation Assistance', desc: 'Support with paperwork for estate planning and transfers', img: 'https://images.pexels.com/photos/6963944/pexels-photo-6963944.jpeg?auto=compress&cs=tinysrgb&w=400' },
-              { icon: Award, title: 'Tax Information', desc: 'General information on tax-efficient investment structures', img: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=400' },
-              { icon: Zap, title: 'Alternative Products', desc: 'Distribution of secondary bonds, unlisted shares, and pre-IPO opportunities', img: 'https://images.pexels.com/photos/7567565/pexels-photo-7567565.jpeg?auto=compress&cs=tinysrgb&w=400' },
+              { icon: TrendingUp, title: 'Investment Products Distribution', desc: 'Access to mutual funds, stocks, and other investment products' },
+              { icon: Target, title: 'Financial Information', desc: 'Educational resources and market information to help you decide' },
+              { icon: Shield, title: 'Insurance Products', desc: 'Distribution of insurance solutions for asset protection' },
+              { icon: Users, title: 'Documentation Assistance', desc: 'Support with paperwork for estate planning and transfers' },
+              { icon: Award, title: 'Tax Information', desc: 'General information on tax-efficient investment structures' },
+              { icon: Zap, title: 'Alternative Products', desc: 'Distribution of secondary bonds, unlisted shares, and pre-IPO opportunities' },
             ].map((service, i) => (
-              <div key={i} className={`lift group bg-bg-elevated rounded-xl overflow-hidden border border-border-subtle ${isLoaded ? `animate-fadeInUp animate-delay-${(i + 3) * 100}` : 'opacity-0'}`} style={{ boxShadow: 'var(--shadow-card)' }}>
-                <div className="h-48 overflow-hidden">
-                  <img src={service.img} alt={service.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                </div>
-                <div className="p-6">
-                  <service.icon className="w-12 h-12 text-accent-soft mb-4" />
-                  <h4 className="text-xl font-bold text-text-primary mb-3" style={{ fontFamily: 'var(--font-display)' }}>{service.title}</h4>
-                  <p className="text-text-secondary leading-relaxed mb-4">{service.desc}</p>
-                  <button
-                    onClick={onViewServices}
-                    className="w-full bg-text-primary text-bg-elevated hover:bg-accent hover:text-on-accent font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group"
+              <Reveal key={i} delay={(i % 3) * 90}>
+                <div className="lift group bg-bg-elevated rounded-xl overflow-hidden border border-border-subtle h-full flex flex-col" style={{ boxShadow: 'var(--shadow-card)' }}>
+                  {/* Branded gradient panel + icon — original artwork in place of
+                      the old stock thumbnail. */}
+                  <div
+                    className="relative h-40 overflow-hidden flex items-center justify-center"
+                    style={{ background: 'linear-gradient(150deg, #081B33 0%, #10284D 55%, #16345C 100%)' }}
                   >
-                    View Details <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                  </button>
+                    <div className="absolute inset-0 hb-grid opacity-70" />
+                    <div
+                      className="absolute -right-6 -top-6 w-28 h-28 rounded-full"
+                      style={{ background: 'radial-gradient(circle, rgba(200,164,93,0.28), transparent 70%)', filter: 'blur(8px)' }}
+                    />
+                    <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+                      style={{ background: 'rgba(200,164,93,0.12)', border: '1px solid rgba(200,164,93,0.35)' }}>
+                      <service.icon className="w-8 h-8 text-accent-soft" />
+                    </div>
+                  </div>
+                  <div className="p-6 flex flex-col flex-1">
+                    <h4 className="text-xl font-bold text-text-primary mb-3" style={{ fontFamily: 'var(--font-display)' }}>{service.title}</h4>
+                    <p className="text-text-secondary leading-relaxed mb-4 flex-1">{service.desc}</p>
+                    <button
+                      onClick={onViewServices}
+                      className="w-full bg-text-primary text-bg-elevated hover:bg-accent hover:text-on-accent font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group"
+                    >
+                      View Details <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Inherently dark (photo backdrop) — pin the dark token set. */}
-      <section data-theme="dark" className="relative py-20 px-6 bg-black text-white">
-        <div className="absolute inset-0 opacity-20">
-          <img
-            src="https://images.pexels.com/photos/6801647/pexels-photo-6801647.jpeg?auto=compress&cs=tinysrgb&w=1920"
-            alt="Values"
-            className="w-full h-full object-cover"
-          />
-        </div>
+      {/* Inherently dark (animated backdrop) — pin the dark token set. */}
+      <section data-theme="dark" className="relative py-20 px-6 text-white overflow-hidden">
+        <HeroBackground />
         <div className="relative max-w-7xl mx-auto">
           <h3 className={`text-4xl font-bold text-center mb-4 ${isLoaded ? 'animate-fadeInUp' : 'opacity-0'}`} style={{ fontFamily: 'var(--font-display)' }}>
             Why Choose <span className="text-accent-soft">Niyom Wealth</span>?
