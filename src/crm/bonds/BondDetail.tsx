@@ -121,7 +121,7 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
     if (!bond) return;
     setGenerating('promo');
     try {
-      await generatePromoImage(bond as NWBondCatalog, { contact, newlyLaunched: bond.status === 'Available' });
+      await generatePromoImage(bond as NWBondCatalog, { contact });
     } finally {
       setGenerating(false);
     }
@@ -289,7 +289,10 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                    {stat('Total Investment', exactInvestment !== null ? formatINRFull(exactInvestment) : '—', cf.ok && cf.accruedInterest > 0 ? `incl. ${formatINRFull(cf.accruedInterest)} accrued` : (inv.pricePerUnit !== null ? `${formatINRFull(inv.pricePerUnit)}/unit` : undefined))}
+                    {stat('Total Investment', exactInvestment !== null ? formatINRFull(exactInvestment) : '—',
+                      cf.ok && cf.accruedInterest > 0 ? `incl. ${formatINRFull(cf.accruedInterest)} accrued`
+                        : cf.ok && cf.exInterest ? `ex-interest · −${formatINRFull(Math.abs(cf.accruedInterest))} rebate`
+                        : (inv.pricePerUnit !== null ? `${formatINRFull(inv.pricePerUnit)}/unit` : undefined))}
                     {stat('Annual Income', inv.annualIncome !== null ? formatINRFull(inv.annualIncome) : '—', bond.coupon !== null ? `at ${formatPercent(bond.coupon)}` : undefined)}
                     {stat('Face Value', inv.faceValueAmount !== null ? formatINR(inv.faceValueAmount) : (bond.face_value_text || '—'))}
                     {stat('Yield at this price', formatPercent(adjYield), bond.yield_ytm !== null && adjYield !== null && Math.abs((adjYield ?? 0) - bond.yield_ytm) >= 0.01 ? `sheet ${formatPercent(bond.yield_ytm)}` : undefined)}

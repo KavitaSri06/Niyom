@@ -106,6 +106,7 @@ function buildHtml(bond: NWBondCatalog, cf: CashflowResult, opts: CashflowPdfOpt
           <span style="font-size:18px;font-weight:900;color:${white};">${formatINRFull(cf.investmentAmount)}</span>
         </div>
         <div style="font-size:8.5px;color:#8592a8;margin-top:5px;">Investment Amount = Principal + Accrued Interest.</div>
+        ${cf.exInterest ? `<div style="font-size:8.5px;color:#8a5a12;margin-top:4px;line-height:1.4;">Purchased <strong>ex-interest</strong>: settlement falls in the record-date window, so the upcoming coupon is paid to the registered holder on the record date. A negative accrued (rebate) is applied and that coupon is excluded below.</div>` : ''}
       </div>
     </div>
 

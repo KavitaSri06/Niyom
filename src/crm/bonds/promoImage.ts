@@ -16,7 +16,6 @@ const NIYOM_LOGO = '/niyomlogo.png';
 
 export interface PromoOptions {
   contact?: EmployeeContact;
-  newlyLaunched?: boolean;
 }
 
 function esc(s: unknown): string {
@@ -68,22 +67,19 @@ function buildHtml(bond: NWBondCatalog, opts: PromoOptions): string {
     <div style="position:absolute;right:-80px;bottom:-60px;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(200,162,75,0.12),transparent 65%);"></div>
 
     <!-- brand row -->
-    <div style="display:flex;justify-content:space-between;align-items:center;position:relative;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <img src="${NIYOM_LOGO}" alt="Niyom Wealth" style="height:52px;width:auto;object-fit:contain;" />
-        <div>
-          <div style="font-size:22px;font-weight:800;letter-spacing:0.02em;">NIYOM WEALTH</div>
-          <div style="font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:${goldSoft};">Wealth Distribution &amp; Advisory</div>
-        </div>
+    <div style="display:flex;align-items:center;gap:12px;position:relative;">
+      <img src="${NIYOM_LOGO}" alt="Niyom Wealth" style="height:52px;width:auto;object-fit:contain;" />
+      <div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:0.02em;">NIYOM WEALTH</div>
+        <div style="font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:${goldSoft};">Wealth Distribution &amp; Advisory</div>
       </div>
-      ${opts.newlyLaunched ? `<div style="background:#b0141d;color:#fff;font-size:12px;font-weight:800;letter-spacing:0.06em;padding:8px 16px;border-radius:12px;transform:rotate(4deg);box-shadow:0 6px 18px rgba(176,20,29,0.4);">NEWLY&nbsp;LAUNCHED</div>` : ''}
     </div>
 
     <!-- headline coupon (solid fill — html2canvas-safe) -->
-    <div style="text-align:center;margin-top:56px;position:relative;">
+    <div style="text-align:center;margin-top:64px;position:relative;">
       <div style="font-size:20px;letter-spacing:0.28em;text-transform:uppercase;color:${goldSoft};font-weight:700;">Earn up to</div>
-      <div style="font-size:150px;font-weight:900;line-height:0.9;margin-top:6px;color:#F2DB99;text-shadow:0 3px 18px rgba(200,162,75,0.35);">${coupon}</div>
-      <div style="font-size:20px;letter-spacing:0.16em;text-transform:uppercase;color:#cfd8ea;font-weight:600;margin-top:2px;">per annum</div>
+      <div style="font-size:128px;font-weight:900;line-height:1;margin-top:14px;color:#F2DB99;text-shadow:0 3px 18px rgba(200,162,75,0.35);">${coupon}</div>
+      <div style="font-size:20px;letter-spacing:0.22em;text-transform:uppercase;color:#cfd8ea;font-weight:600;margin-top:16px;">per annum</div>
     </div>
 
     <!-- issuer + badges -->

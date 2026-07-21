@@ -22,6 +22,14 @@ import { parseLeadingDateToISO, inferFrequency } from './bondUtils';
 export const TDS_RATE = 0.10;
 const SETTLEMENT_LAG_DAYS = 2; // T+2 indicative settlement
 
+// Book-closure / record-date window before a coupon. Many bonds freeze the
+// interest register ~15 days before payout: whoever holds the unit in demat on
+// the record date receives that coupon, EVEN IF the bond is transferred to
+// another DP afterwards. So a buyer who settles inside this window buys
+// "ex-interest" — they do not receive that upcoming coupon and instead get a
+// negative accrued (a price rebate for the days they hold before it).
+export const RECORD_DATE_FREEZE_DAYS = 15;
+
 export type Frequency = 'Monthly' | 'Quarterly' | 'Half-Yearly' | 'Annual';
 
 export interface CashflowRow {
@@ -59,6 +67,7 @@ export interface CashflowResult {
   totalInterest: number;
   totalPrincipalReturned: number;
   assumedBullet: boolean;
+  exInterest: boolean;   // settlement fell in the record-date window (see above)
 }
 
 // ---- date helpers (UTC to avoid tz drift) -----------------------------------
@@ -136,7 +145,7 @@ export function buildCashflow(input: CashflowInput): CashflowResult {
   const empty: CashflowResult = {
     ok: false, frequency, settlementDate: settlementISO, maturityDate: input.maturityISO ?? null,
     totalFace: 0, rows: [], accruedInterest: 0, principalAmount: 0, investmentAmount: 0,
-    totalInterest: 0, totalPrincipalReturned: 0, assumedBullet: true,
+    totalInterest: 0, totalPrincipalReturned: 0, assumedBullet: true, exInterest: false,
   };
   if (!face || face <= 0) return { ...empty, reason: 'Face value unknown' };
   if (!coupon || coupon <= 0) return { ...empty, reason: 'Coupon unknown' };
@@ -157,9 +166,17 @@ export function buildCashflow(input: CashflowInput): CashflowResult {
   const totalFace = face * qty;
   const cleanPer100 = input.cleanPricePer100 ?? null;
 
-  // Accrued interest (Actual/365) from last coupon to settlement.
-  const accruedDays = Math.max(0, days(lastCoupon, settlement));
-  const accruedInterest = +(totalFace * (coupon / 100) * (accruedDays / 365)).toFixed(2);
+  // Record-date / ex-interest test: is settlement inside the freeze window before
+  // the next coupon? If so the seller (registered holder on the record date)
+  // keeps that coupon, so the buyer gets a NEGATIVE accrued (rebate) instead of
+  // paying accrued, and does not receive the first coupon.
+  const nextCoupon = couponDates[0];
+  const daysToNext = days(settlement, nextCoupon);
+  const exInterest = daysToNext >= 0 && daysToNext <= RECORD_DATE_FREEZE_DAYS;
+
+  const accruedInterest = exInterest
+    ? -(+(totalFace * (coupon / 100) * (daysToNext / 365)).toFixed(2))
+    : +(totalFace * (coupon / 100) * (Math.max(0, days(lastCoupon, settlement)) / 365)).toFixed(2);
 
   // Partial redemption schedule (or bullet).
   const redemptionMap = parseRedemption(input.redemptionText, couponDates, totalFace);
@@ -172,14 +189,18 @@ export function buildCashflow(input: CashflowInput): CashflowResult {
   let totalPrincipalReturned = 0;
   couponDates.forEach((cd, i) => {
     const isMaturity = i === couponDates.length - 1;
-    const interest = +(currentFace * (coupon / 100) * (days(prev, cd) / 365)).toFixed(2);
+    // Ex-interest: the first coupon's interest is paid to the registered holder
+    // on the record date (the seller), not the buyer.
+    const toSeller = i === 0 && exInterest;
+    const interest = toSeller ? 0 : +(currentFace * (coupon / 100) * (days(prev, cd) / 365)).toFixed(2);
     let redeemed = redemptionMap ? (redemptionMap[toISO(cd)] ?? 0) : 0;
     if (isMaturity) redeemed = currentFace; // return whatever principal remains
     redeemed = +Math.min(redeemed, currentFace).toFixed(2);
     const total = +(interest + redeemed).toFixed(2);
     const net = +(total - interest * TDS_RATE).toFixed(2);
     let remark = '';
-    if (isMaturity) remark = 'Maturity : Principal Redemption';
+    if (toSeller) remark = 'Interest to registered holder (record date)';
+    else if (isMaturity) remark = 'Maturity : Principal Redemption';
     else if (redeemed > 0) remark = `Part Maturity : Principal Redemption`;
     rows.push({ date: toISO(cd), faceRedeemed: redeemed, interest, total, netAfterTds: net, remark });
     totalInterest += interest;
@@ -195,7 +216,7 @@ export function buildCashflow(input: CashflowInput): CashflowResult {
     ok: true, frequency, settlementDate: settlementISO, maturityDate: input.maturityISO,
     totalFace, rows, accruedInterest, principalAmount, investmentAmount,
     totalInterest: +totalInterest.toFixed(2), totalPrincipalReturned: +totalPrincipalReturned.toFixed(2),
-    assumedBullet,
+    assumedBullet, exInterest,
   };
 }
 

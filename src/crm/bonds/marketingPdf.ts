@@ -174,7 +174,8 @@ function buildHtml(bond: NWBondCatalog, opts: MarketingPdfOptions): string {
       <div style="display:flex;gap:18px;flex-wrap:wrap;">
         ${summaryCell('Total Investment', investAmount,
           [qtyStr !== '—' ? `${qtyStr} · Face ${notionalStr}` : '',
-           opts.accruedInterest ? `incl. ${formatINRFull(opts.accruedInterest)} accrued interest` : '']
+           opts.accruedInterest && opts.accruedInterest > 0 ? `incl. ${formatINRFull(opts.accruedInterest)} accrued interest`
+             : opts.accruedInterest && opts.accruedInterest < 0 ? `ex-interest · ${formatINRFull(Math.abs(opts.accruedInterest))} rebate applied` : '']
             .filter(Boolean).join('<br/>'))}
         <div style="width:1px;background:rgba(200,162,75,0.3);"></div>
         ${summaryCell('Indicative Annual Income', annualIncome, bond.coupon !== null ? `at ${couponStr} coupon` : '')}
