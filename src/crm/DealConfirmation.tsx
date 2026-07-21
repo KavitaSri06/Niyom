@@ -310,12 +310,17 @@ export default function DealConfirmation({ employee }: Props) {
     // a clickable Payment Status pill without extra round-trips per row.
     // Single query with IN() — no N+1. The DB view is the sole source of truth.
     setPaySummariesLoaded(false);
-    const acceptedIds = rows.filter(r => r.acceptance_status === 'accepted').map(r => r.id);
-    if (acceptedIds.length) {
+    // Include pending/viewed deals too — an admin may record payment before the
+    // client digitally accepts (out-of-reach clients who have paid), which then
+    // makes the deal transferable via the Transfer Queue admin override.
+    const summaryIds = rows
+      .filter(r => ['accepted', 'pending', 'viewed'].includes(r.acceptance_status))
+      .map(r => r.id);
+    if (summaryIds.length) {
       const { data: sums } = await supabase
         .from('nw_deal_payment_summary')
         .select('deal_id, payment_status, outstanding_amount')
-        .in('deal_id', acceptedIds);
+        .in('deal_id', summaryIds);
       const map: Record<string, { payment_status: any; outstanding_amount: number }> = {};
       (sums ?? []).forEach((s: any) => { map[s.deal_id] = { payment_status: s.payment_status, outstanding_amount: Number(s.outstanding_amount) }; });
       setPaySummaries(map);
@@ -615,24 +620,37 @@ export default function DealConfirmation({ employee }: Props) {
               </button>
             </>
           ) : (
-            <button
-              onClick={() => handleSendSecureLink(previewDeal)}
-              disabled={emailSending}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent transition-all disabled:cursor-not-allowed"
-              style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', opacity: emailSending ? 0.75 : 1 }}
-            >
-              {emailSending ? (
-                <>
-                  <div className="w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" />
-                  {previewDeal.email_status === 'sent' ? 'Resend Secure Link' : 'Send Secure Link'}
-                </>
+            <>
+              {/* Admin may record payment before the client accepts (out-of-reach
+                  clients who have paid) — except on rejected/expired deals. */}
+              {previewDeal.acceptance_status !== 'rejected' && previewDeal.acceptance_status !== 'expired' && (
+                <button
+                  onClick={() => setView('payments')}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold"
+                  style={{ background: 'rgba(var(--accent-rgb),0.1)', color: 'var(--accent)', border: '1px solid rgba(var(--accent-rgb),0.3)' }}
+                >
+                  <Wallet className="w-4 h-4" /> Manage Payments
+                </button>
               )}
-            </button>
+              <button
+                onClick={() => handleSendSecureLink(previewDeal)}
+                disabled={emailSending}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent transition-all disabled:cursor-not-allowed"
+                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', opacity: emailSending ? 0.75 : 1 }}
+              >
+                {emailSending ? (
+                  <>
+                    <div className="w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    {previewDeal.email_status === 'sent' ? 'Resend Secure Link' : 'Send Secure Link'}
+                  </>
+                )}
+              </button>
+            </>
           )}
         </div>
 
@@ -966,7 +984,7 @@ export default function DealConfirmation({ employee }: Props) {
                         meaningful for accepted deals. Clicking navigates to
                         Manage Payments to reduce clicks. */}
                     <td className="px-5 py-3.5">
-                      {d.acceptance_status !== 'accepted' ? (
+                      {(d.acceptance_status === 'rejected' || d.acceptance_status === 'expired') ? (
                         <span className="text-xs" style={{ color: 'var(--text-faint)' }}>—</span>
                       ) : !paySummariesLoaded ? (
                         <span
