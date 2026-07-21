@@ -279,8 +279,10 @@ Deno.serve(async (req: Request) => {
       .select("id, employee_id, acceptance_status, confirmation_number, snap_client_name, snap_email")
       .eq("id", resolvedDealId).maybeSingle();
     if (!deal) return json({ success: false, error: "Deal not found." }, 404);
-    if (deal.acceptance_status !== "accepted") {
-      return json({ success: false, error: "Deal is not accepted." }, 409);
+    // A payment acknowledgement may be issued for a paid deal before the client
+    // digitally accepts. Only rejected/expired deals are closed to it.
+    if (deal.acceptance_status === "rejected" || deal.acceptance_status === "expired") {
+      return json({ success: false, error: `Deal is ${deal.acceptance_status}.` }, 409);
     }
     if (!isValidEmail(deal.snap_email)) {
       return json({ success: false, error: "Client email is missing or invalid." }, 400);

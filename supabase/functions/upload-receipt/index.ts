@@ -132,8 +132,11 @@ Deno.serve(async (req: Request) => {
       .eq("id", payment.deal_confirmation_id)
       .maybeSingle();
     if (!deal) return json({ success: false, error: "Deal not found." }, 404);
-    if (deal.acceptance_status !== "accepted") {
-      return json({ success: false, error: "Deal is not accepted." }, 409);
+    // Receipts may be generated for a paid deal before the client digitally
+    // accepts (out-of-reach clients who have paid). Only rejected/expired deals
+    // are closed to receipts.
+    if (deal.acceptance_status === "rejected" || deal.acceptance_status === "expired") {
+      return json({ success: false, error: `Deal is ${deal.acceptance_status}.` }, 409);
     }
     const isAdmin = employee.role === "admin" || employee.role === "super_admin";
     if (!isAdmin && deal.employee_id !== employee.id) {
