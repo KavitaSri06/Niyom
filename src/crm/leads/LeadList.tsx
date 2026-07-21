@@ -51,6 +51,10 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
   const [saveViewName, setSaveViewName] = useState('');
   const [exporting, setExporting] = useState(false);
   const [dupCount, setDupCount] = useState(0);
+  // "Select all matching" — when non-null, the selection spans the whole filtered
+  // set (not just the visible page); holds the fetched full rows for bulk ops.
+  const [allMatching, setAllMatching] = useState<NWLead[] | null>(null);
+  const [selectingAll, setSelectingAll] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -137,8 +141,12 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
     setLeads((data as unknown as NWLead[]) || []);
     setTotal(count ?? 0);
     setSelected(new Set());
+    setAllMatching(null);
     setLoading(false);
   }, [buildQuery, page]);
+
+  // Cap on how many rows a single "select all matching" bulk action spans.
+  const SELECT_ALL_CAP = 2000;
 
   useEffect(() => { load(); }, [load, refreshKey]);
 
@@ -164,17 +172,35 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
       .filter(k => filters[k]).length + (filters.include_archived ? 1 : 0),
     [filters]);
 
-  const toggleSel = (id: string) => setSelected(s => {
+  const toggleSel = (id: string) => { setAllMatching(null); setSelected(s => {
     const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n;
-  });
+  }); };
   const allOnPageSelected = leads.length > 0 && leads.every(l => selected.has(l.id));
-  const toggleAll = () => setSelected(s => {
+  const toggleAll = () => { setAllMatching(null); setSelected(s => {
     const n = new Set(s);
     if (allOnPageSelected) leads.forEach(l => n.delete(l.id));
     else leads.forEach(l => n.add(l.id));
     return n;
-  });
-  const selectedLeads = leads.filter(l => selected.has(l.id));
+  }); };
+
+  // Selection the bulk toolbar acts on: the whole filtered set when "select all
+  // matching" is active, otherwise the ticked rows on the current page.
+  const selectedLeads = allMatching ?? leads.filter(l => selected.has(l.id));
+  const selectionActive = allMatching != null || selected.size > 0;
+
+  const clearSelection = () => { setAllMatching(null); setSelected(new Set()); };
+
+  // Fetch every lead matching the current filters (capped) and select them all.
+  const selectAllMatching = async () => {
+    setSelectingAll(true);
+    const { data } = await buildQuery(false)
+      .order('created_at', { ascending: false })
+      .range(0, SELECT_ALL_CAP - 1);
+    const rows = (data as unknown as NWLead[]) || [];
+    setAllMatching(rows);
+    setSelected(new Set(rows.map(r => r.id)));
+    setSelectingAll(false);
+  };
 
   const scopeTabs: { key: LeadListFilters['scope']; label: string; icon: any; adminOnly?: boolean }[] = [
     { key: 'all', label: 'All Leads', icon: Layers },
@@ -365,14 +391,37 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
       )}
 
       {/* Bulk action bar (admin) */}
-      {isAdmin && selected.size > 0 && (
-        <LeadBulkToolbar
-          employee={employee}
-          leads={selectedLeads}
-          onAssign={onAssign}
-          onDone={load}
-          onClear={() => setSelected(new Set())}
-        />
+      {isAdmin && selectionActive && (
+        <div className="space-y-2">
+          <LeadBulkToolbar
+            employee={employee}
+            leads={selectedLeads}
+            onAssign={onAssign}
+            onDone={load}
+            onClear={clearSelection}
+          />
+          {/* Select-all-matching affordance */}
+          {(allMatching != null || (allOnPageSelected && total > leads.length)) && (
+            <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs" style={{ background: 'var(--bg-elevated)', border: '1px dashed var(--border)' }}>
+              {allMatching != null ? (
+                <>
+                  <span style={{ color: 'var(--text-secondary)' }}>
+                    All <strong style={{ color: 'var(--accent)' }}>{allMatching.length.toLocaleString('en-IN')}</strong> leads matching this filter are selected
+                    {total > SELECT_ALL_CAP && ` (capped at ${SELECT_ALL_CAP.toLocaleString('en-IN')})`}.
+                  </span>
+                  <button onClick={clearSelection} className="font-semibold" style={{ color: 'var(--accent)' }}>Clear selection</button>
+                </>
+              ) : (
+                <>
+                  <span style={{ color: 'var(--text-secondary)' }}>All {leads.length} on this page selected.</span>
+                  <button onClick={selectAllMatching} disabled={selectingAll} className="font-semibold" style={{ color: 'var(--accent)' }}>
+                    {selectingAll ? 'Selecting…' : `Select all ${total.toLocaleString('en-IN')} matching`}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Table */}
@@ -383,7 +432,7 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {isAdmin && (
                   <th className="w-10 px-3 py-3">
-                    <input type="checkbox" checked={allOnPageSelected} onChange={toggleAll} />
+                    <input type="checkbox" checked={allMatching != null || allOnPageSelected} onChange={toggleAll} title="Select all on this page" />
                   </th>
                 )}
                 {['Lead', 'Contact', 'Status', 'Priority', 'Score', 'Owner', 'Investment', 'Created', ''].map((h, i) => (
