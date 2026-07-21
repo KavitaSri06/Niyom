@@ -4,6 +4,7 @@ import { NWEmployee } from '../types';
 import {
   Search, Plus, SlidersHorizontal, X, ChevronLeft, ChevronRight, UserPlus,
   Pencil, Layers, Users2, Sparkles, Inbox, RefreshCw, Upload, Download, Bookmark, Save, ShieldAlert,
+  ArrowUp, ArrowDown, ChevronsUpDown,
 } from 'lucide-react';
 import { NWLead, LeadListFilters, LeadStatus, LeadPriority, LeadOrigin, NWLeadSavedView } from './leadTypes';
 import { LEAD_STATUSES, PRIORITIES, INTERESTED_PRODUCTS, LEAD_SOURCES, LEAD_ORIGIN_LABEL, PAGE_SIZE } from './leadConstants';
@@ -21,6 +22,21 @@ const EMPTY_FILTERS: LeadListFilters = {
   scope: 'all', city: '', product: '', source: '', min_investment: '', max_investment: '',
   date_from: '', date_to: '', include_archived: false,
 };
+
+// Table columns. `field` = the nw_leads column used for server-side sorting;
+// columns without a field (Owner, actions) aren't sortable.
+const COLUMNS: { label: string; field?: string }[] = [
+  { label: 'Lead', field: 'lead_name' },
+  { label: 'Contact', field: 'mobile' },
+  { label: 'City / State', field: 'city' },
+  { label: 'Status', field: 'status' },
+  { label: 'Priority', field: 'priority' },
+  { label: 'Score', field: 'lead_score' },
+  { label: 'Owner' },
+  { label: 'Investment', field: 'investment_capacity' },
+  { label: 'Created', field: 'created_at' },
+  { label: '' },
+];
 
 interface Props {
   employee: NWEmployee;
@@ -57,6 +73,15 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
   const [selectingAll, setSelectingAll] = useState(false);
   const [selectCount, setSelectCount] = useState(0);   // live progress while fetching
   const [nInput, setNInput] = useState('');            // "select first N" field
+  const [sortField, setSortField] = useState<string>('created_at');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  // Click a column header: same column toggles direction, new column sorts desc.
+  const toggleSort = (field: string) => {
+    if (sortField === field) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortField(field); setSortDir('desc'); }
+    setPage(0);
+  };
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -86,7 +111,7 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
   // Export the current filtered result set (capped) to CSV.
   const exportFiltered = async () => {
     setExporting(true);
-    const { data } = await buildQuery(false).order('created_at', { ascending: false }).range(0, 4999);
+    const { data } = await buildQuery(false).order(sortField, { ascending: sortDir === 'asc' }).range(0, 4999);
     const rows = (data as unknown as NWLead[]) || [];
     downloadCsv(`leads_${new Date().toISOString().slice(0, 10)}.csv`, leadsToCsv(rows));
     setExporting(false);
@@ -137,7 +162,7 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
   const load = useCallback(async () => {
     setLoading(true);
     const q = buildQuery(false)
-      .order('created_at', { ascending: false })
+      .order(sortField, { ascending: sortDir === 'asc' })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
     const { data, count } = await q;
     setLeads((data as unknown as NWLead[]) || []);
@@ -145,7 +170,7 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
     setSelected(new Set());
     setAllMatching(null);
     setLoading(false);
-  }, [buildQuery, page]);
+  }, [buildQuery, page, sortField, sortDir]);
 
   useEffect(() => { load(); }, [load, refreshKey]);
 
@@ -201,7 +226,7 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const to = from + CHUNK - 1;
-      const { data } = await buildQuery(false).order('created_at', { ascending: false }).range(from, to);
+      const { data } = await buildQuery(false).order(sortField, { ascending: sortDir === 'asc' }).range(from, to);
       const rows = (data as unknown as NWLead[]) || [];
       all = all.concat(rows);
       setSelectCount(all.length);           // live progress
@@ -464,18 +489,29 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
                     <input type="checkbox" checked={allMatching != null || allOnPageSelected} onChange={toggleAll} title="Select all on this page" />
                   </th>
                 )}
-                {['Lead', 'Contact', 'Status', 'Priority', 'Score', 'Owner', 'Investment', 'Created', ''].map((h, i) => (
-                  <th key={i} className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider whitespace-nowrap" style={{ color: 'var(--text-faint)' }}>{h}</th>
-                ))}
+                {COLUMNS.map((c, i) => {
+                  const active = c.field && sortField === c.field;
+                  return (
+                    <th key={i} className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider whitespace-nowrap" style={{ color: active ? 'var(--accent)' : 'var(--text-faint)' }}>
+                      {c.field ? (
+                        <button onClick={() => toggleSort(c.field!)} className="inline-flex items-center gap-1 hover:opacity-80" title={`Sort by ${c.label}`}>
+                          {c.label}
+                          {active ? (sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)
+                                  : <ChevronsUpDown className="w-3 h-3 opacity-40" />}
+                        </button>
+                      ) : c.label}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} className="text-center py-12">
+                <tr><td colSpan={isAdmin ? 11 : 10} className="text-center py-12">
                   <RefreshCw className="w-5 h-5 animate-spin mx-auto" style={{ color: 'var(--accent)' }} />
                 </td></tr>
               ) : leads.length === 0 ? (
-                <tr><td colSpan={10} className="text-center py-14">
+                <tr><td colSpan={isAdmin ? 11 : 10} className="text-center py-14">
                   <Inbox className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--text-faint)' }} />
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No leads found</p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>Try adjusting filters, or create a new lead.</p>
@@ -501,7 +537,11 @@ export default function LeadList({ employee, onNew, onOpen, onEdit, onAssign, re
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <p className="text-xs" style={{ color: 'var(--text-primary)' }}>{l.mobile || '—'}</p>
-                    <p className="text-[11px] truncate max-w-[160px]" style={{ color: 'var(--text-faint)' }}>{l.city || l.email || '—'}</p>
+                    <p className="text-[11px] truncate max-w-[160px]" style={{ color: 'var(--text-faint)' }}>{l.email || '—'}</p>
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap">
+                    <p className="text-xs" style={{ color: 'var(--text-primary)' }}>{l.city || '—'}</p>
+                    <p className="text-[11px]" style={{ color: 'var(--text-faint)' }}>{l.state || '—'}</p>
                   </td>
                   <td className="px-3 py-3"><StatusBadge status={l.status} small /></td>
                   <td className="px-3 py-3"><PriorityBadge priority={l.priority} /></td>
