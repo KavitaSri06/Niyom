@@ -201,21 +201,22 @@ const ACCEPTANCE_STYLES: Record<AcceptanceStatus, { label: string; bg: string; c
 };
 
 // ---------- Payment Status Pill (deal-list quick entry) ----------
-const PAYMENT_STATUS_STYLES: Record<'not_paid' | 'partially_paid' | 'fully_paid', { label: string; bg: string; color: string }> = {
+const PAYMENT_STATUS_STYLES: Record<'not_paid' | 'partially_paid' | 'fully_paid' | 'over_paid', { label: string; bg: string; color: string }> = {
   not_paid:       { label: 'Not Paid',       bg: 'rgba(107,107,107,0.10)', color: 'var(--text-secondary)' },
   partially_paid: { label: 'Partially Paid', bg: 'rgba(245,158,11,0.10)',  color: 'var(--warning)' },
   fully_paid:     { label: 'Fully Paid',     bg: 'rgba(16,185,129,0.10)',  color: 'var(--success)' },
+  over_paid:      { label: 'Over Paid',      bg: 'rgba(59,130,246,0.10)',  color: 'var(--info)' },
 };
 
 function PaymentStatusPill({
   summary,
   onClick,
 }: {
-  summary?: { payment_status: 'not_paid' | 'partially_paid' | 'fully_paid'; outstanding_amount: number };
+  summary?: { payment_status: 'not_paid' | 'partially_paid' | 'fully_paid' | 'over_paid'; outstanding_amount: number };
   onClick: () => void;
 }) {
   const status = summary?.payment_status ?? 'not_paid';
-  const s = PAYMENT_STATUS_STYLES[status];
+  const s = PAYMENT_STATUS_STYLES[status] ?? PAYMENT_STATUS_STYLES.not_paid;
   return (
     <button
       onClick={onClick}
@@ -260,7 +261,7 @@ export default function DealConfirmation({ employee }: Props) {
   const [deleteDeal, setDeleteDeal] = useState<DealRecord | null>(null);
   const [search, setSearch] = useState('');
   const [emailSending, setEmailSending] = useState(false);
-  const [paySummaries, setPaySummaries] = useState<Record<string, { payment_status: 'not_paid' | 'partially_paid' | 'fully_paid'; outstanding_amount: number }>>({});
+  const [paySummaries, setPaySummaries] = useState<Record<string, { payment_status: 'not_paid' | 'partially_paid' | 'fully_paid' | 'over_paid'; outstanding_amount: number }>>({});
   const [paySummariesLoaded, setPaySummariesLoaded] = useState(false);
 
   const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
