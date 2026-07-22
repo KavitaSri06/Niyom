@@ -401,6 +401,28 @@ input[type='range'] {
 }
 
 /* -----------------------------------------------------------------------------
+ * CRM page transition — a subtle fade + rise applied to the routed page content
+ * on each navigation (keyed by page in Layout). Fast and gentle so dense tables
+ * settle quickly. Reduced-motion users get no animation (content is already at
+ * its natural state — no base opacity:0 outside the keyframe).
+ * -------------------------------------------------------------------------- */
+@keyframes crmPageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .crm-page-enter {
+    animation: crmPageIn 0.32s var(--ease-out, ease) both;
+  }
+}
+
+/* -----------------------------------------------------------------------------
  * HeroBackground — mesh blooms + data grid (see components/HeroBackground.tsx).
  * Pure-CSS layers behind the canvas network. Compositor-only transforms, so
  * they stay cheap; motion is disabled under prefers-reduced-motion.

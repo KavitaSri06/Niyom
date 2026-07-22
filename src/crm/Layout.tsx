@@ -205,9 +205,12 @@ export default function Layout({ children, page, onNavigate, employee }: Props) 
           </div>
         </header>
 
-        {/* Page content */}
+        {/* Page content — keyed by page so each navigation re-plays a subtle
+            fade + rise (see .crm-page-enter). */}
         <main className="flex-1 overflow-y-auto p-6">
-          {children}
+          <div key={page} className="crm-page-enter">
+            {children}
+          </div>
         </main>
       </div>
     </div>
