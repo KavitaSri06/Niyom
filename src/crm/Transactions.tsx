@@ -355,6 +355,7 @@ export default function Transactions({ employee, onNavigate }: Props) {
     setEligibleDeals(deals.map(d => ({ ...d, base_rate: rateById.get(d.deal_id) ?? null })));
   }, []);
 
+  useEffect(() => { if (showAdd) loadEligibleDeals(); }, [showAdd, loadEligibleDeals]);
 
   const isBond = BOND_TYPES.includes(form.product_type);
   const isMF = form.product_type === 'mutual_fund';
@@ -519,11 +520,19 @@ export default function Transactions({ employee, onNavigate }: Props) {
       premium_frequency: form.premium_frequency,
     });
 
-    // Note: booking a confirmed deal as *transferred* business no longer happens
-    // here. Unlisted shares & bonds are transferred manually from the Transfer
-    // Queue (nw_transfer_deal), which is the single point that marks a deal
-    // transferred and notifies the employee. "Add New Business" only records
-    // direct-entry business; it never auto-transfers a deal.
+    // Booked from a confirmed deal: carry the same link the Transfer Queue
+    // writes. This is what removes the deal from that queue, and the existing
+    // uq_nw_transactions_deal unique index makes booking the same deal twice
+    // impossible from either path.
+    if (!editTxn && pickedDeal) {
+      Object.assign(payload, {
+        deal_confirmation_id: pickedDeal.deal_id,
+        transfer_stage: 'transferred',
+        transferred_at: new Date().toISOString(),
+        transferred_by: employee.id,
+        transfer_remarks: 'Booked via Add New Business',
+      });
+    }
 
     let txnId: string;
     if (editTxn) {
@@ -536,7 +545,16 @@ export default function Transactions({ employee, onNavigate }: Props) {
       txnId = editTxn.id;
     } else {
       const { data, error: err } = await supabase.from('nw_transactions').insert([payload]).select().single();
-      if (err) { setError(err.message); setSaving(false); return; }
+      if (err) {
+        // 23505 = unique violation on uq_nw_transactions_one_transferred_per_deal:
+        // someone booked this deal first. Say so plainly instead of leaking the
+        // constraint name.
+        setError(err.code === '23505' && pickedDeal
+          ? `Deal ${pickedDeal.confirmation_number} has already been booked as business. Refresh the deal list.`
+          : err.message);
+        setSaving(false);
+        return;
+      }
       txnId = data.id;
       await supabase.from('nw_activity_logs').insert([{
         employee_id: employee.id, client_id: form.client_id, action: 'Transaction Added',
@@ -585,10 +603,71 @@ export default function Transactions({ employee, onNavigate }: Props) {
           Only shown when creating, never when editing an existing row. */}
       {!editTxn && (
         <div className="rounded-xl p-4" style={{ background: 'rgba(var(--accent-rgb),0.04)', border: '1px solid rgba(var(--accent-rgb),0.15)' }}>
-          <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--accent)' }}>Unlisted shares &amp; bonds go through the Transfer Queue</p>
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            New unlisted-share / bond business is created as a <strong>Deal Confirmation</strong>; once it is fully paid it appears in the <strong>Transfer Queue</strong>, where an admin transfers it manually (that step books the revenue and notifies the employee). Use this form for direct-entry business, or <strong>Add Existing Business</strong> to record a client's existing holding.
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Book from a Confirmed Deal</p>
+            {pickedDeal && (
+              <button type="button" onClick={clearPickedDeal}
+                className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg"
+                style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                <X className="w-3 h-3" /> Clear
+              </button>
+            )}
+          </div>
+
+          {!pickedDeal && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-faint)' }} />
+              <input
+                value={dealSearch}
+                onChange={e => { setDealSearch(e.target.value); setShowDealDrop(true); }}
+                onFocus={() => setShowDealDrop(true)}
+                placeholder="Search deal reference, client, security or ISIN…"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-text-primary outline-none"
+                style={{ background: 'var(--bg-base)', border: '1px solid var(--border)' }}
+                autoComplete="off"
+              />
+              {showDealDrop && (
+                <div className="absolute z-30 w-full mt-1 rounded-xl overflow-hidden shadow-2xl"
+                  style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', maxHeight: 260, overflowY: 'auto' }}>
+                  {dealOptions.length === 0 ? (
+                    <div className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      No deals awaiting booking. Deals appear here once they are fully paid.
+                    </div>
+                  ) : dealOptions.map(d => (
+                    <button key={d.deal_id} type="button" onClick={() => selectDeal(d)}
+                      className="w-full text-left px-4 py-3 transition-colors"
+                      style={{ borderBottom: '1px solid var(--bg-raised)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(var(--accent-rgb),0.08)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-mono text-xs" style={{ color: 'var(--accent)' }}>{d.confirmation_number}</span>
+                        <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {d.settlement_amount != null ? fmt(Number(d.settlement_amount)) : '—'}
+                        </span>
+                      </div>
+                      <p className="text-sm mt-0.5 truncate" style={{ color: 'var(--text-primary)' }}>{d.snap_client_name}</p>
+                      <p className="text-xs truncate" style={{ color: 'var(--text-faint)' }}>
+                        {d.security_name}{d.quantity != null ? ` · Qty ${d.quantity}` : ''}{d.isin ? ` · ${d.isin}` : ''}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs mt-2" style={{ color: 'var(--text-faint)' }}>
+                Optional — pick a deal to pre-fill and link it, or leave blank and enter the business manually.
+              </p>
+            </div>
+          )}
+
+          {pickedDeal && (
+            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <span className="font-mono text-xs mr-2" style={{ color: 'var(--accent)' }}>{pickedDeal.confirmation_number}</span>
+              {pickedDeal.snap_client_name} · {pickedDeal.security_name}
+              <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>
+                Deal details are locked below. Add the landing cost{showDsaPrice ? ' and DSA landing' : ''} to finish.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
