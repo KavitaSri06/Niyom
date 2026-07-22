@@ -6,6 +6,7 @@ import {
   cancelEnrollment, mfaErrorMessage, isMfaUnavailable, type TotpEnrollment,
 } from './mfa';
 import { Shield, Users, BarChart3, Mail, Lock, Eye, EyeOff, ArrowRight, ChevronLeft, ArrowLeft, AlertTriangle, KeyRound, CheckCircle2, RotateCw, Smartphone } from 'lucide-react';
+import { HeroBackground } from '../components/HeroBackground';
 
 interface Props {
   onLogin: (emp: NWEmployee) => void;
@@ -387,8 +388,10 @@ export default function CRMLogin({ onLogin }: Props) {
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg-base)' }}>
-      {/* Left Panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[45%] p-12" style={{ background: 'var(--brand-panel-bg)', borderRight: '1px solid rgba(var(--accent-soft-rgb),0.1)' }}>
+      {/* Left Panel — animated brand rail (matches client login + public site) */}
+      <div data-theme="dark" className="hidden lg:flex w-[45%] p-12 relative overflow-hidden" style={{ borderRight: '1px solid rgba(var(--accent-soft-rgb),0.1)' }}>
+        <HeroBackground />
+        <div className="relative z-10 flex flex-col justify-between w-full">
         <div className="flex items-center gap-3">
           <img src="/niyomlogo.png" alt="Niyom Wealth" className="h-10 w-auto object-contain" />
           <div>
@@ -429,6 +432,7 @@ export default function CRMLogin({ onLogin }: Props) {
           </div>
         </div>
         <p className="text-xs" style={{ color: 'var(--border-stronger)' }}>© 2026 Niyom Wealth. All rights reserved.</p>
+        </div>
       </div>
 
       {/* Right Panel */}

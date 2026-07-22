@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Lock, Eye, EyeOff, ArrowRight, ChevronLeft, AlertTriangle, CreditCard, Mail, Home, TrendingUp, X, CheckCircle2, FileText, CreditCard as IDCard, Landmark } from 'lucide-react';
 import { ThemeToggle } from '../theme/ThemeToggle';
+import { HeroBackground } from '../components/HeroBackground';
 
 interface Props {
   onLogin: (clientId: string, passwordChanged: boolean) => void;
@@ -236,8 +237,10 @@ export default function ClientLogin({ onLogin, onInvestNow }: Props) {
 
     <div className="min-h-screen flex relative" style={{ background: 'var(--bg-base)' }}>
       <div className="absolute top-4 right-4 z-20"><ThemeToggle variant="icon" /></div>
-      {/* Left panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[420px] flex-shrink-0 p-10" style={{ background: 'var(--bg-elevated)', borderRight: '1px solid var(--border-subtle)' }}>
+      {/* Left panel — animated brand rail (matches the public site heroes) */}
+      <div data-theme="dark" className="hidden lg:flex w-[420px] flex-shrink-0 p-10 relative overflow-hidden" style={{ borderRight: '1px solid var(--border-subtle)' }}>
+        <HeroBackground />
+        <div className="relative z-10 flex flex-col justify-between w-full">
         <div className="flex items-center gap-3">
           <img src="/niyomlogo.png" alt="Niyom Wealth" className="h-10 w-auto object-contain" />
           <div>
@@ -283,6 +286,7 @@ export default function ClientLogin({ onLogin, onInvestNow }: Props) {
             <Home className="w-3.5 h-3.5" />
             Back to Niyom Wealth home
           </a>
+        </div>
         </div>
       </div>
 
