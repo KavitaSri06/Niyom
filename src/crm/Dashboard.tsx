@@ -5,6 +5,7 @@ import { fmt, fmtDate, timeAgo, TXN_LABELS, TXN_COLORS, VERIFICATION_COLORS, VER
 import { Users, TrendingUp, ArrowLeftRight, UserCheck, ArrowRight, Activity, BarChart2 } from 'lucide-react';
 import { CRMPage } from './types';
 import { Counter } from '../components/Reveal';
+import { HeroBackground } from '../components/HeroBackground';
 
 interface Props { employee: NWEmployee; onNavigate: (page: CRMPage) => void; }
 
@@ -131,12 +132,18 @@ export default function Dashboard({ employee, onNavigate }: Props) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Overview</p>
-        <h1 className="text-2xl font-bold text-text-primary">Welcome back, {employee.full_name.split(' ')[0]}</h1>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-          {isAdmin ? 'Full portfolio view across all employees' : "Here's what's happening across your portfolio"}
-        </p>
+      {/* Welcome banner — the animated brand network (dark-pinned, so it reads
+          the same in both app themes) brings the public-site / login identity
+          into the CRM without touching the dense data views below. */}
+      <div data-theme="dark" className="relative overflow-hidden rounded-2xl p-6 sm:p-8" style={{ border: '1px solid var(--border)' }}>
+        <HeroBackground />
+        <div className="relative z-10">
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Overview</p>
+          <h1 className="text-2xl font-bold text-text-primary">Welcome back, {employee.full_name.split(' ')[0]}</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+            {isAdmin ? 'Full portfolio view across all employees' : "Here's what's happening across your portfolio"}
+          </p>
+        </div>
       </div>
 
       {/* Stats */}
