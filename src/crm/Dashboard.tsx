@@ -4,6 +4,7 @@ import { NWEmployee, NWTransaction, NWActivityLog, NWClient } from './types';
 import { fmt, fmtDate, timeAgo, TXN_LABELS, TXN_COLORS, VERIFICATION_COLORS, VERIFICATION_LABELS } from './utils';
 import { Users, TrendingUp, ArrowLeftRight, UserCheck, ArrowRight, Activity, BarChart2 } from 'lucide-react';
 import { CRMPage } from './types';
+import { Counter } from '../components/Reveal';
 
 interface Props { employee: NWEmployee; onNavigate: (page: CRMPage) => void; }
 
@@ -112,12 +113,12 @@ export default function Dashboard({ employee, onNavigate }: Props) {
     load();
   }, [isAdmin]);
 
-  const statCards = [
-    { label: isAdmin ? 'Total Clients' : 'My Clients', value: stats.totalClients.toString(), icon: Users, color: 'var(--info)', sub: 'Active clients' },
+  const statCards: Array<{ label: string; value: string; numeric?: number; icon: typeof Users; color: string; sub: string }> = [
+    { label: isAdmin ? 'Total Clients' : 'My Clients', value: stats.totalClients.toString(), numeric: stats.totalClients, icon: Users, color: 'var(--info)', sub: 'Active clients' },
     { label: isAdmin ? 'Total Portfolio' : 'My Portfolio', value: fmt(stats.totalPortfolio), icon: TrendingUp, color: 'var(--accent)', sub: 'Under management' },
-    { label: 'Verified Clients', value: stats.verifiedClients.toString(), icon: UserCheck, color: 'var(--success)', sub: `of ${stats.totalClients} total` },
-    { label: 'Monthly Transactions', value: stats.monthlyTxns.toString(), icon: ArrowLeftRight, color: 'var(--warning)', sub: 'This month' },
-    ...(isAdmin && stats.totalEmployees !== undefined ? [{ label: 'Total Employees', value: stats.totalEmployees.toString(), icon: Users, color: 'var(--chart-4)', sub: 'Active staff' }] : []),
+    { label: 'Verified Clients', value: stats.verifiedClients.toString(), numeric: stats.verifiedClients, icon: UserCheck, color: 'var(--success)', sub: `of ${stats.totalClients} total` },
+    { label: 'Monthly Transactions', value: stats.monthlyTxns.toString(), numeric: stats.monthlyTxns, icon: ArrowLeftRight, color: 'var(--warning)', sub: 'This month' },
+    ...(isAdmin && stats.totalEmployees !== undefined ? [{ label: 'Total Employees', value: stats.totalEmployees.toString(), numeric: stats.totalEmployees, icon: Users, color: 'var(--chart-4)', sub: 'Active staff' }] : []),
   ];
 
   if (loading) {
@@ -151,7 +152,9 @@ export default function Dashboard({ employee, onNavigate }: Props) {
                   <Icon className="w-4 h-4" style={{ color: s.color }} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-text-primary tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>{s.value}</p>
+              <p className="text-3xl font-bold text-text-primary tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
+                {s.numeric !== undefined ? <Counter value={s.numeric} durationMs={1100} /> : s.value}
+              </p>
               <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>{s.sub}</p>
             </div>
           );
