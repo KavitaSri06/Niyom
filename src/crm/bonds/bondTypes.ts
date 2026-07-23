@@ -1,164 +1,98 @@
-// Bond Creation module — shared types. Two shapes exist for a bond:
-//   NWBond        — the full master row, ADMIN only (includes landing_cost etc.).
-//   NWBondCatalog — the employee-safe projection from the nw_bonds_catalog view
-//                   (NO landing_cost / purchase_price / margin internals).
-// The service layer picks the source by role so employees can never receive
-// confidential pricing over REST.
+// Bond Security Master — shared types (Zod-validated where it matters).
+//
+// The Excel contributes only { isin, bond_name, price }. Everything else lives
+// in the master (bm_bonds / bm_bonds_public) and is enriched or computed.
 
-export type BondStatus =
-  | 'Available' | 'Sold Out' | 'Reserved' | 'Expired' | 'Matured' | 'Archived';
+import { z } from 'zod';
 
-export type MarginType = 'none' | 'percent' | 'flat' | 'manual';
+// ISIN: 2 country letters + 9 alphanumeric + 1 check digit.
+export const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
 
-export type BondSource = 'excel_upload' | 'pdf_upload' | 'word_upload' | 'api' | 'manual';
+// A single row extracted from the daily Excel.
+export const ImportRowSchema = z.object({
+  isin: z.string().trim().toUpperCase().regex(ISIN_RE, 'Invalid ISIN'),
+  bond_name: z.string().trim().default(''),
+  price: z.number().positive().nullable().default(null),
+});
+export type ImportRow = z.infer<typeof ImportRowSchema>;
 
-// Fields shared by both the admin row and the employee catalog view.
-export interface NWBondBase {
-  id: string;
-  bond_code: string;
-  company_name: string;
+// A parsed row plus its status for the preview grid (before hitting the RPC).
+export interface ParsedImportRow {
+  rowNumber: number;
   isin: string;
   bond_name: string;
-  issuer: string;
-  security_type: string;
-  security_category: string;
-  seniority: string;
-  listing_exchange: string;
-  face_value: number | null;
-  face_value_text: string;
-  available_quantity: string;
-  minimum_investment: string;
-  multiples: string;
-  issue_size: string;
-  selling_price: number | null;      // client-facing price (safe to show)
-  coupon: number | null;             // percent
-  coupon_text: string;
-  yield_ytm: number | null;          // percent
-  ytc_ytp: number | null;            // percent
+  price: number | null;
+  valid: boolean;      // ISIN well-formed
+  issue?: string;      // why it's invalid, if so
+}
+
+export interface ImportSummary {
+  created: number;
+  updated: number;
+  skipped: number;
+  new_bond_ids: string[];
+}
+
+export type VerificationStatus = 'pending' | 'enriching' | 'verified' | 'needs_review' | 'failed';
+export type ActiveStatus = 'active' | 'matured' | 'suspended' | 'inactive';
+
+// Client-safe master projection (mirror of bm_bonds_public; no landing cost).
+export interface BondPublic {
+  id: string;
+  isin: string;
+  issuer_id: string | null;
+  issuer_name: string | null;
+  industry: string;
+  sector: string;
+  bond_name: string;
+  security_description: string;
+  series: string;
+  issue_date: string | null;
+  listing_date: string | null;
   maturity_date: string | null;
-  maturity_text: string;
-  tenure: string;
+  redemption_date: string | null;
+  face_value: number | null;
+  issue_price: number | null;
+  redemption_value: number | null;
+  coupon_rate: number | null;
+  coupon_type: string;
+  coupon_frequency: string;
+  interest_payment_dates: string;
+  first_coupon_date: string | null;
+  next_coupon_date: string | null;
+  previous_coupon_date: string | null;
+  day_count_convention: string;
+  business_day_convention: string;
+  principal_repayment_structure: string;
+  redemption_schedule: unknown;
+  callable: boolean;
+  puttable: boolean;
+  perpetual: boolean;
+  floating: boolean;
+  put_call_date: string | null;
+  put_call_type: string;
+  seniority: string;
+  security_type: string;
+  secured: boolean | null;
+  tax_status: string;
+  exchange_listed: string;
+  listing_status: string;
+  nse_symbol: string;
+  bse_code: string;
+  min_investment: number | null;
+  lot_size: number | null;
+  currency: string;
   rating: string;
   rating_agency: string;
-  interest_frequency: string;
-  interest_payment_dates: string;
-  put_option: string;
-  call_option: string;
-  principal_repayment: string;
-  credit_enhancement: string;
-  trustee: string;
-  tax_status: string;
-  remarks: string;
-  notes: string;
-  footnotes: string;
-  disclaimers: string;
-  status: BondStatus;
-  is_archived: boolean;
-  source: BondSource;
-  ocr_confidence: number;
-  needs_review: boolean;
+  rating_date: string | null;
+  issuer_docs: Record<string, unknown>;
+  selling_price: number | null;
+  latest_price: number | null;
+  price_updated_at: string | null;
+  active_status: ActiveStatus;
+  verification_status: VerificationStatus;
+  data_quality_score: number;
+  enriched_at: string | null;
   created_at: string;
   updated_at: string;
-}
-
-// Employee-safe view row.
-export type NWBondCatalog = NWBondBase;
-
-// Full admin master row — adds the confidential + provenance fields.
-export interface NWBond extends NWBondBase {
-  purchase_price: number | null;       // INTERNAL
-  landing_cost: number | null;         // INTERNAL / CONFIDENTIAL
-  default_margin_type: 'none' | 'percent' | 'flat';
-  default_margin_value: number | null; // INTERNAL
-  internal_notes: string;              // INTERNAL
-  admin_remarks: string;               // INTERNAL
-  extracted_json: unknown;
-  document_id: string | null;
-  created_by: string | null;
-  modified_by: string | null;
-}
-
-export interface NWBondDocument {
-  id: string;
-  storage_path: string;
-  file_name: string;
-  mime_type: string;
-  file_size: number;
-  doc_format: 'excel' | 'pdf' | 'word' | 'other';
-  bond_count: number;
-  uploaded_by: string | null;
-  created_at: string;
-}
-
-export interface NWBondVersion {
-  id: string;
-  bond_id: string;
-  version_no: number;
-  snapshot: Record<string, unknown>;
-  changed_by: string | null;
-  change_note: string;
-  created_at: string;
-  changed_by_employee?: { full_name: string } | null;
-}
-
-export interface NWGeneratedMarketingPdf {
-  id: string;
-  bond_id: string;
-  employee_id: string | null;
-  margin_type: MarginType;
-  margin_value: number | null;
-  selling_price: number | null;
-  bond_name_snapshot: string;
-  created_at: string;
-}
-
-// ---- Parser types (modular; Excel implemented, PDF/Word pluggable) ----
-
-// A single parsed bond ready for the preview grid. Values map 1:1 to nw_bonds
-// columns. Confidence + flagged reasons drive the review UI.
-export interface ParsedBond {
-  rowNumber: number;
-  data: ParsedBondData;
-  confidence: number;            // 0-100
-  needsReview: boolean;
-  issues: string[];              // human-readable reasons a row needs review
-}
-
-export interface ParsedBondData {
-  company_name: string;
-  isin: string;
-  bond_name: string;
-  issuer: string;
-  security_type: string;
-  security_category: string;
-  face_value: number | null;
-  face_value_text: string;
-  available_quantity: string;
-  minimum_investment: string;
-  multiples: string;
-  purchase_price: number | null;
-  coupon: number | null;
-  coupon_text: string;
-  yield_ytm: number | null;
-  ytc_ytp: number | null;
-  maturity_date: string | null;  // ISO date or null
-  maturity_text: string;
-  tenure: string;
-  rating: string;
-  rating_agency: string;
-  interest_frequency: string;
-  interest_payment_dates: string;
-  put_option: string;
-  call_option: string;
-  tax_status: string;
-  remarks: string;
-  extracted_json: Record<string, unknown>;
-}
-
-export interface BondParseResult {
-  supported: boolean;
-  format: 'excel' | 'pdf' | 'word' | 'unknown';
-  bonds: ParsedBond[];
-  message?: string;              // shown when supported === false
-  categories: string[];          // distinct categories found
 }
