@@ -92,7 +92,7 @@ export function Landing({ onViewServices, onViewLearning, onViewNews, onViewMFRe
                       CRM
                     </button>
                     <button
-                      onClick={() => { window.location.href = '/mf-admin'; }}
+                      onClick={() => { window.open('/mf-admin', '_blank'); }}
                       className="w-full text-left px-4 py-3 text-white hover:text-accent-soft hover:bg-bg-elevated/5 transition-colors duration-200 last:rounded-b-md"
                     >
                       MF Admin
@@ -276,7 +276,7 @@ export function Landing({ onViewServices, onViewLearning, onViewNews, onViewMFRe
                   CRM
                 </button>
                 <button
-                  onClick={() => { window.location.href = '/mf-admin'; }}
+                  onClick={() => { window.open('/mf-admin', '_blank'); setIsMobileMenuOpen(false); }}
                   className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded mb-3 transition-colors"
                 >
                   MF Admin
