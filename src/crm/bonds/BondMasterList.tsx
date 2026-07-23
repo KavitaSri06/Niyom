@@ -1,8 +1,9 @@
 // Bond Security Master — searchable list of every bond in the master.
 
 import { useState } from 'react';
-import { Search, UploadCloud, Loader2, ShieldCheck, ShieldAlert, Clock, Landmark } from 'lucide-react';
-import { useBonds } from './bondClient';
+import { useQueryClient } from '@tanstack/react-query';
+import { Search, UploadCloud, Loader2, ShieldCheck, ShieldAlert, Clock, Landmark, Sparkles } from 'lucide-react';
+import { useBonds, enrichPendingLoop } from './bondClient';
 import { BondPublic } from './bondTypes';
 
 interface Props { isAdmin: boolean; onUpload: () => void; onOpen: (id: string) => void; }
@@ -45,6 +46,15 @@ function QualityBadge({ score }: { score: number }) {
 export default function BondMasterList({ isAdmin, onUpload, onOpen }: Props) {
   const [search, setSearch] = useState('');
   const { data: bonds = [], isLoading, error } = useBonds(search);
+  const qc = useQueryClient();
+  const [mastering, setMastering] = useState<number | null>(null);
+  const pending = bonds.filter(b => b.verification_status === 'pending' || b.verification_status === 'failed').length;
+
+  const masterPending = async () => {
+    setMastering(0);
+    try { await enrichPendingLoop(done => setMastering(done)); }
+    finally { setMastering(null); qc.invalidateQueries({ queryKey: ['bm_bonds'] }); }
+  };
 
   return (
     <div className="space-y-5">
@@ -61,6 +71,13 @@ export default function BondMasterList({ isAdmin, onUpload, onOpen }: Props) {
               className="pl-9 pr-3 py-2.5 rounded-xl text-sm outline-none w-64"
               style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
           </div>
+          {isAdmin && pending > 0 && (
+            <button onClick={masterPending} disabled={mastering !== null} className="px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60 flex items-center gap-2"
+              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+              {mastering !== null ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {mastering !== null ? `Mastering… ${mastering}` : `Master ${pending} pending`}
+            </button>
+          )}
           {isAdmin && (
             <button onClick={onUpload} className="px-4 py-2.5 rounded-xl text-sm font-bold text-on-accent flex items-center gap-2"
               style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>

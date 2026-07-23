@@ -85,6 +85,7 @@ export interface BondPublic {
   rating: string;
   rating_agency: string;
   rating_date: string | null;
+  trustee: string;
   issuer_docs: Record<string, unknown>;
   selling_price: number | null;
   latest_price: number | null;
@@ -93,6 +94,35 @@ export interface BondPublic {
   verification_status: VerificationStatus;
   data_quality_score: number;
   enriched_at: string | null;
+  analytics: BondAnalytics | null;
+  analytics_computed_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface BondAnalytics {
+  accrued_per_100: number | null;
+  clean_price: number | null;
+  dirty_price: number | null;
+  current_yield: number | null;
+  ytm: number | null;
+  macaulay_duration: number | null;
+  modified_duration: number | null;
+  days_to_maturity: number | null;
+  years_to_maturity: number | null;
+  total_future_interest_per_100: number | null;
+  total_future_principal_per_100: number | null;
+  assumed_bullet?: boolean;
+  settlement_date?: string;
+  ok?: boolean;
+  reason?: string | null;
+}
+
+export interface CashflowScheduleRow {
+  seq: number;
+  cf_date: string;
+  interest_per_100: number;
+  principal_per_100: number;
+  total_per_100: number;
+  remark: string;
 }

@@ -46,3 +46,35 @@ export function useImportPrices() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['bm_bonds'] }); },
   });
 }
+
+export interface EnrichResult { isin: string; status: string; quality?: number; ytm?: number | null; error?: string }
+export interface EnrichResponse { enriched: number; results: EnrichResult[] }
+
+// One enrichment batch (edge function loops internally, bounded by `limit`).
+export async function enrichBatch(params: { bond_ids?: string[]; isin?: string; limit?: number }): Promise<EnrichResponse> {
+  const { data, error } = await supabase.functions.invoke('bond-enrich', { body: params });
+  if (error) throw error;
+  return data as EnrichResponse;
+}
+
+// Drive enrichment of all pending bonds in safe batches (keeps each invocation
+// well under the edge-function timeout). Calls onProgress after each batch.
+export async function enrichPendingLoop(onProgress?: (done: number) => void, batch = 12, maxBatches = 200): Promise<number> {
+  let done = 0;
+  for (let i = 0; i < maxBatches; i++) {
+    const res = await enrichBatch({ limit: batch });
+    done += res.enriched;
+    onProgress?.(done);
+    if (res.enriched === 0) break;
+  }
+  return done;
+}
+
+// Single-bond enrich (on-demand when opening a Pending bond).
+export function useEnrichOne() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (isin: string) => enrichBatch({ isin }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['bm_bonds'] }); },
+  });
+}

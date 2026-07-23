@@ -6,7 +6,7 @@ import { useRef, useState } from 'react';
 import { ArrowLeft, UploadCloud, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { parsePriceFile } from './excelImport';
 import { ParsedImportRow, ImportRow, ImportSummary } from './bondTypes';
-import { useImportPrices } from './bondClient';
+import { useImportPrices, enrichPendingLoop } from './bondClient';
 
 interface Props { onBack: () => void; onDone: () => void; }
 type Phase = 'select' | 'parsing' | 'preview' | 'done';
@@ -19,6 +19,7 @@ export default function BondImport({ onBack, onDone }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [enrich, setEnrich] = useState<{ running: boolean; done: number; total: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const importMut = useImportPrices();
 
@@ -47,6 +48,13 @@ export default function BondImport({ onBack, onDone }: Props) {
     try {
       const res = await importMut.mutateAsync(payload);
       setSummary(res); setPhase('done');
+      // Automatically master any new / still-pending bonds.
+      if (res.created > 0) {
+        setEnrich({ running: true, done: 0, total: res.created });
+        enrichPendingLoop(done => setEnrich(e => e ? { ...e, done } : e))
+          .then(done => setEnrich({ running: false, done, total: Math.max(res.created, done) }))
+          .catch(() => setEnrich(e => e ? { ...e, running: false } : e));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Import failed.');
     }
@@ -65,10 +73,23 @@ export default function BondImport({ onBack, onDone }: Props) {
             </div>
           ))}
         </div>
-        {summary.created > 0 && (
-          <p className="text-sm mb-6" style={{ color: 'var(--text-faint)' }}>
-            {summary.created} new ISIN{summary.created === 1 ? '' : 's'} added and queued for automatic enrichment.
-          </p>
+        {enrich && (
+          <div className="mb-6 rounded-xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              {enrich.running && <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--accent)' }} />}
+              <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                {enrich.running ? 'Mastering bond data…' : 'Mastering complete'}
+              </span>
+            </div>
+            <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+              {enrich.done} of {enrich.total} bonds fetched &amp; analytics computed{enrich.running ? '' : ' ✓'}
+            </p>
+            {enrich.running && (
+              <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-base)' }}>
+                <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (enrich.done / Math.max(1, enrich.total)) * 100)}%`, background: 'var(--accent)' }} />
+              </div>
+            )}
+          </div>
         )}
         <button onClick={onDone} className="px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>Back to master</button>
       </div>
