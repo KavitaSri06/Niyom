@@ -181,6 +181,79 @@ export default function MIS({ employee }: Props) {
       }
     }
 
+    // ---------------------------------------------------------------------
+    // Fully-paid deals that have NOT been booked into a transaction yet.
+    // Revenue should be visible at PAYMENT time, without waiting for the
+    // Transfer Queue / Add New Business booking. We surface each such deal
+    // here (de-duplicated against booked deals, which are already counted
+    // above via their transaction).
+    // ---------------------------------------------------------------------
+    const bookedDealIds = new Set(
+      txns.map(t => (t as any).deal_confirmation_id).filter(Boolean) as string[],
+    );
+    const DEAL_TYPE: Record<string, ProductType> = {
+      'Unlisted Share': 'unlisted_share',
+      'Secondary Bond': 'secondary_bond',
+      'Primary Bond': 'primary_bond',
+    };
+
+    const { data: paidSumm } = await supabase
+      .from('nw_deal_payment_summary')
+      .select('deal_id')
+      .eq('payment_status', 'fully_paid');
+    const paidDealIds = new Set((paidSumm ?? []).map((s: any) => s.deal_id));
+
+    if (paidDealIds.size > 0) {
+      const { data: dealData } = await supabase
+        .from('nw_deal_confirmations')
+        .select('id, client_id, product_type, transaction_type, security_name, quantity, base_rate, landing_cost, deal_date')
+        .in('client_id', clientIds)
+        .gte('deal_date', startDate)
+        .lte('deal_date', endDate);
+
+      for (const d of (dealData ?? []) as any[]) {
+        if (!paidDealIds.has(d.id)) continue;   // only fully-paid deals
+        if (bookedDealIds.has(d.id)) continue;  // already counted via its transaction
+        const prodNorm = DEAL_TYPE[d.product_type as string];
+        if (!prodNorm) continue;                // landing-cost products only
+        const client = clientList.find(c => c.id === d.client_id);
+        if (!client) continue;
+
+        const qty = d.quantity || 0;
+        const price = d.base_rate || 0;         // client pays base rate × qty
+        const baseRow = {
+          client_id: d.client_id,
+          client_name: client.full_name,
+          client_code: client.client_code,
+          date: d.deal_date,
+          product_type: prodNorm,
+          product_name: d.security_name,
+        };
+
+        if (d.landing_cost === null || d.landing_cost === undefined) {
+          // Paid but no landing cost yet — show it so it isn't lost, without
+          // guessing revenue. Enter the landing cost (book it) to compute it.
+          computed.push({
+            ...baseRow,
+            revenue_type: 'landing_cost',
+            revenue: 0,
+            notes: `⚠ Paid, awaiting booking — enter landing cost to compute revenue (Price ${fmt(price)} × Qty ${qty})`,
+          });
+        } else {
+          const landing = Number(d.landing_cost);
+          const revenue = d.transaction_type === 'Sell'
+            ? (landing - price) * qty
+            : (price - landing) * qty;
+          computed.push({
+            ...baseRow,
+            revenue_type: 'landing_cost',
+            revenue,
+            notes: `Paid deal (not yet booked) — Price ${fmt(price)} | Landing ${fmt(landing)} | Qty ${qty}`,
+          });
+        }
+      }
+    }
+
     // Newest first. Dates are ISO (YYYY-MM-DD) so they order correctly as
     // strings; client name breaks ties so rows from the same day keep a stable,
     // predictable order instead of shifting between loads.
