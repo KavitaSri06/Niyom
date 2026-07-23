@@ -284,6 +284,52 @@ async function syncTransactionToHolding(txn: Record<string, any>) {
   await supabase.from('nw_clients').update({ portfolio_value: total }).eq('id', txn.client_id);
 }
 
+// Reverse a previously-synced BUY transaction out of its holding. The inverse of
+// syncTransactionToHolding: it subtracts this transaction's quantity/amount from
+// the matched holding (deleting the holding if nothing is left) and recomputes
+// the client's portfolio_value. Returns true if a holding was found and
+// adjusted — the caller uses that to decide whether to re-apply new values on an
+// edit (transactions that never produced a holding, e.g. sells or Transfer-Queue
+// bookings, must not spawn a new one). Mirrors nw_unwind_txn_holding() in SQL.
+async function reverseTransactionFromHolding(txn: Record<string, any>): Promise<boolean> {
+  if (txn.txn_type !== 'buy') return false;
+
+  const qty = txn.quantity || 0;
+  const amount = (txn.product_type === 'secondary_bond' && txn.client_price)
+    ? (txn.client_price * qty)
+    : (txn.consolidated_amount || 0);
+
+  const { data: existing } = await supabase
+    .from('nw_holdings')
+    .select('*')
+    .eq('client_id', txn.client_id)
+    .eq('product_name', txn.product_name)
+    .eq('product_type', txn.product_type)
+    .maybeSingle();
+
+  if (!existing) return false;
+
+  const newQty = (existing.quantity || 0) - qty;
+  const newInvested = (existing.invested_amount || 0) - amount;
+
+  if (newQty <= 0 || newInvested <= 0) {
+    await supabase.from('nw_holdings').delete().eq('id', existing.id);
+  } else {
+    await supabase.from('nw_holdings').update({
+      quantity: newQty,
+      invested_amount: newInvested,
+      avg_cost: newInvested / newQty,
+      current_value: newInvested,
+      updated_at: new Date().toISOString(),
+    }).eq('id', existing.id);
+  }
+
+  const { data: allHoldings } = await supabase.from('nw_holdings').select('current_value').eq('client_id', txn.client_id);
+  const total = (allHoldings || []).reduce((s: number, h: any) => s + (h.current_value || 0), 0);
+  await supabase.from('nw_clients').update({ portfolio_value: total }).eq('id', txn.client_id);
+  return true;
+}
+
 export default function Transactions({ employee, onNavigate }: Props) {
   const [txns, setTxns] = useState<NWTransaction[]>([]);
   const [clients, setClients] = useState<NWClient[]>([]);
@@ -550,18 +596,27 @@ export default function Transactions({ employee, onNavigate }: Props) {
       // settlement (base rate / stamp-duty rounding). Non-transferred rows keep
       // the full edit, minus employee_id (never reassign ownership).
       let updatePayload: Record<string, any>;
-      if ((editTxn as any).transfer_stage === 'transferred') {
+      if ((editTxn as any).transfer_stage === 'transferred' && !isAdmin) {
         updatePayload = {};
         for (const k of ['landing_cost', 'insurance_revenue', 'trail_percent', 'trail_start_date', 'txn_date', 'notes'] as const) {
           if (k in payload) updatePayload[k] = payload[k];
         }
       } else {
+        // Admins may fully amend any transaction (including a transferred one).
+        // Ownership is never reassigned on edit.
         const { employee_id: _keepOwner, ...rest } = payload;
         updatePayload = rest;
       }
       const { error: err } = await supabase.from('nw_transactions').update({ ...updatePayload, updated_at: new Date().toISOString() }).eq('id', editTxn.id);
       if (err) { setError(err.message); setSaving(false); return; }
       txnId = editTxn.id;
+
+      // Keep portfolio holdings in step with the amended figures: reverse the
+      // pre-edit contribution, then re-apply the new one — but only if this
+      // transaction was actually holding-tracked (reverse returns false for
+      // sells and Transfer-Queue bookings, which must not spawn a holding here).
+      const hadHolding = await reverseTransactionFromHolding(editTxn as any);
+      if (hadHolding) await syncTransactionToHolding(payload);
     } else {
       const { data, error: err } = await supabase.from('nw_transactions').insert([payload]).select().single();
       if (err) {
@@ -599,8 +654,15 @@ export default function Transactions({ employee, onNavigate }: Props) {
   const handleDelete = async () => {
     if (!deleteTxn) return;
     setSaving(true);
-    await supabase.from('nw_transactions').delete().eq('id', deleteTxn.id);
-    setSaving(false); setDeleteTxn(null); loadTxns();
+    // Server-side cascade (admin/owner-gated): reverses the portfolio holding,
+    // removes any DSA debit-note coverage line, deletes the row (documents
+    // cascade) and — if it was booked from a deal — returns that deal to the
+    // Transfer Queue. A plain DELETE would drift the holding and be blocked by
+    // the DSA line / transfer guards.
+    const { error: err } = await supabase.rpc('nw_delete_transaction_cascade', { p_txn_id: deleteTxn.id });
+    setSaving(false);
+    if (err) { setError(err.message || 'Could not delete transaction.'); return; }
+    setDeleteTxn(null); loadTxns();
   };
 
   const selectedClientForForm = clients.find(c => c.id === form.client_id);
@@ -613,6 +675,14 @@ export default function Transactions({ employee, onNavigate }: Props) {
   const txnFormJsx = (
     <div className="p-6 space-y-5">
       {error && <div className="p-3 rounded-xl text-sm text-c-red" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
+
+      {editTxn && (editTxn as any).transfer_stage === 'transferred' && isAdmin && (
+        <div className="p-3 rounded-xl text-sm" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: 'var(--warning)' }}>
+          This is a transferred (executed-ledger) transaction. As an admin you may amend any field; its
+          portfolio holding will re-sync automatically. If it is covered by a DSA debit note, update that
+          note separately — editing here does not adjust an already-computed DSA payout.
+        </div>
+      )}
 
       {/* Book from a confirmed deal. Open to every employee who can already
           add business here — this grants no new authority, it just removes the
@@ -981,7 +1051,7 @@ export default function Transactions({ employee, onNavigate }: Props) {
                       <div className="flex items-center gap-1">
                         <button onClick={() => setViewTxn(t)} className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><ChevronRight className="w-4 h-4" /></button>
                         <button onClick={() => openEdit(t)} className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'rgb(var(--info-soft-rgb))')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => setDeleteTxn(t)} className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => { setError(''); setDeleteTxn(t); }} className="p-1.5 rounded-lg" style={{ color: 'var(--text-faint)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -1077,7 +1147,8 @@ export default function Transactions({ employee, onNavigate }: Props) {
       {deleteTxn && (
         <Modal title="Delete Transaction" onClose={() => setDeleteTxn(null)}>
           <div className="p-6 space-y-4">
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Delete transaction for <span className="text-text-primary font-semibold">{deleteTxn.product_name}</span> ({fmt(deleteTxn.consolidated_amount)})? This cannot be undone.</p>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Delete transaction for <span className="text-text-primary font-semibold">{deleteTxn.product_name}</span> ({fmt(deleteTxn.consolidated_amount)})? This also reverses its portfolio holding{(deleteTxn as any).transfer_stage === 'transferred' ? ' and permanently deletes the source deal confirmation along with its payments' : ''}. This cannot be undone.</p>
+            {error && <div className="p-3 rounded-xl text-sm text-c-red" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
             <div className="flex justify-end gap-3">
               <button onClick={() => setDeleteTxn(null)} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
               <button onClick={handleDelete} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-text-primary disabled:opacity-50" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)' }}>
