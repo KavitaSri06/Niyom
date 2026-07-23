@@ -42,12 +42,19 @@ export interface BondInsertRow extends Partial<ParsedBondData> {
   needs_review?: boolean;
 }
 
-export async function insertBatch(rows: BondInsertRow[], documentId: string | null):
+export async function insertBatch(rows: BondInsertRow[], documentId: string | null, replace = false):
   Promise<{ count: number; error: string | null }> {
   const { data, error } = await supabase.rpc('nw_bond_insert_batch', {
-    p_rows: rows, p_document_id: documentId,
+    p_rows: rows, p_document_id: documentId, p_replace: replace,
   });
   return { count: (data as number) ?? 0, error: error?.message || null };
+}
+
+// Count of bonds currently in the master (admin only) — used to warn before a
+// replace-on-upload wipes them.
+export async function countBonds(): Promise<number> {
+  const { count } = await supabase.from('nw_bonds').select('*', { count: 'exact', head: true });
+  return count ?? 0;
 }
 
 export async function updateBond(id: string, patch: Partial<NWBond>): Promise<string | null> {

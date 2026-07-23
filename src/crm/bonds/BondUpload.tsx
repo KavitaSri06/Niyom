@@ -6,7 +6,7 @@
 // increase applied to each bond's existing price (the imported Price Per 100) to
 // derive the selling price. Admin may correct any cell, drop bad rows, then save.
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, UploadCloud, FileSpreadsheet, AlertTriangle, CheckCircle2,
   Loader2, Trash2, Filter, Percent,
@@ -16,7 +16,7 @@ import { BondStatus, ParsedBond, ParsedBondData } from './bondTypes';
 import { BOND_STATUSES } from './bondConstants';
 import { computeSellingPrice } from './bondUtils';
 import { parseBondFile } from './bondParser';
-import { insertBatch, uploadDocument, BondInsertRow } from './bondService';
+import { insertBatch, uploadDocument, countBonds, BondInsertRow } from './bondService';
 
 const DEFAULT_MARKUP = 2;
 
@@ -48,7 +48,14 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
   const [onlyFlagged, setOnlyFlagged] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [markup, setMarkup] = useState<number>(DEFAULT_MARKUP);
+  const [replaceExisting, setReplaceExisting] = useState(true);
+  const [existingCount, setExistingCount] = useState<number | null>(null);
+  const [confirmReplace, setConfirmReplace] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // How many bonds are already in the master — so the admin knows what a replace
+  // will wipe.
+  useEffect(() => { countBonds().then(setExistingCount); }, []);
 
   const handleFile = useCallback(async (f: File) => {
     setFile(f);
@@ -100,7 +107,14 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
   const includedCount = useMemo(() => rows.filter(r => r.included).length, [rows]);
   const visibleRows = useMemo(() => rows.map((r, i) => ({ r, i })).filter(({ r }) => !onlyFlagged || r.needsReview), [rows, onlyFlagged]);
 
+  // A replace that would wipe existing bonds asks for confirmation first.
+  const onSaveClick = () => {
+    if (replaceExisting && (existingCount ?? 0) > 0) setConfirmReplace(true);
+    else save();
+  };
+
   const save = async () => {
+    setConfirmReplace(false);
     setPhase('saving');
     setError(null);
     try {
@@ -121,7 +135,7 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
         ocr_confidence: r.confidence,
         needs_review: r.needsReview,
       }));
-      const { count, error: insErr } = await insertBatch(payload, documentId);
+      const { count, error: insErr } = await insertBatch(payload, documentId, replaceExisting);
       if (insErr) { setError(insErr); setPhase('preview'); return; }
       onDone(count);
     } catch (e) {
@@ -203,11 +217,31 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
               <Filter className="w-4 h-4" /> {onlyFlagged ? 'Show all' : 'Only flagged'}
             </button>
           )}
-          <button disabled={includedCount === 0} onClick={save} className="px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-40 flex items-center gap-2"
+          <button disabled={includedCount === 0} onClick={onSaveClick} className="px-5 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-40 flex items-center gap-2"
             style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
-            <CheckCircle2 className="w-4 h-4" /> Save {includedCount} Bond{includedCount === 1 ? '' : 's'}
+            <CheckCircle2 className="w-4 h-4" /> {replaceExisting ? 'Replace with' : 'Add'} {includedCount} Bond{includedCount === 1 ? '' : 's'}
           </button>
         </div>
+      </div>
+
+      {/* Replace vs append mode */}
+      <div className="p-3 rounded-xl flex items-center justify-between gap-3 flex-wrap" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input type="checkbox" checked={replaceExisting} onChange={e => setReplaceExisting(e.target.checked)} className="mt-0.5 w-4 h-4 flex-shrink-0" style={{ accentColor: 'var(--accent)' }} />
+          <span>
+            <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Replace the existing bond list</span>
+            <span className="block text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>
+              {replaceExisting
+                ? `Deletes ${existingCount === null ? 'the' : `all ${existingCount.toLocaleString('en-IN')}`} current bond${existingCount === 1 ? '' : 's'} and imports this sheet as the fresh list. Recommended for a daily refresh.`
+                : 'Adds these bonds on top of the existing list (may create duplicates).'}
+            </span>
+          </span>
+        </label>
+        {existingCount !== null && existingCount > 0 && (
+          <span className="text-xs px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+            {existingCount.toLocaleString('en-IN')} in database now
+          </span>
+        )}
       </div>
 
       {flaggedCount > 0 && (
@@ -269,6 +303,26 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
           <div className="px-6 py-5 rounded-2xl flex items-center gap-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
             <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--accent)' }} />
             <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Saving bonds to database…</span>
+          </div>
+        </div>
+      )}
+
+      {/* Replace confirmation */}
+      {confirmReplace && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <div className="absolute inset-0" style={{ background: 'var(--bg-overlay)' }} onClick={() => setConfirmReplace(false)} />
+          <div className="relative w-full max-w-sm rounded-2xl shadow-2xl p-5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <div className="flex items-start gap-2.5 mb-2">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'rgb(245,158,11)' }} />
+              <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Replace the entire bond list?</h3>
+            </div>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-faint)' }}>
+              This permanently deletes the current <strong style={{ color: 'var(--text-secondary)' }}>{(existingCount ?? 0).toLocaleString('en-IN')}</strong> bond{existingCount === 1 ? '' : 's'} (and their version history) and imports these <strong style={{ color: 'var(--text-secondary)' }}>{includedCount}</strong> as the fresh list. This cannot be undone.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button onClick={() => setConfirmReplace(false)} className="px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>Cancel</button>
+              <button onClick={save} className="px-4 py-2 rounded-xl text-sm font-bold text-on-accent" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>Replace &amp; Import</button>
+            </div>
           </div>
         </div>
       )}
