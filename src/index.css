@@ -418,7 +418,13 @@ input[type='range'] {
 }
 @media (prefers-reduced-motion: no-preference) {
   .crm-page-enter {
-    animation: crmPageIn 0.32s var(--ease-out, ease) both;
+    /* NOTE: fill-mode must NOT be 'forwards'/'both'. Retaining the final
+       keyframe leaves transform: translateY(0) (an identity transform) on this
+       page wrapper, which creates a containing block for position:fixed — so
+       every modal centered itself relative to this tall wrapper instead of the
+       viewport and appeared far down the page. 'backwards' keeps the entry
+       animation but returns transform to 'none' at rest. */
+    animation: crmPageIn 0.32s var(--ease-out, ease) backwards;
   }
 }
 
