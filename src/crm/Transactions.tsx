@@ -462,13 +462,6 @@ export default function Transactions({ employee, onNavigate }: Props) {
   };
 
   const handleSave = async () => {
-    // A deal picked here is for PRE-FILL/reference only. Booking + transfer of a
-    // deal happens solely in the Transfer Queue (so it gets a review step and
-    // never double-books). Saving a deal-linked entry from this form is blocked.
-    if (pickedDeal && !editTxn) {
-      setError('This deal is booked from the Transfer Queue, not here. The fields are pre-filled for reference — clear the deal to record separate business.');
-      return;
-    }
     if (!form.client_id) { setError('Please select a client.'); return; }
     if (!form.product_name.trim()) { setError('Product name is required.'); return; }
     if (!form.consolidated_amount || parseFloat(form.consolidated_amount) <= 0) { setError('Amount is required.'); return; }
@@ -526,6 +519,20 @@ export default function Transactions({ employee, onNavigate }: Props) {
       premium_amount: form.premium_amount ? parseFloat(form.premium_amount) : null,
       premium_frequency: form.premium_frequency,
     });
+
+    // Booked from a confirmed deal: carry the same link the Transfer Queue
+    // writes. This is what removes the deal from that queue, and the existing
+    // uq_nw_transactions_deal unique index makes booking the same deal twice
+    // impossible from either path.
+    if (!editTxn && pickedDeal) {
+      Object.assign(payload, {
+        deal_confirmation_id: pickedDeal.deal_id,
+        transfer_stage: 'transferred',
+        transferred_at: new Date().toISOString(),
+        transferred_by: employee.id,
+        transfer_remarks: 'Booked via Add New Business',
+      });
+    }
 
     let txnId: string;
     if (editTxn) {
@@ -647,7 +654,7 @@ export default function Transactions({ employee, onNavigate }: Props) {
                 </div>
               )}
               <p className="text-xs mt-2" style={{ color: 'var(--text-faint)' }}>
-                Optional — pick a deal to view its details pre-filled below, or leave blank and enter business manually.
+                Optional — pick a deal to pre-fill and link it, or leave blank and enter the business manually.
               </p>
             </div>
           )}
@@ -656,8 +663,8 @@ export default function Transactions({ employee, onNavigate }: Props) {
             <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
               <span className="font-mono text-xs mr-2" style={{ color: 'var(--accent)' }}>{pickedDeal.confirmation_number}</span>
               {pickedDeal.snap_client_name} · {pickedDeal.security_name}
-              <p className="text-xs mt-1" style={{ color: 'var(--warning)' }}>
-                Pre-filled for reference only. This paid deal is booked &amp; transferred from the <strong>Transfer Queue</strong> (with review) — it can't be saved from here. Clear the deal to record separate business manually.
+              <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>
+                Deal details are locked below. Add the landing cost{showDsaPrice ? ' and DSA landing' : ''} to finish.
               </p>
             </div>
           )}
@@ -826,9 +833,7 @@ export default function Transactions({ employee, onNavigate }: Props) {
       </div>
       <div className="flex justify-end gap-3 pt-1">
         <button onClick={() => { setShowAdd(false); setEditTxn(null); }} className="px-4 py-2 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
-        <button onClick={handleSave} disabled={saving || (!!pickedDeal && !editTxn)}
-          title={(!!pickedDeal && !editTxn) ? 'This deal is transferred from the Transfer Queue — clear it to record separate business' : undefined}
-          className="px-5 py-2 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+        <button onClick={handleSave} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
           {saving ? 'Saving...' : editTxn ? 'Save Changes' : 'Add New Business'}
         </button>
       </div>
