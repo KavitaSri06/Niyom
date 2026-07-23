@@ -1,10 +1,11 @@
-import { ArrowRight, Shield, Target, Zap, TrendingUp, Users, Award, Instagram, Linkedin, ChevronRight, Phone, Mail, MessageCircle, Menu, X, ChevronDown, MapPin, Layers, FileCheck, Clock, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Shield, Target, Zap, TrendingUp, Users, Award, Instagram, Linkedin, ChevronRight, Phone, Mail, MessageCircle, Menu, X, ChevronDown, MapPin, ShieldCheck, Search, Eye, Handshake } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Logo } from '../components/Logo';
 import { RegulatoryInfo } from '../components/RegulatoryInfo';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { HeroBackground } from '../components/HeroBackground';
-import { Reveal, Counter } from '../components/Reveal';
+import { HeroShowcase } from '../components/HeroShowcase';
+import { Reveal } from '../components/Reveal';
 
 interface LandingProps {
   onGetStarted: () => void;
@@ -356,61 +357,74 @@ export function Landing({ onViewServices, onViewLearning, onViewNews, onViewMFRe
       {/* Inherently dark: the animated network backdrop renders in navy + gold,
           so it pins the dark token set regardless of the active theme —
           otherwise the light theme's dark-on-light gold would render muted. */}
-      <section id="home" data-theme="dark" className="relative text-white py-32 px-6 overflow-hidden">
+      <section id="home" data-theme="dark" className="relative text-white overflow-hidden min-h-[92vh] flex items-center py-20 md:py-24 px-6">
         {/* Original animated fintech backdrop — replaces the old stock photo. */}
         <HeroBackground />
-        <div className="relative max-w-6xl mx-auto flex flex-col items-center text-center">
-          <div className={`flex justify-center mb-8 ${isLoaded ? 'animate-scaleIn' : 'opacity-0'}`}>
-            <img
-              src="/niyom-mark.png"
-              alt="Niyom Wealth"
-              className="h-28 w-auto md:h-36 drop-shadow-[0_6px_28px_rgba(200,164,93,0.28)]"
-            />
-          </div>
-          <h2 className={`text-5xl md:text-7xl font-bold mb-6 leading-[1.05] tracking-tight ${isLoaded ? 'animate-fadeInUp animate-delay-100' : 'opacity-0'}`} style={{ fontFamily: 'var(--font-display)' }}>
-            Your Financial Success<br />
-            <span className="text-accent-soft">is Our Priority</span>
-          </h2>
-          <p className={`text-lg md:text-xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed ${isLoaded ? 'animate-fadeInUp animate-delay-200' : 'opacity-0'}`}>
-            One premium platform for mutual funds, bonds, fixed deposits, insurance and unlisted shares — with the information and tools to invest with confidence.
-          </p>
-          <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 ${isLoaded ? 'animate-fadeInUp animate-delay-400' : 'opacity-0'}`}>
-            <button
-              onClick={() => onNavigate('client-login')}
-              className="lift press bg-accent-soft hover:bg-accent-soft-deep text-black font-bold py-4 px-10 rounded-xl flex items-center gap-3 shadow-lg text-lg"
-            >
-              Get Started <ArrowRight size={22} />
-            </button>
-            <button
-              onClick={() => scrollToSection('services')}
-              className="press text-white font-semibold py-4 px-8 rounded-xl text-lg transition-colors"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)' }}
-            >
-              Explore Services
-            </button>
+        <div className="relative w-full max-w-7xl mx-auto grid lg:grid-cols-2 gap-14 lg:gap-8 items-center">
+
+          {/* Left — message */}
+          <div className="text-center lg:text-left">
+            {/* Eyebrow */}
+            <div className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-7 ${isLoaded ? 'animate-fadeInUp' : 'opacity-0'}`}
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(200,164,93,0.28)', backdropFilter: 'blur(8px)' }}>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-pulse-subtle absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: 'var(--accent-soft)' }} />
+                <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: 'var(--accent-soft)' }} />
+              </span>
+              <span className="text-xs font-medium tracking-wide text-gray-200">AMFI-Registered Distribution · Built on Trust</span>
+            </div>
+
+            {/* Headline — gold emphasis on "Build Wealth" and "Confidence" */}
+            <h1 className={`text-5xl md:text-6xl xl:text-7xl font-bold leading-[1.04] tracking-tight mb-6 ${isLoaded ? 'animate-fadeInUp animate-delay-100' : 'opacity-0'}`} style={{ fontFamily: 'var(--font-display)' }}>
+              <span className="text-accent-soft">Build Wealth</span><br />
+              <span className="text-white">with </span><span className="text-accent-soft">Confidence</span>
+            </h1>
+
+            {/* Sub-heading */}
+            <p className={`text-lg md:text-xl text-gray-300 leading-relaxed mb-9 max-w-xl mx-auto lg:mx-0 ${isLoaded ? 'animate-fadeInUp animate-delay-200' : 'opacity-0'}`}>
+              Premium investment solutions in Mutual Funds, Bonds, Fixed Deposits, Insurance &amp; Unlisted Shares—powered by research, transparency and personalized guidance.
+            </p>
+
+            {/* CTAs */}
+            <div className={`flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4 ${isLoaded ? 'animate-fadeInUp animate-delay-300' : 'opacity-0'}`}>
+              <button
+                onClick={() => onNavigate('client-login')}
+                className="cta-glow press bg-accent-soft hover:bg-accent-soft-deep text-black font-bold py-4 px-9 rounded-xl flex items-center gap-2.5 text-lg w-full sm:w-auto justify-center"
+              >
+                Start Investing <ArrowRight size={20} />
+              </button>
+              <button
+                onClick={() => scrollToSection('services')}
+                className="group press font-semibold py-4 px-7 rounded-xl text-lg transition-colors w-full sm:w-auto"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)' }}
+              >
+                <span className="relative inline-block">
+                  Explore Investment Solutions
+                  <span className="absolute left-0 -bottom-0.5 h-px w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300" style={{ background: 'var(--accent-soft)' }} />
+                </span>
+              </button>
+            </div>
+
+            {/* Trust strip */}
+            <div className={`mt-11 flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-3 ${isLoaded ? 'animate-fadeInUp animate-delay-500' : 'opacity-0'}`}>
+              {[
+                { icon: Search, label: 'Research Driven' },
+                { icon: Eye, label: 'Transparent Process' },
+                { icon: ShieldCheck, label: 'Secure Investments' },
+                { icon: Target, label: 'Goal-Based Planning' },
+                { icon: Handshake, label: 'Trusted Guidance' },
+              ].map(({ icon: Icon, label }) => (
+                <div key={label} className="flex items-center gap-2">
+                  <Icon size={16} className="text-accent-soft flex-shrink-0" />
+                  <span className="text-sm text-gray-300 whitespace-nowrap">{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Trust strip — factual platform stats (no performance/AUM claims),
-              counters animate up when the hero first paints. */}
-          <div className={`mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto ${isLoaded ? 'animate-fadeInUp animate-delay-500' : 'opacity-0'}`}>
-            {[
-              { icon: Layers, value: 5, suffix: '+', label: 'Investment verticals' },
-              { icon: FileCheck, value: 100, suffix: '%', label: 'Paperless onboarding' },
-              { icon: Clock, value: 24, suffix: '×7', label: 'Client portal access' },
-              { icon: ShieldCheck, value: 0, custom: 'AMFI', label: 'Registered distributor' },
-            ].map((stat, i) => (
-              <div
-                key={i}
-                className="rounded-2xl px-4 py-5 text-center"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)', backdropFilter: 'blur(8px)' }}
-              >
-                <stat.icon size={20} className="mx-auto mb-2 text-accent-soft" />
-                <div className="text-3xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-                  {stat.custom ? stat.custom : <Counter value={stat.value} suffix={stat.suffix} />}
-                </div>
-                <div className="text-xs text-gray-400 mt-1 tracking-wide uppercase">{stat.label}</div>
-              </div>
-            ))}
+          {/* Right — premium wealth visual */}
+          <div className="hidden md:block">
+            <HeroShowcase />
           </div>
         </div>
       </section>

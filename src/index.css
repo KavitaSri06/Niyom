@@ -429,6 +429,25 @@ input[type='range'] {
 }
 
 /* -----------------------------------------------------------------------------
+ * Hero primary CTA — a soft gold glow that intensifies on hover, plus a gentle
+ * lift. Compositor-only (box-shadow + transform), reduced-motion friendly.
+ * -------------------------------------------------------------------------- */
+.cta-glow {
+  box-shadow: 0 10px 30px rgba(200, 164, 93, 0.22);
+  transition: box-shadow var(--dur-base, 250ms) var(--ease-out, ease),
+              transform var(--dur-fast, 150ms) var(--ease-out, ease),
+              background-color var(--dur-base, 250ms) var(--ease-out, ease);
+}
+.cta-glow:hover {
+  box-shadow: 0 0 0 1px rgba(200, 164, 93, 0.45), 0 12px 44px rgba(200, 164, 93, 0.45);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cta-glow:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* -----------------------------------------------------------------------------
  * HeroBackground — mesh blooms + data grid (see components/HeroBackground.tsx).
  * Pure-CSS layers behind the canvas network. Compositor-only transforms, so
  * they stay cheap; motion is disabled under prefers-reduced-motion.
