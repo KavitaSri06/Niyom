@@ -23,6 +23,16 @@ function useBond(id: string) {
     },
   });
 }
+function usePriceHistory(id: string) {
+  return useQuery({
+    queryKey: ['bm_price_hist', id],
+    queryFn: async (): Promise<{ price: number; as_of: string }[]> => {
+      const { data, error } = await supabase.from('bm_price_history').select('price,as_of').eq('bond_id', id).order('as_of', { ascending: true }).limit(400);
+      if (error) throw error;
+      return (data as { price: number; as_of: string }[]) ?? [];
+    },
+  });
+}
 function useCashflow(id: string, ready: boolean) {
   return useQuery({
     queryKey: ['bm_cashflow', id],
@@ -53,6 +63,7 @@ export default function BondProfile({ bondId, isAdmin, employee, onBack }: Props
   const [form, setForm] = useState<Record<string, string>>({});
   const ready = !!b && (b.verification_status === 'verified' || b.verification_status === 'needs_review');
   const { data: cashflow = [] } = useCashflow(bondId, ready);
+  const { data: priceHist = [] } = usePriceHistory(bondId);
 
   const [markup, setMarkup] = useState(2);
   const [qty, setQty] = useState(1);
@@ -291,6 +302,42 @@ export default function BondProfile({ bondId, isAdmin, employee, onBack }: Props
           </div>
         ))}
       </div>
+
+      {/* Price history */}
+      {priceHist.length >= 2 && (() => {
+        const prices = priceHist.map(p => p.price);
+        const min = Math.min(...prices), max = Math.max(...prices);
+        const span = max - min || 1;
+        const W = 640, H = 120, pad = 6;
+        const pts = priceHist.map((p, i) => {
+          const x = pad + (i / (priceHist.length - 1)) * (W - 2 * pad);
+          const y = pad + (1 - (p.price - min) / span) * (H - 2 * pad);
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        const first = priceHist[0].price, last = priceHist[priceHist.length - 1].price;
+        const chg = +(last - first).toFixed(4);
+        const chgRgb = chg > 0 ? '16,185,129' : chg < 0 ? '239,68,68' : '148,163,184';
+        return (
+          <div className="rounded-2xl p-5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Price History (per ₹100)</h2>
+              <div className="flex items-center gap-3 text-xs">
+                <span style={{ color: 'var(--text-faint)' }}>{priceHist.length} points</span>
+                <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{NUM(last)}</span>
+                <span className="font-semibold px-2 py-0.5 rounded-lg" style={{ background: `rgba(${chgRgb},0.12)`, color: `rgb(${chgRgb})` }}>{chg > 0 ? '+' : ''}{NUM(chg)}</span>
+              </div>
+            </div>
+            <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 120 }} preserveAspectRatio="none">
+              <polyline points={pts} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+            </svg>
+            <div className="flex justify-between mt-1 text-[10px]" style={{ color: 'var(--text-faint)' }}>
+              <span>{fmtDate(priceHist[0].as_of)}</span>
+              <span>H {NUM(max)} · L {NUM(min)}</span>
+              <span>{fmtDate(priceHist[priceHist.length - 1].as_of)}</span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Cashflow schedule */}
       {cashflow.length > 0 && (
