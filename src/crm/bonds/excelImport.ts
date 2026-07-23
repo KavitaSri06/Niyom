@@ -3,6 +3,7 @@
 // when the vendor changes the layout. SheetJS is dynamically imported (heavy).
 
 import { ISIN_RE, ParsedImportRow } from './bondTypes';
+import { extractExtras } from './excelExtract';
 
 // Header aliases → the field we keep. Matched case-insensitively as a substring
 // after normalizing spaces/punctuation.
@@ -69,6 +70,9 @@ export async function parsePriceFile(file: File): Promise<ExcelParseResult> {
   }
 
   const { cols } = best.loc;
+  // Fallback extras (coupon, rating, maturity, IP dates, face, redemption…) keyed
+  // by ISIN — used later ONLY to fill fields no provider covers.
+  const extras = extractExtras(wb, XLSX);
   const out: ParsedImportRow[] = [];
   const seen = new Set<string>();
   for (let i = best.loc.headerIdx + 1; i < best.rows.length; i++) {
@@ -82,6 +86,7 @@ export async function parsePriceFile(file: File): Promise<ExcelParseResult> {
     out.push({
       rowNumber: i + 1, isin, bond_name, price, valid,
       issue: !ISIN_RE.test(isin) ? 'Malformed ISIN' : (seen.has(isin) && !valid ? 'Duplicate ISIN in file' : undefined),
+      extra: extras[isin],
     });
   }
 

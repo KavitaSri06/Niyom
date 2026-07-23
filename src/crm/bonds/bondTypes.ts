@@ -4,6 +4,7 @@
 // in the master (bm_bonds / bm_bonds_public) and is enriched or computed.
 
 import { z } from 'zod';
+import type { ExcelExtra } from './excelExtract';
 
 // ISIN: 2 country letters + 9 alphanumeric + 1 check digit.
 export const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
@@ -13,6 +14,7 @@ export const ImportRowSchema = z.object({
   isin: z.string().trim().toUpperCase().regex(ISIN_RE, 'Invalid ISIN'),
   bond_name: z.string().trim().default(''),
   price: z.number().positive().nullable().default(null),
+  extra: z.any().optional(),   // fallback master fields from the sheet (gap-fill only)
 });
 export type ImportRow = z.infer<typeof ImportRowSchema>;
 
@@ -24,6 +26,7 @@ export interface ParsedImportRow {
   price: number | null;
   valid: boolean;      // ISIN well-formed
   issue?: string;      // why it's invalid, if so
+  extra?: ExcelExtra;  // normalized fallback fields from the sheet
 }
 
 export interface ImportSummary {

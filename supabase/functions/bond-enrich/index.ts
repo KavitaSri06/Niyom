@@ -55,6 +55,23 @@ async function enrichOne(supabase: Client, bond: Record<string, unknown>, holida
     if (r.redemption_schedule && r.redemption_schedule.length && !redemption && !locked.has("redemption_schedule")) redemption = r.redemption_schedule;
   }
 
+  // Excel fallback (LOWEST priority): fill only fields no provider covered, from
+  // the sheet's own columns stored at import time. Never wins over a provider.
+  const raw = (bond.import_raw ?? {}) as Record<string, unknown>;
+  const FALLBACK = ["coupon_rate", "coupon_type", "coupon_frequency", "interest_payment_dates",
+    "maturity_date", "face_value", "rating", "rating_agency", "seniority", "security_type",
+    "tax_status", "principal_repayment_structure"];
+  for (const field of FALLBACK) {
+    if (locked.has(field)) continue;
+    const v = raw[field];
+    if (v === null || v === undefined || v === "") continue;
+    const score = 10 * 35;                                    // priority 10 × confidence 35 — always below any provider
+    if (!merged[field] || score > merged[field].score) merged[field] = { value: v, source: "excel", confidence: 35, score };
+  }
+  if (!redemption && Array.isArray(raw.redemption_schedule) && (raw.redemption_schedule as unknown[]).length && !locked.has("redemption_schedule")) {
+    redemption = raw.redemption_schedule as { date: string; pct: number }[];
+  }
+
   // Resolve effective master values (merged, else existing).
   const val = (k: string): unknown => (merged[k] ? merged[k].value : bond[k]);
 

@@ -44,7 +44,7 @@ export default function BondImport({ onBack, onDone }: Props) {
 
   const doImport = async () => {
     setError(null);
-    const payload: ImportRow[] = valid.map(r => ({ isin: r.isin, bond_name: r.bond_name, price: r.price }));
+    const payload: ImportRow[] = valid.map(r => ({ isin: r.isin, bond_name: r.bond_name, price: r.price, extra: r.extra }));
     try {
       const res = await importMut.mutateAsync(payload);
       setSummary(res); setPhase('done');
