@@ -62,9 +62,14 @@ export default function BondProfile({ bondId, isAdmin, employee, onBack }: Props
   const basePrice = b?.latest_price ?? null;
   const sellingPrice = basePrice !== null ? +(basePrice * (1 + markup / 100)).toFixed(4) : (b?.selling_price ?? null);
 
-  // Default the quantity to the minimum lot.
+  // Default the quantity to the minimum lot, and seed the markup from any
+  // admin-set default selling price so both roles start from it.
   useEffect(() => {
     if (b?.min_investment && b?.face_value) setQty(Math.max(1, Math.ceil(Number(b.min_investment) / Number(b.face_value))));
+    if (b?.selling_price != null && b?.latest_price && Number(b.latest_price) > 0) {
+      const m = (Number(b.selling_price) / Number(b.latest_price) - 1) * 100;
+      if (m >= 0 && m < 100) setMarkup(+m.toFixed(2));
+    }
   }, [b?.id]);
 
   if (isLoading) return <div className="flex items-center justify-center py-24"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--accent)' }} /></div>;
@@ -78,7 +83,7 @@ export default function BondProfile({ bondId, isAdmin, employee, onBack }: Props
   const a = b.analytics;
   const notMastered = b.verification_status === 'pending' || b.verification_status === 'failed';
   const doEnrich = async () => { await enrichMut.mutateAsync(b.isin); await refetch(); };
-  const outputPrice = isAdmin ? sellingPrice : (b.selling_price ?? b.latest_price ?? null);
+  const outputPrice = sellingPrice ?? b.selling_price ?? b.latest_price ?? null;
   const doOutput = async (kind: 'cashflow' | 'image' | 'promo') => {
     setGen(kind);
     try {
@@ -233,20 +238,16 @@ export default function BondProfile({ bondId, isAdmin, employee, onBack }: Props
           <div className="grid md:grid-cols-3 gap-4">
             {/* Pricing (admin sets markup; employee sees selling price) */}
             <div>
-              {isAdmin ? (
-                <>
-                  <div className="flex items-center justify-between mb-2"><span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-faint)' }}>Existing Price /100</span><span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{NUM(basePrice)}</span></div>
-                  <label className="block text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: 'var(--text-faint)' }}>% Increase</label>
-                  <div className="relative mb-2">
-                    <Percent className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }} />
-                    <input type="number" step="0.01" value={markup} onChange={e => setMarkup(parseFloat(e.target.value) || 0)} className="w-full pl-8 pr-2 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
-                  </div>
-                  <div className="flex items-center justify-between px-3 py-2 rounded-lg mb-2" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}><span className="text-[10px] uppercase tracking-wider font-bold text-on-accent" style={{ opacity: 0.9 }}>Selling /100</span><span className="text-sm font-extrabold text-on-accent">{NUM(sellingPrice)}</span></div>
-                  <button onClick={doSaveMargin} disabled={saveMargin.isPending} className="w-full text-xs font-semibold py-1.5 rounded-lg" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{saveMargin.isPending ? 'Saving…' : 'Save selling price'}</button>
-                </>
-              ) : (
-                <><span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-faint)' }}>Selling Price /100</span><p className="text-2xl font-extrabold mt-1" style={{ color: 'var(--text-primary)' }}>{NUM(b.selling_price ?? b.latest_price)}</p></>
-              )}
+              <div className="flex items-center justify-between mb-2"><span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-faint)' }}>Existing Price /100</span><span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{NUM(basePrice)}</span></div>
+              <label className="block text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: 'var(--text-faint)' }}>% Increase</label>
+              <div className="relative mb-2">
+                <Percent className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }} />
+                <input type="number" step="0.01" value={markup} onChange={e => setMarkup(parseFloat(e.target.value) || 0)} className="w-full pl-8 pr-2 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+              </div>
+              <div className="flex items-center justify-between px-3 py-2 rounded-lg mb-2" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}><span className="text-[10px] uppercase tracking-wider font-bold text-on-accent" style={{ opacity: 0.9 }}>Selling /100</span><span className="text-sm font-extrabold text-on-accent">{NUM(sellingPrice)}</span></div>
+              {isAdmin
+                ? <button onClick={doSaveMargin} disabled={saveMargin.isPending} className="w-full text-xs font-semibold py-1.5 rounded-lg" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{saveMargin.isPending ? 'Saving…' : 'Save as default'}</button>
+                : <p className="text-[10px] text-center" style={{ color: 'var(--text-faint)' }}>{b.selling_price != null ? `Default ${NUM(b.selling_price)}` : 'Your markup is applied to the outputs below.'}</p>}
             </div>
             {/* Quantity → investment */}
             <div>
