@@ -23,6 +23,7 @@ import { generateMarketingImage, generateMarketingPdf } from './marketingPdf';
 import { EmployeeContact } from './cashflowPdf';
 import { generatePromoImage } from './promoImage';
 import BondMarginCalculator, { MarginState } from './BondMarginCalculator';
+import { Portal } from './Portal';
 
 interface Props {
   employee: NWEmployee;
@@ -316,6 +317,7 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
 
       {/* Version history */}
       {showVersions && (
+        <Portal>
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div className="absolute inset-0" style={{ background: 'var(--bg-overlay)' }} onClick={() => setShowVersions(false)} />
           <div className="relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
@@ -340,10 +342,12 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* Delete confirm */}
       {confirmDelete && (
+        <Portal>
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div className="absolute inset-0" style={{ background: 'var(--bg-overlay)' }} onClick={() => setConfirmDelete(false)} />
           <div className="relative w-full max-w-sm rounded-2xl shadow-2xl p-5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
@@ -355,6 +359,7 @@ export default function BondDetail({ employee, bondId, onBack, onEdit, onChanged
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

@@ -3,6 +3,7 @@
 // ClientOnboarding's Field/Input but reusable across the lead screens.
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { statusRgb, priorityRgb } from './leadConstants';
 import { scoreBandRgb } from './leadUtils';
@@ -109,7 +110,9 @@ export function Drawer({ open, onClose, title, subtitle, children, footer, width
     return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onEsc); };
   }, [open, onClose]);
   if (!open) return null;
-  return (
+  // Portal to body so the overlay always anchors to the viewport, never trapped
+  // inside a transformed/scrolling ancestor.
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex justify-end">
       <div className="absolute inset-0" style={{ background: 'var(--bg-overlay)' }} onClick={onClose} />
       <div className={`relative w-full ${width} h-full flex flex-col shadow-2xl`}
@@ -126,7 +129,8 @@ export function Drawer({ open, onClose, title, subtitle, children, footer, width
         <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
         {footer && <div className="px-6 py-4 flex-shrink-0" style={{ borderTop: '1px solid var(--border)' }}>{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -140,7 +144,7 @@ export function Modal({ open, onClose, title, children, width = 'max-w-md' }:
     return () => window.removeEventListener('keydown', onEsc);
   }, [open, onClose]);
   if (!open) return null;
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0" style={{ background: 'var(--bg-overlay)' }} onClick={onClose} />
       <div className={`relative w-full ${width} rounded-2xl shadow-2xl overflow-hidden`}
@@ -151,7 +155,8 @@ export function Modal({ open, onClose, title, children, width = 'max-w-md' }:
         </div>
         <div className="px-5 py-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -17,6 +17,7 @@ import { BOND_STATUSES } from './bondConstants';
 import { computeSellingPrice } from './bondUtils';
 import { parseBondFile } from './bondParser';
 import { insertBatch, uploadDocument, countBonds, BondInsertRow } from './bondService';
+import { Portal } from './Portal';
 
 const DEFAULT_MARKUP = 2;
 
@@ -299,16 +300,19 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
       </div>
 
       {phase === 'saving' && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center" style={{ background: 'var(--bg-overlay)' }}>
-          <div className="px-6 py-5 rounded-2xl flex items-center gap-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-            <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--accent)' }} />
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Saving bonds to database…</span>
+        <Portal>
+          <div className="fixed inset-0 z-[80] flex items-center justify-center" style={{ background: 'var(--bg-overlay)' }}>
+            <div className="px-6 py-5 rounded-2xl flex items-center gap-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+              <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--accent)' }} />
+              <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Saving bonds to database…</span>
+            </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {/* Replace confirmation */}
       {confirmReplace && (
+        <Portal>
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
           <div className="absolute inset-0" style={{ background: 'var(--bg-overlay)' }} onClick={() => setConfirmReplace(false)} />
           <div className="relative w-full max-w-sm rounded-2xl shadow-2xl p-5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
@@ -325,6 +329,7 @@ export default function BondUpload({ employeeId, onBack, onDone }: Props) {
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );
