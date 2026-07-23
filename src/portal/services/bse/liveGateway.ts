@@ -6,12 +6,15 @@
  * SOAP, and is IP-whitelisted). The browser sends only view models — never BSE
  * credentials or session tokens.
  *
- * STATUS: scaffolding. Every method posts to a proxy route that does not exist
- * yet, so `createLiveGateway` refuses to run until the proxy `baseUrl` is
- * configured (VITE_BSE_MODE=live + VITE_BSE_PROXY_URL). This is intentional —
- * it makes "we haven't wired BSE yet" a loud, safe failure rather than a silent
- * wrong call. Fill in once the dossier §7 questions are resolved.
+ * The proxy implementation lives in server/bse-proxy (deployed on the
+ * DigitalOcean droplet whose static IP BSE whitelists). `createLiveGateway`
+ * refuses to run until VITE_BSE_MODE=live + VITE_BSE_PROXY_URL are configured —
+ * "not wired yet" stays a loud, safe failure rather than a silent wrong call.
+ *
+ * Every request carries the caller's Supabase session JWT; the proxy verifies
+ * it before touching BSE, so only signed-in NIYOM users can transact.
  */
+import { supabase } from '../../../lib/supabase';
 import type {
   FundScheme,
   OrderRequest,
@@ -32,12 +35,20 @@ import {
   type UccRegistrationResult,
 } from './contract';
 
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 async function proxyPost<T>(baseUrl: string, route: string, body: unknown): Promise<T> {
   const res = await fetch(`${baseUrl}${route}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authHeaders(),
     body: JSON.stringify(body),
-    credentials: 'include',
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -47,7 +58,7 @@ async function proxyPost<T>(baseUrl: string, route: string, body: unknown): Prom
 }
 
 async function proxyGet<T>(baseUrl: string, route: string): Promise<T> {
-  const res = await fetch(`${baseUrl}${route}`, { credentials: 'include' });
+  const res = await fetch(`${baseUrl}${route}`, { headers: await authHeaders() });
   if (!res.ok) throw new Error(`BSE proxy ${route} failed (${res.status})`);
   return (await res.json()) as T;
 }
