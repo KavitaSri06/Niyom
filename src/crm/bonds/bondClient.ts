@@ -89,6 +89,19 @@ export async function enrichPendingLoop(onProgress?: (done: number) => void, bat
   return done;
 }
 
+// Admin: manually set + lock master fields, then recompute analytics.
+export function useSetFields() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, isin, fields, lock }: { id: string; isin: string; fields: Record<string, string>; lock: boolean }) => {
+      const { error } = await supabase.rpc('bm_set_fields', { p_bond_id: id, p_fields: fields, p_lock: lock });
+      if (error) throw error;
+      await enrichBatch({ isin });   // recompute analytics/schedules from the now-present values
+    },
+    onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: bondKeys.detail(v.id) }); qc.invalidateQueries({ queryKey: ['bm_bonds'] }); qc.invalidateQueries({ queryKey: ['bm_verif_queue'] }); },
+  });
+}
+
 // Admin: set the markup% → selling price on the master.
 export function useSaveMargin() {
   const qc = useQueryClient();

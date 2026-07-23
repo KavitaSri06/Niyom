@@ -2,11 +2,11 @@
 // schedule. Pending bonds can be mastered on demand.
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Loader2, Sparkles, Percent, ImageDown, ReceiptText, Megaphone, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Percent, ImageDown, ReceiptText, Megaphone, Minus, Plus, Pencil, Lock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { NWEmployee } from '../types';
-import { bondKeys, useEnrichOne, useSaveMargin } from './bondClient';
+import { bondKeys, useEnrichOne, useSaveMargin, useSetFields } from './bondClient';
 import { BondPublic, CashflowScheduleRow } from './bondTypes';
 import { EmployeeContact } from './bondConstants';
 import { generateCashflowPdf, generateMarketingImage, generatePromoImage } from './bondOutputs';
@@ -48,6 +48,9 @@ export default function BondProfile({ bondId, isAdmin, employee, onBack }: Props
   const { data: b, isLoading, refetch } = useBond(bondId);
   const enrichMut = useEnrichOne();
   const saveMargin = useSaveMargin();
+  const setFields = useSetFields();
+  const [editOpen, setEditOpen] = useState(false);
+  const [form, setForm] = useState<Record<string, string>>({});
   const ready = !!b && (b.verification_status === 'verified' || b.verification_status === 'needs_review');
   const { data: cashflow = [] } = useCashflow(bondId, ready);
 
@@ -86,6 +89,18 @@ export default function BondProfile({ bondId, isAdmin, employee, onBack }: Props
     } finally { setGen(false); }
   };
   const doSaveMargin = async () => { if (sellingPrice === null) return; await saveMargin.mutateAsync({ id: b.id, marginValue: markup, sellingPrice }); await refetch(); };
+  const openEdit = () => {
+    setForm({
+      bond_name: b.bond_name || '', coupon_rate: b.coupon_rate?.toString() || '', coupon_type: b.coupon_type || 'fixed',
+      coupon_frequency: b.coupon_frequency || '', maturity_date: b.maturity_date || '', issue_date: b.issue_date || '',
+      face_value: b.face_value?.toString() || '', interest_payment_dates: b.interest_payment_dates || '',
+      rating: b.rating || '', rating_agency: b.rating_agency || '', seniority: b.seniority || '', security_type: b.security_type || '',
+      tax_status: b.tax_status || '', day_count_convention: b.day_count_convention || 'actual_365',
+      business_day_convention: b.business_day_convention || 'following', principal_repayment_structure: b.principal_repayment_structure || '',
+    });
+    setEditOpen(true);
+  };
+  const doSaveFields = async () => { await setFields.mutateAsync({ id: b.id, isin: b.isin, fields: form, lock: true }); setEditOpen(false); await refetch(); };
   const faceAmt = b.face_value ? b.face_value * qty : null;
   const perUnit = (b.face_value && outputPrice) ? +(b.face_value * outputPrice / 100).toFixed(2) : null;
   const investAmt = perUnit ? +(perUnit * qty).toFixed(2) : null;
@@ -125,17 +140,68 @@ export default function BondProfile({ bondId, isAdmin, employee, onBack }: Props
           </div>
           <p className="text-sm mt-1 font-mono" style={{ color: 'var(--text-faint)' }}>{b.isin}</p>
         </div>
-        {notMastered && (
-          <button onClick={doEnrich} disabled={enrichMut.isPending} className="px-4 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50 flex items-center gap-2" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
-            {enrichMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {enrichMut.isPending ? 'Mastering…' : 'Master this bond'}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button onClick={openEdit} className="px-3 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+              <Pencil className="w-4 h-4" /> {ready ? 'Edit master' : 'Enter master'}
+            </button>
+          )}
+          {notMastered && (
+            <button onClick={doEnrich} disabled={enrichMut.isPending} className="px-4 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50 flex items-center gap-2" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+              {enrichMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {enrichMut.isPending ? 'Mastering…' : 'Auto-fetch'}
+            </button>
+          )}
+        </div>
       </div>
 
       {notMastered && !enrichMut.isPending && (
         <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)' }}>
-          <span style={{ color: 'var(--text-secondary)' }}>Only name + price are known so far. Click “Master this bond” to fetch the full master and compute analytics.</span>
+          <span style={{ color: 'var(--text-secondary)' }}>Only name + price are known so far. <strong>Auto-fetch</strong> tries the data providers; if this bond isn’t covered, use <strong>Enter master</strong> to key the details manually — they’re locked and analytics compute instantly.</span>
+        </div>
+      )}
+
+      {/* Manual master entry (admin) */}
+      {editOpen && (
+        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--accent)' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Lock className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+            <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Master data (manual — locked on save)</h2>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {([
+              ['bond_name', 'Bond Name', 'text'], ['coupon_rate', 'Coupon Rate %', 'number'],
+              ['coupon_type', 'Coupon Type', 'select:fixed,floating,zero'],
+              ['coupon_frequency', 'Frequency', 'select:monthly,quarterly,half_yearly,annual,zero'],
+              ['maturity_date', 'Maturity Date', 'date'], ['issue_date', 'Issue Date', 'date'],
+              ['face_value', 'Face Value', 'number'], ['interest_payment_dates', 'IP Dates (comma-sep)', 'text'],
+              ['rating', 'Rating', 'text'], ['rating_agency', 'Rating Agency', 'text'],
+              ['seniority', 'Seniority', 'text'], ['security_type', 'Security Type', 'text'],
+              ['tax_status', 'Tax Status', 'text'],
+              ['day_count_convention', 'Day Count', 'select:actual_365,actual_actual,30_360'],
+              ['business_day_convention', 'Business Day', 'select:following,modified_following,none'],
+              ['principal_repayment_structure', 'Redemption', 'select:bullet,amortizing'],
+            ] as [string, string, string][]).map(([key, label, type]) => (
+              <div key={key}>
+                <label className="block text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: 'var(--text-faint)' }}>{label}</label>
+                {type.startsWith('select:') ? (
+                  <select value={form[key] ?? ''} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} className="w-full px-2.5 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+                    <option value="">—</option>
+                    {type.slice(7).split(',').map(o => <option key={o} value={o}>{o.replace('_', '-')}</option>)}
+                  </select>
+                ) : (
+                  <input type={type} step={type === 'number' ? '0.0001' : undefined} value={form[key] ?? ''} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} className="w-full px-2.5 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-end gap-2 mt-4">
+            <button onClick={() => setEditOpen(false)} className="px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>Cancel</button>
+            <button onClick={doSaveFields} disabled={setFields.isPending} className="px-4 py-2 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50 flex items-center gap-2" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>
+              {setFields.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+              {setFields.isPending ? 'Saving & computing…' : 'Save, lock & compute'}
+            </button>
+          </div>
         </div>
       )}
 
