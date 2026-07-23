@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { NWEmployee, NWClient } from './types';
 import {
   FileText, Plus, Search, ChevronDown, Eye, Pencil, Trash2,
-  Download, CheckCircle2, AlertCircle, ChevronLeft, Send, Lock, Wallet,
+  Download, CheckCircle2, AlertCircle, ChevronLeft, Send, Wallet,
 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import DealDocument from './DealDocument';
@@ -367,8 +367,23 @@ export default function DealConfirmation({ employee }: Props) {
     setView('form');
   };
 
-  const openEdit = (deal: DealRecord) => {
-    if (deal.acceptance_status === 'accepted') {
+  const openEdit = async (deal: DealRecord) => {
+    // A deal that has already been booked into the ledger is edited/removed via
+    // its transaction, not here — resetting its acceptance would strand the
+    // executed transaction against a "pending" deal.
+    const { data: bookedTxn } = await supabase
+      .from('nw_transactions')
+      .select('id')
+      .eq('deal_confirmation_id', deal.id)
+      .eq('transfer_stage', 'transferred')
+      .limit(1);
+    if (bookedTxn && bookedTxn.length) {
+      showToast('This deal is already booked as a transaction. Edit or delete that transaction instead.', false);
+      return;
+    }
+    // Non-admins cannot touch a signed/accepted deal; admins may (it resets to
+    // pending for re-acceptance — see handleSave).
+    if (deal.acceptance_status === 'accepted' && !isAdmin) {
       showToast('Accepted deals are locked. Create a new deal for corrections.', false);
       return;
     }
@@ -446,7 +461,8 @@ export default function DealConfirmation({ employee }: Props) {
     };
 
     if (editDeal) {
-      if (editDeal.acceptance_status === 'accepted') {
+      const wasSigned = editDeal.acceptance_status === 'accepted';
+      if (wasSigned && !isAdmin) {
         setSaving(false);
         setError('Accepted deals are locked and cannot be edited. Create a new deal confirmation.');
         return;
@@ -461,12 +477,26 @@ export default function DealConfirmation({ employee }: Props) {
       payload.rejected_at = null;
       payload.rejection_reason = null;
       payload.email_status = 'pending';
+      // An admin editing an already-signed deal fully unwinds the acceptance:
+      // the stored signature/PDF no longer matches the amended terms, so it is
+      // cleared and the client must re-accept.
+      if (wasSigned) {
+        payload.accepted_at = null;
+        payload.signer_email = null;
+        payload.signed_pdf_path = null;
+      }
 
       const { error: err } = await supabase.from('nw_deal_confirmations').update(payload).eq('id', editDeal.id);
       setSaving(false);
       if (err) { setError(err.message); return; }
 
-      if (wasSent) {
+      if (wasSigned) {
+        await supabase.from('nw_deal_confirmation_events').insert([
+          { deal_id: editDeal.id, event_type: 'edited', actor: 'employee' },
+          { deal_id: editDeal.id, event_type: 'token_invalidated', actor: 'employee' },
+        ]);
+        showToast('Signed deal amended and reset to pending — the client must review and re-accept.');
+      } else if (wasSent) {
         await supabase.from('nw_deal_confirmation_events').insert([
           { deal_id: editDeal.id, event_type: 'edited', actor: 'employee' },
           { deal_id: editDeal.id, event_type: 'token_invalidated', actor: 'employee' },
@@ -490,8 +520,13 @@ export default function DealConfirmation({ employee }: Props) {
 
   const handleDelete = async () => {
     if (!deleteDeal) return;
-    await supabase.from('nw_deal_confirmations').delete().eq('id', deleteDeal.id);
+    // Full cascade (server-side, admin/owner-gated): removes the deal's
+    // payments, any booked transaction + its holding + DSA coverage line, and
+    // returns the deal to the Transfer Queue. Plain DELETE would be blocked by
+    // the payment / transaction FK RESTRICTs.
+    const { error: err } = await supabase.rpc('nw_delete_deal_cascade', { p_deal_id: deleteDeal.id });
     setDeleteDeal(null);
+    if (err) { showToast(err.message || 'Could not delete deal.', false); return; }
     loadDeals();
     showToast('Deleted.');
   };
@@ -765,7 +800,7 @@ export default function DealConfirmation({ employee }: Props) {
             <Field label="Quantity" required>
               <Input type="number" min="0" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} placeholder="0" />
             </Field>
-            <Field label="Rate per Unit (₹)" required hint="Rate automatically adjusted after applicable charges deduction.">
+            <Field label={`Rate per ${form.product_type === 'Unlisted Share' ? 'Share' : 'Unit'} (₹)`} required hint="Rate automatically adjusted after applicable charges deduction.">
               <Input
                 type="number" min="0" step="0.01"
                 value={form.base_rate}
@@ -1002,7 +1037,10 @@ export default function DealConfirmation({ employee }: Props) {
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{deleteDeal.confirmation_number}</p>
               </div>
             </div>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>This action is permanent and cannot be undone.</p>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              This permanently deletes the deal along with any recorded payments, its booked
+              transaction and that transaction's portfolio holding. This cannot be undone.
+            </p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteDeal(null)} className="flex-1 py-2.5 rounded-xl text-sm" style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Cancel</button>
               <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: 'var(--danger)' }}>Delete</button>
