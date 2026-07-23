@@ -146,7 +146,17 @@ function clean(o: Record<string, unknown>): Record<string, unknown> { const out:
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const supabase = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // Gate to active CRM staff (block bare anon-key callers).
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const userClient = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...cors, "Content-Type": "application/json" } });
+    const { data: emp } = await supabase.from("nw_employees").select("id").eq("auth_user_id", user.id).eq("status", "active").maybeSingle();
+    if (!emp) return new Response(JSON.stringify({ error: "Staff only" }), { status: 403, headers: { ...cors, "Content-Type": "application/json" } });
+
     const body = await req.json().catch(() => ({}));
     const limit = Math.min(Number(body.limit) || 25, 100);
 
