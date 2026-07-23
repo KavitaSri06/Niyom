@@ -139,41 +139,48 @@ export async function generateMarketingImage(b: BondPublic, a: BondAnalytics | n
   const invest = perUnit !== null ? perUnit * qty : null;
   const annual = b.coupon_rate ? +(face * qty * b.coupon_rate / 100).toFixed(2) : null;
 
-  const chip = (l: string, v: string) => `<div style="flex:1;min-width:104px;padding:2px 4px;"><div style="font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:${goldSoft};font-weight:700;">${l}</div><div style="font-size:16px;font-weight:800;margin-top:4px;color:${white};line-height:1.1;">${v || '—'}</div></div>`;
-  const cell = (l: string, v: string, sub = '') => `<div style="flex:1;min-width:130px;"><div style="font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:${goldSoft};font-weight:700;">${l}</div><div style="font-size:22px;font-weight:900;margin-top:3px;color:${white};line-height:1.05;">${v}</div>${sub ? `<div style="font-size:9.5px;color:#b9c6de;margin-top:3px;">${sub}</div>` : ''}</div>`;
+  const minInv = b.min_investment ?? b.face_value;
+  const chip = (l: string, v: string, i: number) => `<div style="flex:1;padding:0 18px;${i > 0 ? `border-left:1px solid rgba(200,162,75,0.22);` : ''}"><div style="font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:${goldSoft};font-weight:700;">${l}</div><div style="font-size:17px;font-weight:800;margin-top:5px;color:${white};line-height:1.1;">${v || '—'}</div></div>`;
+  const cell = (l: string, v: string, sub: string, i: number) => `<div style="flex:1;padding:0 20px;${i > 0 ? `border-left:1px solid rgba(200,162,75,0.25);` : ''}"><div style="font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:${goldSoft};font-weight:700;">${l}</div><div style="font-size:23px;font-weight:900;margin-top:4px;color:${white};line-height:1.05;">${v}</div>${sub ? `<div style="font-size:9.5px;color:#aebbd4;margin-top:4px;">${sub}</div>` : ''}</div>`;
+  const drow = (l: string, v: string) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:11px;color:#8fa0bd;">${l}</span><span style="font-size:12px;color:#eaf0fa;font-weight:600;text-align:right;">${v || '—'}</span></div>`;
+  const pill = (t: string) => `<span style="display:inline-flex;align-items:center;line-height:1;background:rgba(200,162,75,0.14);border:1px solid rgba(200,162,75,0.55);color:${goldSoft};font-size:9.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:6px 13px;border-radius:999px;">${t}</span>`;
 
-  const html = `<div style="width:794px;box-sizing:border-box;font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:${white};color:${NIYOM_BRAND.ink};">
-    <div style="background:linear-gradient(135deg,${darkBlue},${navy});padding:30px 42px 24px;color:${white};position:relative;overflow:hidden;">
-      <div style="position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(200,162,75,0.22),transparent 70%);"></div>
+  const html = `<div style="width:794px;box-sizing:border-box;font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:linear-gradient(160deg,${navy} 0%,${darkBlue} 55%,#071426 100%);color:#eaf0fa;overflow:hidden;border:1px solid rgba(200,162,75,0.25);">
+    <div style="padding:30px 42px 22px;position:relative;overflow:hidden;">
+      <div style="position:absolute;right:-70px;top:-70px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(200,162,75,0.20),transparent 70%);"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;position:relative;">
-        <div style="display:flex;align-items:center;gap:12px;"><img src="${LOGO}" style="height:46px;width:auto;object-fit:contain;"/><div><div style="font-size:17px;font-weight:800;">NIYOM WEALTH</div><div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:${goldSoft};">${NIYOM.tagline}</div></div></div>
-        <div style="text-align:center;background:rgba(200,162,75,0.14);border:1px solid ${gold};border-radius:14px;padding:8px 16px;"><div style="font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:${goldSoft};font-weight:700;">Coupon</div><div style="font-size:26px;font-weight:900;color:${white};line-height:1;">${coupon}</div><div style="font-size:8.5px;color:${goldSoft};margin-top:2px;">${ytm} YTM</div></div>
+        <div style="display:flex;align-items:center;gap:12px;"><img src="${LOGO}" style="height:46px;width:auto;object-fit:contain;"/><div><div style="font-size:17px;font-weight:800;color:${white};">NIYOM WEALTH</div><div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:${goldSoft};">${NIYOM.tagline}</div></div></div>
+        <div style="text-align:center;background:rgba(200,162,75,0.14);border:1px solid ${gold};border-radius:14px;padding:9px 18px;"><div style="font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:${goldSoft};font-weight:700;">Coupon</div><div style="font-size:27px;font-weight:900;color:${white};line-height:1;">${coupon}</div><div style="font-size:8.5px;color:${goldSoft};margin-top:2px;">${ytm} YTM</div></div>
       </div>
-      <div style="margin-top:22px;position:relative;"><div style="width:46px;height:3px;background:${gold};border-radius:2px;"></div><h1 style="font-size:23px;font-weight:800;margin:12px 0 0;line-height:1.2;">${safe(b.bond_name) || safe(b.issuer_name)}</h1>
-        <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap;">${[safe(b.security_type), safe(b.seniority)].filter(Boolean).map(t => `<span style="display:inline-flex;align-items:center;line-height:1;background:rgba(200,162,75,0.16);border:1px solid ${gold};color:${goldSoft};font-size:9.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:5px 12px;border-radius:999px;">${t}</span>`).join('')}</div></div>
+      <div style="margin-top:22px;position:relative;"><div style="width:46px;height:3px;background:${gold};border-radius:2px;"></div><h1 style="font-size:23px;font-weight:800;margin:12px 0 0;line-height:1.25;color:${white};">${safe(b.bond_name) || safe(b.issuer_name)}</h1>
+        <div style="margin-top:11px;display:flex;gap:8px;flex-wrap:wrap;">${[safe(b.security_type), safe(b.seniority), safe(b.tax_status)].filter(Boolean).map(pill).join('')}</div></div>
     </div>
-    <div style="background:${navy};padding:14px 42px;display:flex;align-items:center;border-top:1px solid rgba(200,162,75,0.25);">
-      ${[chip('Coupon', coupon), chip('Yield (YTM)', ytm), chip('Maturity', fdate(b.maturity_date)), chip('Rating', safe(b.rating) || '—'), chip('Payout', payout(b))].join('<div style="width:1px;background:rgba(200,162,75,0.3);align-self:stretch;"></div>')}
+    <div style="background:rgba(0,0,0,0.22);padding:16px 42px;display:flex;align-items:stretch;border-top:1px solid rgba(200,162,75,0.22);border-bottom:1px solid rgba(200,162,75,0.22);">
+      ${[['Face Value', inrShort(face)], ['Yield (YTM)', ytm], ['Maturity', fdate(b.maturity_date)], ['Rating', safe(b.rating) || '—'], ['Payout', payout(b)]].map(([l, v], i) => chip(l, v, i)).join('')}
     </div>
-    <div style="margin:20px 42px 0;background:linear-gradient(135deg,${darkBlue},${navy});border:1px solid ${gold};border-radius:16px;padding:20px 24px;">
-      <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:${gold};font-weight:800;margin-bottom:14px;">Investment Summary</div>
-      <div style="display:flex;gap:18px;flex-wrap:wrap;">
-        ${cell('Total Investment', invest !== null ? inr(invest) : (price !== null ? `${inr(price)} /₹100` : 'On Request'), `${qty} unit${qty === 1 ? '' : 's'} · Face ${inrShort(face * qty)}`)}
-        <div style="width:1px;background:rgba(200,162,75,0.3);"></div>
-        ${cell('Indicative Annual Income', annual !== null ? inr(annual) : '—', b.coupon_rate ? `at ${coupon} coupon` : '')}
-        <div style="width:1px;background:rgba(200,162,75,0.3);"></div>
-        ${cell('Yield to Maturity', ytm, b.maturity_date ? `matures ${fdate(b.maturity_date)}` : '')}
+    <div style="padding:22px 42px 8px;"><div style="background:linear-gradient(135deg,rgba(200,162,75,0.10),rgba(200,162,75,0.03));border:1px solid ${gold};border-radius:16px;padding:20px 6px;">
+      <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:${gold};font-weight:800;margin:0 0 14px 16px;">Investment Summary</div>
+      <div style="display:flex;align-items:stretch;">
+        ${cell('Total Investment', invest !== null ? inr(invest) : (price !== null ? `${inr(price)} /₹100` : 'On Request'), `${qty} unit${qty === 1 ? '' : 's'} · Face ${inrShort(face * qty)}`, 0)}
+        ${cell('Annual Income', annual !== null ? inr(annual) : '—', b.coupon_rate ? `at ${coupon} coupon` : '', 1)}
+        ${cell('Yield to Maturity', ytm, b.maturity_date ? `matures ${fdate(b.maturity_date)}` : '', 2)}
       </div>
+    </div></div>
+    <div style="padding:8px 42px 4px;display:flex;gap:30px;">
+      <div style="flex:1;"><div style="font-size:11px;font-weight:800;color:${goldSoft};text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid rgba(200,162,75,0.4);padding-bottom:6px;margin-bottom:4px;">Bond Details</div>
+        ${drow('Issuer', safe(b.issuer_name))}${drow('ISIN', safe(b.isin))}${drow('Security', safe(b.security_type))}${drow('Face Value', inr(b.face_value))}</div>
+      <div style="flex:1;"><div style="font-size:11px;font-weight:800;color:${goldSoft};text-transform:uppercase;letter-spacing:0.1em;border-bottom:2px solid rgba(200,162,75,0.4);padding-bottom:6px;margin-bottom:4px;">Terms</div>
+        ${drow('Seniority', safe(b.seniority))}${drow('Payout', payout(b))}${drow('Min. Investment', minInv ? inrShort(minInv) : '—')}${drow('Price / ₹100', price !== null ? inr(price) : '—')}</div>
     </div>
-    <div style="margin:14px 42px 0;padding:11px 16px;background:#fbfbfd;border:1px solid ${NIYOM_BRAND.line};border-radius:10px;"><div style="font-size:8.5px;color:#6b7688;line-height:1.55;text-align:justify;"><strong style="color:${navy};">Important:</strong> ${BOND_PDF_DISCLAIMER}</div></div>
-    <div style="margin-top:16px;background:linear-gradient(135deg,${darkBlue},${navy});color:${white};padding:16px 42px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;">
-      <div style="font-size:9px;line-height:1.5;color:#cfd8ea;"><div style="font-weight:800;color:${white};font-size:11px;">${NIYOM.name}</div><div>${NIYOM.address}</div><div>${NIYOM.email} • ${NIYOM.web}</div></div>
+    <div style="margin:14px 42px 0;padding:11px 15px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;"><div style="font-size:8.5px;color:#8fa0bd;line-height:1.55;text-align:justify;"><strong style="color:${goldSoft};">Important:</strong> ${BOND_PDF_DISCLAIMER}</div></div>
+    <div style="margin-top:16px;background:rgba(0,0,0,0.28);padding:16px 42px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;border-top:1px solid rgba(200,162,75,0.22);">
+      <div style="font-size:9px;line-height:1.5;color:#9fb0cd;"><div style="font-weight:800;color:${white};font-size:11px;">${NIYOM.name}</div><div>${NIYOM.address}</div><div>${NIYOM.email} • ${NIYOM.web}</div></div>
       ${contactBlock(opts.contact, white, goldSoft)}
     </div>
   </div>`;
 
   await offscreen(html, async node => {
-    const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false, windowWidth: 794 });
+    const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: darkBlue, logging: false, windowWidth: 794 });
     download(canvas.toDataURL('image/png'), `${fileBase(b)}.png`);
   });
 }
@@ -190,16 +197,22 @@ export async function generatePromoImage(b: BondPublic, opts: OutputOptions): Pr
   const pill = (t: string) => `<span style="display:inline-flex;align-items:center;justify-content:center;line-height:1;background:rgba(200,162,75,0.16);border:1px solid ${gold};color:${goldSoft};font-size:15px;font-weight:700;letter-spacing:0.02em;padding:10px 18px;border-radius:999px;">${t}</span>`;
   const stat = (l: string, v: string) => `<div style="text-align:center;flex:1;"><div style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:${goldSoft};font-weight:700;">${l}</div><div style="font-size:20px;font-weight:800;color:${white};margin-top:4px;">${v || '—'}</div></div>`;
 
-  const html = `<div style="width:820px;height:1025px;box-sizing:border-box;position:relative;overflow:hidden;font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:radial-gradient(120% 80% at 80% 0%,#183463 0%,${darkBlue} 45%,#050c18 100%);color:${white};padding:44px 46px;">
+  const html = `<div style="width:820px;height:1025px;box-sizing:border-box;position:relative;overflow:hidden;font-family:'Segoe UI',Helvetica,Arial,sans-serif;background:radial-gradient(120% 80% at 80% 0%,#183463 0%,${darkBlue} 45%,#050c18 100%);color:${white};padding:44px 46px;display:flex;flex-direction:column;">
     <div style="position:absolute;left:-120px;top:120px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(200,162,75,0.16),transparent 65%);"></div>
+    <div style="position:absolute;right:-140px;bottom:120px;width:460px;height:460px;border-radius:50%;background:radial-gradient(circle,rgba(200,162,75,0.10),transparent 65%);"></div>
     <div style="display:flex;align-items:center;gap:12px;position:relative;"><img src="${LOGO}" style="height:52px;width:auto;object-fit:contain;"/><div><div style="font-size:22px;font-weight:800;">NIYOM WEALTH</div><div style="font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:${goldSoft};">${NIYOM.tagline}</div></div></div>
-    <div style="text-align:center;margin-top:60px;position:relative;"><div style="font-size:20px;letter-spacing:0.28em;text-transform:uppercase;color:${goldSoft};font-weight:700;">Earn up to</div><div style="font-size:124px;font-weight:900;line-height:1.12;margin-top:16px;padding-bottom:6px;color:#F2DB99;text-shadow:0 3px 18px rgba(200,162,75,0.35);">${coupon}</div><div style="font-size:20px;letter-spacing:0.22em;text-transform:uppercase;color:#cfd8ea;font-weight:600;margin-top:40px;">per annum</div></div>
-    <div style="text-align:center;margin-top:30px;position:relative;"><div style="font-size:30px;font-weight:800;line-height:1.15;">${safe(b.issuer_name) || safe(b.bond_name)}</div>
-      <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">${[safe(b.security_type), safe(b.seniority)].filter(Boolean).map(pill).join('')}</div></div>
-    <div style="margin-top:40px;position:relative;display:flex;gap:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(200,162,75,0.35);border-radius:18px;padding:22px 18px;">
+    <div style="height:2px;margin-top:20px;position:relative;background:linear-gradient(90deg,${gold},rgba(200,162,75,0.15) 60%,transparent);border-radius:2px;"></div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;position:relative;">
+      <div style="font-size:20px;letter-spacing:0.28em;text-transform:uppercase;color:${goldSoft};font-weight:700;">Earn up to</div>
+      <div style="font-size:128px;font-weight:900;line-height:1.1;margin-top:14px;padding-bottom:6px;color:#F2DB99;text-shadow:0 3px 18px rgba(200,162,75,0.35);">${coupon}</div>
+      <div style="font-size:20px;letter-spacing:0.22em;text-transform:uppercase;color:#cfd8ea;font-weight:600;margin-top:34px;">per annum</div>
+      <div style="font-size:30px;font-weight:800;line-height:1.2;margin-top:50px;">${safe(b.issuer_name) || safe(b.bond_name)}</div>
+      <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">${[safe(b.security_type), safe(b.seniority), safe(b.tax_status)].filter(Boolean).map(pill).join('')}</div>
+    </div>
+    <div style="position:relative;display:flex;gap:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(200,162,75,0.35);border-radius:18px;padding:24px 18px;">
       ${stat('Tenure', tenure)}<div style="width:1px;background:rgba(200,162,75,0.3);"></div>${stat('Payout', payout(b))}<div style="width:1px;background:rgba(200,162,75,0.3);"></div>${stat('Rating', safe(b.rating) || '—')}<div style="width:1px;background:rgba(200,162,75,0.3);"></div>${stat('Min. Invest', minInv ? inrShort(minInv) : '—')}</div>
-    ${b.maturity_date ? `<div style="text-align:center;margin-top:18px;font-size:14px;color:#cfd8ea;position:relative;">Maturity: <strong style="color:${white};">${fdate(b.maturity_date)}</strong></div>` : ''}
-    <div style="position:absolute;left:46px;right:46px;bottom:40px;"><div style="background:linear-gradient(135deg,${gold},#E9D8A0);border-radius:16px;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${navy};font-weight:800;opacity:0.8;">To invest, contact</div><div style="font-size:20px;font-weight:900;color:${navy};margin-top:2px;">${contact ? esc(contact.name) : 'Niyom Wealth'}</div>${contact?.designation ? `<div style="font-size:12px;color:${navy};opacity:0.85;">${esc(contact.designation)}</div>` : ''}</div>
+    ${b.maturity_date ? `<div style="text-align:center;margin-top:16px;font-size:14px;color:#cfd8ea;position:relative;">Maturity: <strong style="color:${white};">${fdate(b.maturity_date)}</strong></div>` : ''}
+    <div style="margin-top:26px;position:relative;"><div style="background:linear-gradient(135deg,${gold},#E9D8A0);border-radius:16px;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${navy};font-weight:800;opacity:0.8;">To invest, contact</div><div style="font-size:20px;font-weight:900;color:${navy};margin-top:2px;">${contact ? esc(contact.name) : 'Niyom Wealth'}</div>${contact?.designation ? `<div style="font-size:12px;color:${navy};opacity:0.85;">${esc(contact.designation)}</div>` : ''}</div>
       <div style="text-align:right;color:${navy};font-weight:700;font-size:14px;line-height:1.5;">${contact?.phone ? `<div>Call ${esc(contact.phone)}</div>` : ''}<div style="font-size:12px;">${contact?.email ? esc(contact.email) : NIYOM.email}</div></div></div>
       <div style="text-align:center;font-size:10px;color:#8592a8;margin-top:12px;line-height:1.4;">Investments in bonds are subject to market, credit and interest-rate risks, including loss of principal. Rates indicative. Niyom Wealth Distribution LLP acts as a distributor.</div></div>
   </div>`;
