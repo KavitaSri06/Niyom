@@ -133,7 +133,7 @@ export default function DealDocument({ deal, signatureDataUrl, acceptedDate, pdf
                 ['Security / Company Name', deal.security_name, false],
                 ['ISIN Number', deal.isin, false],
                 ['Quantity', deal.quantity.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), false],
-                ['Rate per Unit (₹)', `${(Math.round(deal.rate_per_unit * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Per Share`, false],
+                [`Rate per ${deal.product_type === 'Unlisted Share' ? 'Share' : 'Unit'} (₹)`, `${(Math.round(deal.rate_per_unit * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Per ${deal.product_type === 'Unlisted Share' ? 'Share' : 'Unit'}`, false],
                 ['Stamp Duty / Charges (₹)', `${(Math.round((deal.stamp_duty || 0) * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, false],
                 ['Settlement Amount (₹)', fmt(deal.settlement_amount), true],
               ].map(([label, value, bold]) => (
