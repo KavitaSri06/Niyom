@@ -13,6 +13,7 @@ import LeadImport from './LeadImport';
 import LeadDuplicateQueue from './LeadDuplicateQueue';
 import LeadDashboard from './LeadDashboard';
 import LeadCalendar from './LeadCalendar';
+import LeadReminderPopup from './LeadReminderPopup';
 
 interface Props {
   employee: NWEmployee;
@@ -49,9 +50,12 @@ export default function Leads({ employee, onNavigate }: Props) {
   // Import takes over the whole page (admin only).
   if (view === 'import' && isAdmin) {
     return (
-      <LeadImport employee={employee}
-        onBack={() => setView('list')}
-        onDone={() => { setView('list'); bump(); }} />
+      <>
+        <LeadImport employee={employee}
+          onBack={() => setView('list')}
+          onDone={() => { setView('list'); bump(); }} />
+        <LeadReminderPopup employee={employee} onOpenLead={id => { setView('list'); openWorkspace(id); }} />
+      </>
     );
   }
 
@@ -79,6 +83,7 @@ export default function Leads({ employee, onNavigate }: Props) {
             onClose={() => setAssign({ open: false, leads: [] })}
             onAssigned={count => { setAssign({ open: false, leads: [] }); flash(`${count} lead${count === 1 ? '' : 's'} assigned`); bump(); openWorkspace(openLead.id); }} />
         )}
+        <LeadReminderPopup employee={employee} onOpenLead={openWorkspace} />
         {toast && <Toast text={toast} />}
       </>
     );
@@ -162,6 +167,7 @@ export default function Leads({ employee, onNavigate }: Props) {
           onOpenLead={openWorkspace}
           onChanged={bump} />
       )}
+      <LeadReminderPopup employee={employee} onOpenLead={openWorkspace} />
       {toast && <Toast text={toast} />}
     </div>
   );
