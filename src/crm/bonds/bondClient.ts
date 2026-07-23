@@ -25,7 +25,8 @@ export function useBonds(search: string) {
     queryKey: bondKeys.list(search),
     queryFn: async (): Promise<BondPublic[]> => {
       let q = supabase.from('bm_bonds_public').select(LIST_COLUMNS)
-        .order('updated_at', { ascending: false }).limit(2000);
+        .eq('active_status', 'active')      // only bonds in the latest uploaded list
+        .order('updated_at', { ascending: false }).limit(5000);
       const s = search.trim();
       if (s) q = q.or(`isin.ilike.%${s}%,bond_name.ilike.%${s}%,issuer_name.ilike.%${s}%`);
       const { data, error } = await q;

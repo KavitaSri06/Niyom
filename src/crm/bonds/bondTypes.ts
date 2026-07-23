@@ -33,6 +33,7 @@ export interface ImportSummary {
   created: number;
   updated: number;
   skipped: number;
+  removed: number;
   new_bond_ids: string[];
 }
 

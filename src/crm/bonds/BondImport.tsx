@@ -65,8 +65,8 @@ export default function BondImport({ onBack, onDone }: Props) {
       <div className="max-w-lg mx-auto text-center py-16">
         <CheckCircle2 className="w-12 h-12 mx-auto mb-4" style={{ color: 'rgb(16,185,129)' }} />
         <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Prices imported</h1>
-        <div className="flex items-center justify-center gap-6 my-6">
-          {([['Updated', summary.updated], ['New bonds', summary.created], ['Skipped', summary.skipped]] as const).map(([label, n]) => (
+        <div className="flex items-center justify-center gap-6 my-6 flex-wrap">
+          {([['Updated', summary.updated], ['New bonds', summary.created], ['Removed', summary.removed], ['Skipped', summary.skipped]] as const).map(([label, n]) => (
             <div key={label}>
               <p className="text-3xl font-extrabold" style={{ color: 'var(--text-primary)' }}>{n}</p>
               <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>{label}</p>

@@ -63,7 +63,7 @@ export default function BondMasterList({ isAdmin, onUpload, onVerify, onOpen }: 
         <div>
           <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>Bond Security Master</p>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Bonds</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-faint)' }}>{bonds.length.toLocaleString('en-IN')} in master</p>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-faint)' }}>{bonds.length.toLocaleString('en-IN')} in current list</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
