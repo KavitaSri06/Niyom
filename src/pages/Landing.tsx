@@ -18,7 +18,7 @@ interface LandingProps {
   onNavigate: (page: string) => void;
 }
 
-export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNews, onViewMFResearch, onViewCalculator, onViewUnlisted, onViewBonds, onNavigate }: LandingProps) {
+export function Landing({ onViewServices, onViewLearning, onViewNews, onViewMFResearch, onViewCalculator, onNavigate }: LandingProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isInvestDropdownOpen, setIsInvestDropdownOpen] = useState(false);
@@ -347,13 +347,13 @@ export function Landing({ onGetStarted, onViewServices, onViewLearning, onViewNe
       <section id="home" data-theme="dark" className="relative text-white py-32 px-6 overflow-hidden">
         {/* Original animated fintech backdrop — replaces the old stock photo. */}
         <HeroBackground />
-        <div className="relative max-w-6xl mx-auto text-center">
-          <div
-            className={`inline-flex items-center gap-2 mb-8 px-4 py-1.5 rounded-full text-sm font-medium text-accent-soft ${isLoaded ? 'animate-fadeInUp' : 'opacity-0'}`}
-            style={{ background: 'rgba(200,164,93,0.10)', border: '1px solid rgba(200,164,93,0.28)', backdropFilter: 'blur(6px)' }}
-          >
-            <ShieldCheck size={15} />
-            AMFI-registered distribution · Built on trust
+        <div className="relative max-w-6xl mx-auto flex flex-col items-center text-center">
+          <div className={`flex justify-center mb-8 ${isLoaded ? 'animate-scaleIn' : 'opacity-0'}`}>
+            <img
+              src="/niyomlogo.png"
+              alt="Niyom Wealth"
+              className="h-28 w-auto md:h-32 drop-shadow-[0_6px_28px_rgba(200,164,93,0.28)]"
+            />
           </div>
           <h2 className={`text-5xl md:text-7xl font-bold mb-6 leading-[1.05] tracking-tight ${isLoaded ? 'animate-fadeInUp animate-delay-100' : 'opacity-0'}`} style={{ fontFamily: 'var(--font-display)' }}>
             Your Financial Success<br />
