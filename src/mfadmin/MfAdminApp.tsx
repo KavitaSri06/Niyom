@@ -2,16 +2,21 @@
  * MfAdminApp — the NIYOM Mutual Fund Admin Portal (employee-facing).
  * -----------------------------------------------------------------------------
  * A completely custom NIYOM console over BSE StAR MF, so staff never open BSE's
- * own interface. Reuses the existing employee Supabase session (same
- * nw_employees gate as the CRM); it does not re-implement login/MFA — an
- * unauthenticated visitor is routed to the CRM sign-in.
+ * own interface. Mounted additively at /mf-admin, isolated in src/mfadmin.
  *
- * Isolated in src/mfadmin; mounted additively at /mf-admin.
+ * AUTH: the console has its OWN sign-in (MfAdminLogin) — maintained separately
+ * from the CRM — against the shared employee backend (Supabase auth +
+ * nw_employees + TOTP gate for privileged roles). Restoring a stored session
+ * re-checks the second factor exactly like the CRM shell does, so a half-
+ * finished privileged login can never slip past MFA. Sign-out stays on
+ * /mf-admin (back to this console's login), never bouncing through the CRM.
  */
 import { useEffect, useState, type ReactNode } from 'react';
-import { AlertTriangle, ShieldAlert } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { NWEmployee } from '../crm/types';
+import { evaluateMfaGate, isMfaUnavailable } from '../crm/mfa';
+import MfAdminLogin from './MfAdminLogin';
 import { AdminShell } from './layout/AdminShell';
 import { ADMIN_VIEW_TITLES } from './layout/adminNav';
 import { useAdminRouter } from './routing/useAdminRouter';
@@ -21,47 +26,74 @@ import { AdminPlaceholder } from './features/AdminPlaceholder';
 
 export default function MfAdminApp() {
   const [employee, setEmployee] = useState<NWEmployee | null>(null);
-  const [authState, setAuthState] = useState<'loading' | 'ok' | 'denied'>('loading');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) {
-        if (alive) setAuthState('denied');
-        return;
+
+    // Restore an existing session — with the same MFA re-check the CRM does.
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        const { data } = await supabase
+          .from('nw_employees')
+          .select('*')
+          .eq('auth_user_id', session.user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+        const emp = (data as NWEmployee) || null;
+        if (emp) {
+          let gate: Awaited<ReturnType<typeof evaluateMfaGate>>;
+          try {
+            gate = await evaluateMfaGate(emp);
+          } catch (err) {
+            gate = isMfaUnavailable(err) ? 'ok' : 'challenge';
+          }
+          if (!alive) return;
+          if (gate === 'ok') {
+            setEmployee(emp);
+          } else {
+            // Incomplete second factor — end the session; the login enforces it.
+            await supabase.auth.signOut();
+            setEmployee(null);
+          }
+        } else if (alive) {
+          setEmployee(null);
+        }
       }
-      const { data } = await supabase
-        .from('nw_employees')
-        .select('*')
-        .eq('auth_user_id', user.id)
-        .eq('status', 'active')
-        .maybeSingle();
-      if (!alive) return;
-      if (data) {
-        setEmployee(data as NWEmployee);
-        setAuthState('ok');
-      } else {
-        setAuthState('denied');
-      }
-    });
+      if (alive) setLoading(false);
+    };
+    void checkSession();
+
     return () => {
       alive = false;
     };
   }, []);
 
-  if (authState === 'loading') return <FullScreen><Spinner /></FullScreen>;
-  if (authState === 'denied') return <AccessGate />;
+  if (loading) {
+    return (
+      <FullScreen>
+        <Spinner />
+      </FullScreen>
+    );
+  }
+
+  if (!employee) return <MfAdminLogin onLogin={setEmployee} />;
 
   return <AdminConsole employee={employee} />;
 }
 
-function AdminConsole({ employee }: { employee: NWEmployee | null }) {
+function AdminConsole({ employee }: { employee: NWEmployee }) {
   const { view, navigate } = useAdminRouter();
   const { data, loading, error, refresh } = useAdminDashboard();
 
   const logout = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/crm';
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.replace('/mf-admin');
   };
 
   const renderView = () => {
@@ -96,31 +128,11 @@ function FullScreen({ children }: { children: ReactNode }) {
 function Spinner() {
   return (
     <div className="flex min-h-[50vh] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+      <div
+        className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
+        style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
+      />
     </div>
-  );
-}
-
-function AccessGate() {
-  return (
-    <FullScreen>
-      <div className="mx-auto max-w-sm px-6 text-center">
-        <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-token-xl bg-accent/10">
-          <ShieldAlert className="h-6 w-6 text-accent" />
-        </span>
-        <h1 className="font-display text-xl font-bold text-text-primary">NIYOM MF Admin</h1>
-        <p className="mx-auto mt-2 text-sm text-text-secondary">
-          This console is for NIYOM employees. Please sign in through the CRM to continue.
-        </p>
-        <a
-          href="/crm"
-          className="mt-5 inline-flex items-center justify-center rounded-token-md px-5 py-2.5 text-sm font-bold text-on-accent"
-          style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}
-        >
-          Go to CRM Sign-in
-        </a>
-      </div>
-    </FullScreen>
   );
 }
 
@@ -129,7 +141,11 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
     <div className="mx-auto max-w-md py-16 text-center">
       <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-danger" />
       <p className="text-sm text-text-primary">{message}</p>
-      <button type="button" onClick={onRetry} className="mt-4 rounded-token-md border border-border bg-bg-surface px-4 py-2 text-xs font-semibold text-text-primary hover:text-accent">
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-4 rounded-token-md border border-border bg-bg-surface px-4 py-2 text-xs font-semibold text-text-primary hover:text-accent"
+      >
         Try again
       </button>
     </div>

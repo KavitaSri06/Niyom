@@ -87,9 +87,15 @@ export function Landing({ onViewServices, onViewLearning, onViewNews, onViewMFRe
                     </button>
                     <button
                       onClick={() => { window.location.href = '/crm'; }}
-                      className="w-full text-left px-4 py-3 text-white hover:text-accent-soft hover:bg-bg-elevated/5 transition-colors duration-200 last:rounded-b-md"
+                      className="w-full text-left px-4 py-3 text-white hover:text-accent-soft hover:bg-bg-elevated/5 transition-colors duration-200"
                     >
                       CRM
+                    </button>
+                    <button
+                      onClick={() => { window.location.href = '/mf-admin'; }}
+                      className="w-full text-left px-4 py-3 text-white hover:text-accent-soft hover:bg-bg-elevated/5 transition-colors duration-200 last:rounded-b-md"
+                    >
+                      MF Admin
                     </button>
                   </div>
                 )}
@@ -265,9 +271,15 @@ export function Landing({ onViewServices, onViewLearning, onViewNews, onViewMFRe
                 </button>
                 <button
                   onClick={() => { window.location.href = '/crm'; }}
-                  className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded mb-3 transition-colors"
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded mb-2 transition-colors"
                 >
                   CRM
+                </button>
+                <button
+                  onClick={() => { window.location.href = '/mf-admin'; }}
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded mb-3 transition-colors"
+                >
+                  MF Admin
                 </button>
                 <button
                   onClick={() => {

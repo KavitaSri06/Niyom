@@ -5,7 +5,7 @@ import {
   LayoutDashboard, UserPlus, Users, PieChart, ArrowLeftRight,
   FileText, UserCog, Settings, LogOut, Bell, ChevronRight, X, Home,
   FolderOpen, Shield, BarChart3, Wallet, Handshake, ClipboardList,
-  Send, Target, Landmark, Building2,
+  Send, Target, Landmark,
 } from 'lucide-react';
 import { ThemeToggle } from '../theme/ThemeToggle';
 
@@ -93,16 +93,6 @@ export default function Layout({ children, page, onNavigate, employee }: Props) 
 
         {/* Divider */}
         <div className="my-2" style={{ borderTop: '1px solid rgba(var(--accent-soft-rgb),0.08)' }} />
-
-        {/* MF Admin — separate operations console; admins only. Uses a real
-            navigation (like Back to Website) since it's a distinct app mount. */}
-        {isAdmin && (
-          <a href="/mf-admin"
-            className="crm-nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">
-            <Building2 className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">MF Admin</span>
-          </a>
-        )}
 
         {/* Back to Home */}
         <button onClick={goHome}
