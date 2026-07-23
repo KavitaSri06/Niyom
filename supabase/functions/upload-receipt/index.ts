@@ -135,8 +135,9 @@ Deno.serve(async (req: Request) => {
     // Receipts may be generated for a paid deal before the client digitally
     // accepts (out-of-reach clients who have paid). Only rejected/expired deals
     // are closed to receipts.
-    if (deal.acceptance_status === "rejected" || deal.acceptance_status === "expired") {
-      return json({ success: false, error: `Deal is ${deal.acceptance_status}.` }, 409);
+    // Only a rejected deal is closed to receipts; 'expired' is still live.
+    if (deal.acceptance_status === "rejected") {
+      return json({ success: false, error: "Deal is rejected." }, 409);
     }
     const isAdmin = employee.role === "admin" || employee.role === "super_admin";
     if (!isAdmin && deal.employee_id !== employee.id) {

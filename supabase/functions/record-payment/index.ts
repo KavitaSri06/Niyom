@@ -160,8 +160,11 @@ Deno.serve(async (req: Request) => {
     // clients stay out of reach yet pay, and that payment must be captured so
     // the deal can later be transferred (admin override). Only rejected/expired
     // deals are closed to new payments.
-    if (deal.acceptance_status === "rejected" || deal.acceptance_status === "expired") {
-      return json({ success: false, error: `Payments cannot be recorded on a ${deal.acceptance_status} deal.` }, 409);
+    // Acceptance is not part of the payment flow. Only a client-REJECTED deal is
+    // closed to payments; 'expired' (a timed-out acceptance link) is still a live
+    // deal and must accept payments.
+    if (deal.acceptance_status === "rejected") {
+      return json({ success: false, error: "Payments cannot be recorded on a rejected deal." }, 409);
     }
     const isAdmin = employee.role === "admin" || employee.role === "super_admin";
     if (!isAdmin && deal.employee_id !== employee.id) {

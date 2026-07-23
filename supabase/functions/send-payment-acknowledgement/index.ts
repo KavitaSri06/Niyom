@@ -281,8 +281,9 @@ Deno.serve(async (req: Request) => {
     if (!deal) return json({ success: false, error: "Deal not found." }, 404);
     // A payment acknowledgement may be issued for a paid deal before the client
     // digitally accepts. Only rejected/expired deals are closed to it.
-    if (deal.acceptance_status === "rejected" || deal.acceptance_status === "expired") {
-      return json({ success: false, error: `Deal is ${deal.acceptance_status}.` }, 409);
+    // Only a rejected deal is closed; 'expired' is still a live deal.
+    if (deal.acceptance_status === "rejected") {
+      return json({ success: false, error: "Deal is rejected." }, 409);
     }
     if (!isValidEmail(deal.snap_email)) {
       return json({ success: false, error: "Client email is missing or invalid." }, 400);
