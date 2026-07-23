@@ -70,6 +70,19 @@ export async function enrichPendingLoop(onProgress?: (done: number) => void, bat
   return done;
 }
 
+// Admin: set the markup% → selling price on the master.
+export function useSaveMargin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, marginValue, sellingPrice }: { id: string; marginValue: number; sellingPrice: number }) => {
+      const { error } = await supabase.from('bm_bonds')
+        .update({ default_margin_type: 'percent', default_margin_value: marginValue, selling_price: sellingPrice }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: bondKeys.detail(v.id) }); qc.invalidateQueries({ queryKey: ['bm_bonds'] }); },
+  });
+}
+
 // Single-bond enrich (on-demand when opening a Pending bond).
 export function useEnrichOne() {
   const qc = useQueryClient();

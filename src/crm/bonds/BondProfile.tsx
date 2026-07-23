@@ -1,13 +1,17 @@
 // Bond profile — master fields + internally-computed analytics + cashflow
 // schedule. Pending bonds can be mastered on demand.
 
-import { ArrowLeft, Loader2, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, Loader2, Sparkles, Percent, ImageDown, ReceiptText, Megaphone, Minus, Plus } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { bondKeys, useEnrichOne } from './bondClient';
+import { NWEmployee } from '../types';
+import { bondKeys, useEnrichOne, useSaveMargin } from './bondClient';
 import { BondPublic, CashflowScheduleRow } from './bondTypes';
+import { EmployeeContact } from './bondConstants';
+import { generateCashflowPdf, generateMarketingImage, generatePromoImage } from './bondOutputs';
 
-interface Props { bondId: string; isAdmin: boolean; onBack: () => void; }
+interface Props { bondId: string; isAdmin: boolean; employee: NWEmployee; onBack: () => void; }
 
 function useBond(id: string) {
   return useQuery({
@@ -40,11 +44,25 @@ const S = (v: unknown) => { const s = String(v ?? '').trim(); return s || '—';
 const PCT = (v: number | null | undefined) => v === null || v === undefined ? '—' : `${Number(v).toFixed(4)}%`;
 const NUM = (v: number | null | undefined) => v === null || v === undefined ? '—' : Number(v).toLocaleString('en-IN', { maximumFractionDigits: 4 });
 
-export default function BondProfile({ bondId, onBack }: Props) {
+export default function BondProfile({ bondId, isAdmin, employee, onBack }: Props) {
   const { data: b, isLoading, refetch } = useBond(bondId);
   const enrichMut = useEnrichOne();
+  const saveMargin = useSaveMargin();
   const ready = !!b && (b.verification_status === 'verified' || b.verification_status === 'needs_review');
   const { data: cashflow = [] } = useCashflow(bondId, ready);
+
+  const [markup, setMarkup] = useState(2);
+  const [qty, setQty] = useState(1);
+  const [gen, setGen] = useState<false | 'cashflow' | 'image' | 'promo'>(false);
+
+  const contact: EmployeeContact = { name: employee.full_name, phone: employee.phone || undefined, email: employee.email || undefined, designation: employee.designation || undefined };
+  const basePrice = b?.latest_price ?? null;
+  const sellingPrice = basePrice !== null ? +(basePrice * (1 + markup / 100)).toFixed(4) : (b?.selling_price ?? null);
+
+  // Default the quantity to the minimum lot.
+  useEffect(() => {
+    if (b?.min_investment && b?.face_value) setQty(Math.max(1, Math.ceil(Number(b.min_investment) / Number(b.face_value))));
+  }, [b?.id]);
 
   if (isLoading) return <div className="flex items-center justify-center py-24"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--accent)' }} /></div>;
   if (!b) return (
@@ -57,6 +75,20 @@ export default function BondProfile({ bondId, onBack }: Props) {
   const a = b.analytics;
   const notMastered = b.verification_status === 'pending' || b.verification_status === 'failed';
   const doEnrich = async () => { await enrichMut.mutateAsync(b.isin); await refetch(); };
+  const outputPrice = isAdmin ? sellingPrice : (b.selling_price ?? b.latest_price ?? null);
+  const doOutput = async (kind: 'cashflow' | 'image' | 'promo') => {
+    setGen(kind);
+    try {
+      const opts = { contact, quantity: qty, sellingPricePer100: outputPrice };
+      if (kind === 'cashflow') await generateCashflowPdf(b, a, cashflow, opts);
+      else if (kind === 'image') await generateMarketingImage(b, a, opts);
+      else await generatePromoImage(b, opts);
+    } finally { setGen(false); }
+  };
+  const doSaveMargin = async () => { if (sellingPrice === null) return; await saveMargin.mutateAsync({ id: b.id, marginValue: markup, sellingPrice }); await refetch(); };
+  const faceAmt = b.face_value ? b.face_value * qty : null;
+  const perUnit = (b.face_value && outputPrice) ? +(b.face_value * outputPrice / 100).toFixed(2) : null;
+  const investAmt = perUnit ? +(perUnit * qty).toFixed(2) : null;
 
   const q = Math.round(b.data_quality_score);
   const qrgb = q >= 90 ? '16,185,129' : q >= 60 ? '245,158,11' : '239,68,68';
@@ -125,6 +157,55 @@ export default function BondProfile({ bondId, onBack }: Props) {
             ))}
           </div>
           <p className="text-[11px] mt-3" style={{ color: 'var(--text-faint)' }}>Indicative, computed internally from the verified master (Actual/365 unless noted). {a.assumed_bullet ? 'Bullet redemption.' : 'Amortizing redemption.'}</p>
+        </div>
+      )}
+
+      {/* Client pricing, quantity & outputs */}
+      {ready && (
+        <div className="rounded-2xl p-5" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+          <h2 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--accent)' }}>Client Pricing &amp; Outputs</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            {/* Pricing (admin sets markup; employee sees selling price) */}
+            <div>
+              {isAdmin ? (
+                <>
+                  <div className="flex items-center justify-between mb-2"><span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-faint)' }}>Existing Price /100</span><span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{NUM(basePrice)}</span></div>
+                  <label className="block text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: 'var(--text-faint)' }}>% Increase</label>
+                  <div className="relative mb-2">
+                    <Percent className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }} />
+                    <input type="number" step="0.01" value={markup} onChange={e => setMarkup(parseFloat(e.target.value) || 0)} className="w-full pl-8 pr-2 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg mb-2" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}><span className="text-[10px] uppercase tracking-wider font-bold text-on-accent" style={{ opacity: 0.9 }}>Selling /100</span><span className="text-sm font-extrabold text-on-accent">{NUM(sellingPrice)}</span></div>
+                  <button onClick={doSaveMargin} disabled={saveMargin.isPending} className="w-full text-xs font-semibold py-1.5 rounded-lg" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{saveMargin.isPending ? 'Saving…' : 'Save selling price'}</button>
+                </>
+              ) : (
+                <><span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-faint)' }}>Selling Price /100</span><p className="text-2xl font-extrabold mt-1" style={{ color: 'var(--text-primary)' }}>{NUM(b.selling_price ?? b.latest_price)}</p></>
+              )}
+            </div>
+            {/* Quantity → investment */}
+            <div>
+              <div className="flex items-center justify-between mb-2"><span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-faint)' }}>Quantity (units)</span></div>
+              <div className="flex items-center gap-2 mb-3">
+                <button onClick={() => setQty(q => Math.max(1, q - 1))} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}><Minus className="w-3.5 h-3.5" /></button>
+                <input type="number" min={1} value={qty} onChange={e => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))} className="flex-1 min-w-0 px-2 py-2 rounded-lg text-sm text-center font-bold outline-none" style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
+                <button onClick={() => setQty(q => q + 1)} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}><Plus className="w-3.5 h-3.5" /></button>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between"><span style={{ color: 'var(--text-faint)' }}>Face value</span><span style={{ color: 'var(--text-primary)' }}>{faceAmt ? `₹${faceAmt.toLocaleString('en-IN')}` : '—'}</span></div>
+                <div className="flex justify-between"><span style={{ color: 'var(--text-faint)' }}>Investment</span><span className="font-bold" style={{ color: 'var(--text-primary)' }}>{investAmt ? `₹${investAmt.toLocaleString('en-IN')}` : '—'}</span></div>
+                <div className="flex justify-between"><span style={{ color: 'var(--text-faint)' }}>Annual income</span><span style={{ color: 'var(--text-primary)' }}>{(b.coupon_rate && faceAmt) ? `₹${(faceAmt * b.coupon_rate / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : '—'}</span></div>
+              </div>
+            </div>
+            {/* Outputs */}
+            <div className="flex flex-col gap-2 justify-center">
+              <button onClick={() => doOutput('image')} disabled={!!gen} className="px-3 py-2.5 rounded-xl text-sm font-bold text-on-accent disabled:opacity-50 flex items-center justify-center gap-2" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' }}>{gen === 'image' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageDown className="w-4 h-4" />} Marketing Image</button>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => doOutput('promo')} disabled={!!gen} className="px-3 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{gen === 'promo' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Megaphone className="w-4 h-4" />} Promo</button>
+                <button onClick={() => doOutput('cashflow')} disabled={!!gen || cashflow.length === 0} className="px-3 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5" style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{gen === 'cashflow' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ReceiptText className="w-4 h-4" />} Cashflow</button>
+              </div>
+              <p className="text-[10px] text-center" style={{ color: 'var(--text-faint)' }}>Client-facing — no internal cost shown.</p>
+            </div>
+          </div>
         </div>
       )}
 

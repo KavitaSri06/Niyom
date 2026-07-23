@@ -32,7 +32,7 @@ export default function Bonds({ employee }: Props) {
         <BondImport onBack={() => setView({ name: 'list' })} onDone={() => setView({ name: 'list' })} />
       )}
       {view.name === 'profile' && (
-        <BondProfile bondId={view.id} isAdmin={isAdmin} onBack={() => setView({ name: 'list' })} />
+        <BondProfile bondId={view.id} isAdmin={isAdmin} employee={employee} onBack={() => setView({ name: 'list' })} />
       )}
     </QueryClientProvider>
   );
