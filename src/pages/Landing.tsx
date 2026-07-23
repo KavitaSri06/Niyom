@@ -350,9 +350,9 @@ export function Landing({ onViewServices, onViewLearning, onViewNews, onViewMFRe
         <div className="relative max-w-6xl mx-auto flex flex-col items-center text-center">
           <div className={`flex justify-center mb-8 ${isLoaded ? 'animate-scaleIn' : 'opacity-0'}`}>
             <img
-              src="/niyomlogo.png"
+              src="/niyom-mark.png"
               alt="Niyom Wealth"
-              className="h-28 w-auto md:h-32 drop-shadow-[0_6px_28px_rgba(200,164,93,0.28)]"
+              className="h-28 w-auto md:h-36 drop-shadow-[0_6px_28px_rgba(200,164,93,0.28)]"
             />
           </div>
           <h2 className={`text-5xl md:text-7xl font-bold mb-6 leading-[1.05] tracking-tight ${isLoaded ? 'animate-fadeInUp animate-delay-100' : 'opacity-0'}`} style={{ fontFamily: 'var(--font-display)' }}>
