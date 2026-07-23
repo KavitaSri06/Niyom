@@ -174,11 +174,11 @@ export function HeroShowcase({ className = '' }: { className?: string }) {
         <TrendingUp className="w-3.5 h-3.5" style={{ color: '#34D399' }} />
         SIP Ready
       </FloatingChip>
-      <FloatingChip pos="top-9 right-0 translate-x-[60%]" enterStyle={enter(640)} layerStyle={layer(20)} reduced={reduced} delay="1.1s">
+      <FloatingChip pos="top-14 right-0 translate-x-[108%]" enterStyle={enter(640)} layerStyle={layer(20)} reduced={reduced} delay="1.1s">
         <span className="w-2 h-2 rounded-full" style={{ background: '#5B8DEF' }} />
         AAA Bonds
       </FloatingChip>
-      <FloatingChip pos="bottom-12 right-0 translate-x-[52%]" enterStyle={enter(780)} layerStyle={layer(30)} reduced={reduced} delay="0.6s">
+      <FloatingChip pos="bottom-16 right-0 translate-x-[108%]" enterStyle={enter(780)} layerStyle={layer(30)} reduced={reduced} delay="0.6s">
         <span className="w-2 h-2 rounded-full" style={{ background: '#C8A45D' }} />
         Goal Tracking
       </FloatingChip>

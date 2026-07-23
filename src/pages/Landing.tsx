@@ -357,23 +357,13 @@ export function Landing({ onViewServices, onViewLearning, onViewNews, onViewMFRe
       {/* Inherently dark: the animated network backdrop renders in navy + gold,
           so it pins the dark token set regardless of the active theme —
           otherwise the light theme's dark-on-light gold would render muted. */}
-      <section id="home" data-theme="dark" className="relative text-white overflow-hidden min-h-[92vh] flex items-center py-20 md:py-24 px-6">
+      <section id="home" data-theme="dark" className="relative text-white overflow-hidden min-h-[92vh] flex items-start px-6 pt-24 md:pt-28 pb-16">
         {/* Original animated fintech backdrop — replaces the old stock photo. */}
         <HeroBackground />
         <div className="relative w-full max-w-7xl mx-auto grid lg:grid-cols-2 gap-14 lg:gap-8 items-center">
 
           {/* Left — message */}
           <div className="text-center lg:text-left">
-            {/* Eyebrow */}
-            <div className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-7 ${isLoaded ? 'animate-fadeInUp' : 'opacity-0'}`}
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(200,164,93,0.28)', backdropFilter: 'blur(8px)' }}>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-pulse-subtle absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: 'var(--accent-soft)' }} />
-                <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: 'var(--accent-soft)' }} />
-              </span>
-              <span className="text-xs font-medium tracking-wide text-gray-200">AMFI-Registered Distribution · Built on Trust</span>
-            </div>
-
             {/* Headline — gold emphasis on "Build Wealth" and "Confidence" */}
             <h1 className={`text-5xl md:text-6xl xl:text-7xl font-bold leading-[1.04] tracking-tight mb-6 ${isLoaded ? 'animate-fadeInUp animate-delay-100' : 'opacity-0'}`} style={{ fontFamily: 'var(--font-display)' }}>
               <span className="text-accent-soft">Build Wealth</span><br />
