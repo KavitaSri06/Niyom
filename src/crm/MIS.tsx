@@ -117,22 +117,35 @@ export default function MIS({ employee }: Props) {
       // gated this way.)
       if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(t.product_type)
           && ((t as any).transfer_stage === 'transferred' || (t as any).deal_confirmation_id)) {
-        const landingCost = (t as any).landing_cost || 0;
+        const landingRaw = (t as any).landing_cost;
         const qty = t.quantity || 0;
         const price =
           client?.sourced_via === 'dsa'
             ? ((t as any).dsa_price || 0)
             : ((t as any).per_unit_price || 0);
-        const revenue = t.txn_type === 'sell'
-          ? (landingCost - price) * qty
-          : (price - landingCost) * qty;
-        if (revenue !== 0) {
+        if (landingRaw === null || landingRaw === undefined || landingRaw === '') {
+          // Landing cost was never entered — revenue is NOT the whole settlement.
+          // Show the row as pending (₹0) so it doesn't inflate MIS; the user
+          // enters the landing cost on the transaction to compute real revenue.
           computed.push({
             ...baseRow,
             revenue_type: 'landing_cost',
-            revenue,
-            notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
+            revenue: 0,
+            notes: `⚠ Landing cost pending — enter it on this transaction to compute revenue (Price ${fmt(price)} × Qty ${qty})`,
           });
+        } else {
+          const landingCost = Number(landingRaw);
+          const revenue = t.txn_type === 'sell'
+            ? (landingCost - price) * qty
+            : (price - landingCost) * qty;
+          if (revenue !== 0) {
+            computed.push({
+              ...baseRow,
+              revenue_type: 'landing_cost',
+              revenue,
+              notes: `Price: ${fmt(price)} | Landing Cost: ${fmt(landingCost)} | Qty: ${qty}`,
+            });
+          }
         }
       }
 

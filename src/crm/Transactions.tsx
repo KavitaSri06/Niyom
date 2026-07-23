@@ -466,6 +466,13 @@ export default function Transactions({ employee, onNavigate }: Props) {
     if (!form.product_name.trim()) { setError('Product name is required.'); return; }
     if (!form.consolidated_amount || parseFloat(form.consolidated_amount) <= 0) { setError('Amount is required.'); return; }
     if (isIns && !form.policy_number.trim()) { setError('Policy number is required.'); return; }
+    // Landing cost drives MIS revenue for unlisted shares & bonds — require it so
+    // MIS never shows the whole settlement as profit.
+    if (['unlisted_share', 'secondary_bond', 'primary_bond'].includes(form.product_type)
+        && (form.landing_cost === '' || form.landing_cost == null)) {
+      setError('Landing cost per unit is required — it determines the MIS revenue for this business.');
+      return;
+    }
     setError(''); setSaving(true);
 
     const selectedClient = clients.find(c => c.id === form.client_id);
