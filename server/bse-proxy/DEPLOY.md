@@ -60,12 +60,12 @@ curl -s localhost:8080/health   # → {"ok":true,...}
 
 ## 4. HTTPS in front (nginx + certbot)
 
-Point a DNS A-record (e.g. `bse.niyomwealth.com`) at the droplet IP, then:
+Point a DNS A-record (e.g. `api.niyomwealth.com`) at the droplet IP, then:
 
 ```bash
 sudo tee /etc/nginx/sites-available/bse-proxy <<'NGINX'
 server {
-    server_name bse.niyomwealth.com;
+    server_name api.niyomwealth.com;
     location / {
         proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
@@ -76,7 +76,7 @@ NGINX
 sudo ln -s /etc/nginx/sites-available/bse-proxy /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 sudo apt-get install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d bse.niyomwealth.com
+sudo certbot --nginx -d api.niyomwealth.com
 ```
 
 ## 5. Point the app at it
@@ -85,7 +85,7 @@ In the web app's environment (Vercel → Project → Environment Variables):
 
 ```
 VITE_BSE_MODE=live
-VITE_BSE_PROXY_URL=https://bse.niyomwealth.com
+VITE_BSE_PROXY_URL=https://api.niyomwealth.com
 ```
 
 Redeploy the app — `BSEService` flips from mock to live with no code changes.
