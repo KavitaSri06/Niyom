@@ -543,10 +543,22 @@ export default function Transactions({ employee, onNavigate }: Props) {
 
     let txnId: string;
     if (editTxn) {
-      // Never reassign ownership on edit — keep the original employee_id. Sending
-      // the current user's id would also falsely trip the post-transfer
-      // immutability guard (it compares every non-revenue field for changes).
-      const { employee_id: _keepOwner, ...updatePayload } = payload;
+      // A transferred transaction only allows the revenue-basis fields, the date
+      // and notes to change (DB immutability guard). Send ONLY those — sending
+      // the full payload would falsely trip the guard, because setF recomputes
+      // consolidated_amount (qty × per-unit-price), which differs from the stored
+      // settlement (base rate / stamp-duty rounding). Non-transferred rows keep
+      // the full edit, minus employee_id (never reassign ownership).
+      let updatePayload: Record<string, any>;
+      if ((editTxn as any).transfer_stage === 'transferred') {
+        updatePayload = {};
+        for (const k of ['landing_cost', 'insurance_revenue', 'trail_percent', 'trail_start_date', 'txn_date', 'notes'] as const) {
+          if (k in payload) updatePayload[k] = payload[k];
+        }
+      } else {
+        const { employee_id: _keepOwner, ...rest } = payload;
+        updatePayload = rest;
+      }
       const { error: err } = await supabase.from('nw_transactions').update({ ...updatePayload, updated_at: new Date().toISOString() }).eq('id', editTxn.id);
       if (err) { setError(err.message); setSaving(false); return; }
       txnId = editTxn.id;
