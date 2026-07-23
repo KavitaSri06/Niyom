@@ -8,6 +8,7 @@ import { bondQueryClient } from './bondClient';
 import BondMasterList from './BondMasterList';
 import BondImport from './BondImport';
 import BondProfile from './BondProfile';
+import VerificationQueue from './VerificationQueue';
 
 interface Props {
   employee: NWEmployee;
@@ -15,7 +16,7 @@ interface Props {
   pageParams?: Record<string, string>;
 }
 
-type View = { name: 'list' } | { name: 'import' } | { name: 'profile'; id: string };
+type View = { name: 'list' } | { name: 'import' } | { name: 'profile'; id: string } | { name: 'verify' };
 
 export default function Bonds({ employee }: Props) {
   const isAdmin = employee.role === 'admin' || employee.role === 'super_admin';
@@ -26,7 +27,11 @@ export default function Bonds({ employee }: Props) {
       {view.name === 'list' && (
         <BondMasterList isAdmin={isAdmin}
           onUpload={() => setView({ name: 'import' })}
+          onVerify={() => setView({ name: 'verify' })}
           onOpen={id => setView({ name: 'profile', id })} />
+      )}
+      {view.name === 'verify' && (
+        <VerificationQueue onBack={() => setView({ name: 'list' })} onOpen={id => setView({ name: 'profile', id })} />
       )}
       {view.name === 'import' && isAdmin && (
         <BondImport onBack={() => setView({ name: 'list' })} onDone={() => setView({ name: 'list' })} />

@@ -6,7 +6,7 @@ import { Search, UploadCloud, Loader2, ShieldCheck, ShieldAlert, Clock, Landmark
 import { useBonds, enrichPendingLoop } from './bondClient';
 import { BondPublic } from './bondTypes';
 
-interface Props { isAdmin: boolean; onUpload: () => void; onOpen: (id: string) => void; }
+interface Props { isAdmin: boolean; onUpload: () => void; onVerify: () => void; onOpen: (id: string) => void; }
 
 function fmtDate(d: string | null): string {
   if (!d) return '—';
@@ -43,12 +43,13 @@ function QualityBadge({ score }: { score: number }) {
   );
 }
 
-export default function BondMasterList({ isAdmin, onUpload, onOpen }: Props) {
+export default function BondMasterList({ isAdmin, onUpload, onVerify, onOpen }: Props) {
   const [search, setSearch] = useState('');
   const { data: bonds = [], isLoading, error } = useBonds(search);
   const qc = useQueryClient();
   const [mastering, setMastering] = useState<number | null>(null);
   const pending = bonds.filter(b => b.verification_status === 'pending' || b.verification_status === 'failed').length;
+  const review = bonds.filter(b => b.verification_status === 'needs_review').length;
 
   const masterPending = async () => {
     setMastering(0);
@@ -71,6 +72,12 @@ export default function BondMasterList({ isAdmin, onUpload, onOpen }: Props) {
               className="pl-9 pr-3 py-2.5 rounded-xl text-sm outline-none w-64"
               style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }} />
           </div>
+          {isAdmin && review > 0 && (
+            <button onClick={onVerify} className="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
+              style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', color: 'rgb(180,120,10)' }}>
+              <ShieldAlert className="w-4 h-4" /> Verify {review}
+            </button>
+          )}
           {isAdmin && pending > 0 && (
             <button onClick={masterPending} disabled={mastering !== null} className="px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60 flex items-center gap-2"
               style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>

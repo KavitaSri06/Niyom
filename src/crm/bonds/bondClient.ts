@@ -47,6 +47,25 @@ export function useImportPrices() {
   });
 }
 
+export interface VerifQueueItem {
+  id: string; bond_id: string; missing_fields: string[]; reason: string; confidence: number; created_at: string;
+  bond: { isin: string; bond_name: string; data_quality_score: number } | null;
+}
+
+// Admin-only: bonds needing manual verification (missing required fields).
+export function useVerificationQueue() {
+  return useQuery({
+    queryKey: ['bm_verif_queue'],
+    queryFn: async (): Promise<VerifQueueItem[]> => {
+      const { data, error } = await supabase.from('bm_verification_queue')
+        .select('id,bond_id,missing_fields,reason,confidence,created_at,bond:bm_bonds(isin,bond_name,data_quality_score)')
+        .eq('status', 'open').order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data as unknown as VerifQueueItem[]) ?? [];
+    },
+  });
+}
+
 export interface EnrichResult { isin: string; status: string; quality?: number; ytm?: number | null; error?: string }
 export interface EnrichResponse { enriched: number; results: EnrichResult[] }
 
